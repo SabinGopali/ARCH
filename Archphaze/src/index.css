@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+
+#slider-boxes{
+  display: flex !important
+}
+
+.slick-slide div{
+  margin: 10px;
+}
+
+.slick-arrow:before{
+  color: black;
+  font-size: 50px;
+}
+
+.slick-prev{
+  top: -60px;
+  left: 1170px;
+}
+
+
+
