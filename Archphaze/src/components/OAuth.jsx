@@ -47,7 +47,7 @@ export default function OAuth() {
 
   return (
     <div>
-      <div className="text-center text-gray-500 font-semibold">OR</div>
+     
 
       <button
         onClick={handleGoogleClick}

@@ -1,14 +1,28 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
+import AOS from "aos";
+import "aos/dist/aos.css";
+
 import logo from "/archphaze.webp";
 import Scrollingcards from "./Scrollingcards";
 import Techintro from "./Techintro";
+import Category from "./Category";
 
 export default function ProductShowcase() {
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: true,
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-white px-4 py-16 flex flex-col items-center text-center">
       {/* Main Heading */}
-      <h1 className="text-3xl md:text-5xl font-extrabold text-gray-800 uppercase leading-tight max-w-3xl">
+      <h1
+        className="text-3xl md:text-5xl font-extrabold text-gray-800 uppercase leading-tight max-w-3xl"
+        data-aos="fade-up"
+      >
         <em className="italic font-medium text-red-500 uppercase">Smart, Sleek</em>
         <span className="inline-flex items-center justify-center mx-2">
           <span className="text-red-500 text-2xl">⚡</span>
@@ -18,7 +32,7 @@ export default function ProductShowcase() {
       </h1>
 
       {/* Search Bar */}
-      <div className="mt-8 w-full max-w-xl flex">
+      <div className="mt-8 w-full max-w-xl flex" data-aos="fade-up">
         <input
           type="text"
           placeholder="Search tech products..."
@@ -30,7 +44,10 @@ export default function ProductShowcase() {
       </div>
 
       {/* Product Grid */}
-      <div className="mt-16 w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-10 items-center">
+      <div
+        className="mt-16 w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-10 items-center"
+        data-aos="fade-up"
+      >
         {/* Left Side */}
         <div className="flex flex-col gap-8 items-center">
           <img
@@ -70,11 +87,18 @@ export default function ProductShowcase() {
       </div>
 
       {/* Scrolling Cards Section */}
-      <div className="mt-20 w-full">
+      <div className="mt-20 w-full" data-aos="fade-up">
         <Scrollingcards />
       </div>
-        <div className="mt-20 w-full">
+
+      {/* Tech Introduction Section */}
+      <div className="mt-20 w-full" data-aos="fade-up">
         <Techintro />
+      </div>
+
+      {/* Category Section */}
+      <div className="mt-20 w-full" data-aos="fade-up">
+        <Category />
       </div>
     </div>
   );

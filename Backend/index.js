@@ -2,8 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv'
 import userroute from './routes/user.route.js';
-import authroute from './routes/auth.route.js'
-// import cookieParser from 'cookie-parser';
+import authroute from './routes/auth.route.js';
+import careerroute from './routes/career.route.js';
+import cookieParser from 'cookie-parser';
 // import applicationRouter from './routes/application.route.js';
 // import bookingRouter from './routes/booking.route.js';
 
@@ -18,7 +19,7 @@ mongoose.connect(process.env.MONGO).then(
 const app = express();
 
 
-// app.use(cookieParser());
+app.use(cookieParser());
 
 app.listen(3000, () => {
     console.log('Server is running in port 3000');
@@ -27,6 +28,7 @@ app.listen(3000, () => {
 app.use(express.json());
 app.use('/backend/user', userroute);
 app.use('/backend/auth', authroute);
+app.use('/backend/Career', careerroute);
 // app.use('/api/application', applicationRouter);
 // app.use('/api/booking', bookingRouter);
 

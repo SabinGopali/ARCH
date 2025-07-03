@@ -1,86 +1,122 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react'
+import { useState } from 'react';
 import { signInStart, signInSuccess, signInFailure } from '../redux/user/userslice';
 import { useDispatch, useSelector } from 'react-redux';
-import Logo from '/logo.webp'
+import Logo from '/logo.webp';
 import OAuth from './OAuth';
 
 export default function Login() {
   const [formData, setFormData] = useState({});
-  const {loading, error: errorMessage} = useSelector(state => state.user);
+  const { loading, error: errorMessage } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-    const handleChange = (e) => {
-      setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
-     
-    };
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      if (!formData.email || !formData.password) {
-        return dispatch(signInFailure('Please fill all the fields'))
-      }
-      try {
-        dispatch(signInStart());
-        const res = await fetch('/backend/auth/signin', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        });
-        const data = await res.json();
-        if (data.success === false) {
-          
-          dispatch(signInFailure(data.message));
-        }
 
-        if(res.ok) {
-          dispatch(signInSuccess(data));
-          navigate('/');
-        }
-      } catch (error) {
-        dispatch(signInFailure(error.message));
-      }
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password) {
+      return dispatch(signInFailure('Please fill all the fields'));
     }
-  
+    try {
+      dispatch(signInStart());
+      const res = await fetch('/backend/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (data.success === false) {
+        dispatch(signInFailure(data.message));
+      }
+      if (res.ok) {
+        dispatch(signInSuccess(data));
+        navigate('/');
+      }
+    } catch (error) {
+      dispatch(signInFailure(error.message));
+    }
+  };
+
   return (
-<div className="flex items-center justify-center min-h-screen">
-      <div className="md:bg-slate-200 p-8 rounded-lg shadow-lg flex w-2/3 max-w-4xl sm:w-fit sm:ml-5 sm:mr-5 sm:bg-transparent">
-        {/* Left Side - 3D Illustration */}
-        <div className="w-1/2 flex items-center justify-center">
-          <img src={Logo} alt="Illustration" className="w-80" />
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white to-slate-100 px-4">
+      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-4xl flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
+        
+        {/* Left Side - Logo */}
+        <div className="flex justify-center items-center w-full md:w-1/2">
+          <img
+            src={Logo}
+            alt="Logo"
+            className="h-12 sm:h-14 md:h-16 object-contain transition-transform duration-300 hover:scale-105"
+          />
         </div>
+
         {/* Right Side - Form */}
-        <div className="w-1/2 p-6">
+        <div className="w-full md:w-1/2 space-y-4">
           <h2 className="text-2xl font-bold text-gray-800 text-center">Sign In</h2>
-          <p className="text-gray-600 text-center mb-4">Sign in for further</p>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-semibold">Email</label>
-              <input type="email" className="w-full px-4 py-2 border rounded-md " placeholder="Enter your email" id="email"
-              onChange={handleChange} />
+          <p className="text-gray-600 text-center">Sign in for further</p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <input
+                type="email"
+                id="email"
+                placeholder="Email address"
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
             </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-semibold">Password</label>
-              <input type="password" className="w-full px-4 py-2 border rounded-md " placeholder="Enter your password" id="password"
-              onChange={handleChange} />
-            </div>
-            <button className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition disabled:opacity-80"
-            disabled={loading}>{
-              loading ? 'Loading...' : 'Login'
-            }</button>
-          </form>
-          <OAuth/>
-          <p className="text-center text-gray-600 mt-4">
-          Don't have an account? <Link to='/signup' className="text-blue-500">Create an account</Link>
-          </p>
-          {
-            errorMessage && (
-              <div className='p-4 mt-2 mb-4 text-sm text-red-600 rounded-lg bg-red-100 " role="alert'>
-                <span className="font-medium">Error!</span> {errorMessage}
+            <div className="space-y-2">
+              <input
+                type="password"
+                id="password"
+                placeholder="Password"
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+              <div className="text-right">
+                <Link
+                  to="/forgetpassword"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Forgot password?
+                </Link>
               </div>
-            )
-          }
+            </div>
+            <button
+              disabled={loading}
+              className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition disabled:opacity-80"
+            >
+              {loading ? 'Loading...' : 'Sign In'}
+            </button>
+          </form>
+
+          {/* OR Divider */}
+          <div className="flex items-center my-2">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="px-3 text-gray-500 text-sm">OR</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
+
+          <OAuth />
+
+          {/* Redirect */}
+          <p className="text-center text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-blue-600 hover:underline">
+              Create an account
+            </Link>
+          </p>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg">
+              <strong>Error:</strong> {errorMessage}
+            </div>
+          )}
         </div>
       </div>
     </div>
-  )
+  );
 }

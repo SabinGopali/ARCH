@@ -11,7 +11,7 @@ export default function Forgetpassword() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-50 to-blue-200 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-white py-8 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl shadow-2xl p-8 sm:p-10 space-y-6">
         
         {/* Logo */}

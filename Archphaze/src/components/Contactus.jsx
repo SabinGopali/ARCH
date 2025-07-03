@@ -1,7 +1,25 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Mail, MapPin, Phone } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 export default function ContactUs() {
+
+  const form = useRef();
+
+  const SendEmail = (e)=>{
+    e.preventDefault();
+    emailjs.sendForm('service_pezqqsx', 'template_2zek6tt', form.current, 'fQD12l4-tzTZE6fcH').then(
+      ()=>{
+        alert("Message sent successfully");
+        form.current.reset();
+      },
+      (error)=>{
+        alert("failed try again", error);
+      }
+    )
+  }
+
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,10 +38,10 @@ export default function ContactUs() {
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\d{7,15}$/.test(formData.phone)) {
-      newErrors.phone = 'Phone number is invalid';
+    if (!formData.contact.trim()) {
+      newErrors.contact = 'Phone number is required';
+    } else if (!/^\d{7,15}$/.test(formData.contact)) {
+      newErrors.contact = 'Phone number is invalid';
     }
     if (!formData.subject.trim()) newErrors.subject = 'Subject is required';
     if (!formData.message.trim()) newErrors.message = 'Message is required';
@@ -93,7 +111,7 @@ export default function ContactUs() {
 
         {/* Contact Form */}
         <div className="flex flex-col gap-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form ref={form} onSubmit={SendEmail} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <input
@@ -120,10 +138,10 @@ export default function ContactUs() {
             </div>
             <div>
               <input
-                type="text"
-                name="phone"
+                type="number"
+                name="contact"
                 placeholder="Phone.no"
-                value={formData.phone}
+                value={formData.contact}
                 onChange={handleChange}
                 className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black-500"
               />
@@ -152,7 +170,7 @@ export default function ContactUs() {
               {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
             </div>
             <div >
-              <button type="submit" className="px-5 py-2 border border-black rounded-md hover:bg-black hover:text-white transition">
+              <button type="submit" className="px-5 py-2 cursor-pointer border border-black rounded-md hover:bg-black hover:text-white transition">
                 Send us message
               </button>
             </div>

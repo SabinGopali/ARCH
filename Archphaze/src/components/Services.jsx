@@ -13,28 +13,24 @@ const data = [
     title: 'Custom Software Development',
     para: 'We build secure, scalable, and high-performance software tailored to your business needs — from internal tools to full enterprise systems.',
     cta: 'Request a quote',
-    
   },
   {
     img: MobileAppImg,
     title: 'Mobile App Development',
     para: 'Deliver seamless mobile experiences across iOS and Android with native and cross-platform apps that users love.',
     cta: 'Start your app',
-    
   },
   {
     img: UIUXImg,
     title: 'UI/UX Design Services',
     para: 'Design intuitive user interfaces and meaningful experiences that boost engagement and simplify interaction across platforms.',
     cta: 'View our design work',
-   
   },
   {
     img: ApiImg,
     title: 'API Development & Integration',
     para: 'Create and connect RESTful or GraphQL APIs to enable data exchange, third-party services, and system interoperability.',
     cta: 'Explore API solutions',
-    
   }
 ];
 
@@ -59,6 +55,7 @@ export default function Services() {
         <p className="text-center text-gray-600 mb-12 text-lg">
           Empowering your ideas with technology that works.
         </p>
+
         <div className="space-y-20">
           {data.map((item, index) => {
             const isReversed = index % 2 === 1;
@@ -74,22 +71,26 @@ export default function Services() {
               >
                 {/* Text Section */}
                 <div className="md:w-1/2">
-                  <h3 className="text-2xl font-semibold mb-4 text-gray-900">{item.title}</h3>
-                  <p className="text-gray-600 mb-4">{item.para}</p>
-                  <button className="bg-white text-black border border-black px-4 py-2 rounded hover:bg-black hover:text-white transition">
+                  <h3 className="text-3xl font-bold mb-4 text-gray-900">{item.title}</h3>
+                  <p className="text-gray-700 text-base mb-4 leading-relaxed">{item.para}</p>
+                  <button className="bg-white text-black border border-black px-5 py-2.5 rounded hover:bg-black hover:text-white transition font-medium">
                     {item.cta}
                   </button>
-
-                  {/* Related links */}
-                  
                 </div>
 
-                {/* Image/Icon Section */}
+                {/* Image Section */}
                 <div className="md:w-1/2 flex justify-center">
-                  <div className="w-64 h-64 flex items-center justify-center bg-orange-50 rounded-full shadow-inner p-4">
-                    <img src={item.img} alt={item.title} className="object-contain h-40" />
+                  <div className="w-56 h-56 rounded-3xl bg-gradient-to-br from-red-100 via-white to-blue-100 p-[3px] shadow-lg transform transition duration-300 hover:scale-105 hover:-translate-y-1">
+                    <div className="w-full h-full rounded-2xl overflow-hidden bg-white">
+                      <img
+                        src={item.img}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   </div>
                 </div>
+
               </div>
             );
           })}

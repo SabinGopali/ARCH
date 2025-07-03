@@ -1,12 +1,43 @@
-import React from "react";
-import img from "../assets/careerimg.jpg"; // Make sure this image has no visible border
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import img from "../assets/careerimg.jpg";
 import { Helmet } from "react-helmet";
 
 const JoinOurTeam = () => {
+  const { currentUser } = useSelector((state) => state.user);
+  const [careers, setCareers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCareers = async () => {
+      try {
+        const res = await fetch("/backend/career/getCareer");
+        const data = await res.json();
+
+        if (res.ok && Array.isArray(data.careers)) {
+          setCareers(data.careers);
+        } else if (res.ok && Array.isArray(data)) {
+          setCareers(data);
+        } else {
+          console.error("Unexpected response:", data);
+          setCareers([]);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error.message);
+        setCareers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (currentUser?._id) {
+      fetchCareers();
+    }
+  }, [currentUser?._id]);
+
   return (
     <>
       <Helmet>
-        
         <meta
           name="description"
           content="Discover exciting career opportunities at Archphaze Technologies. We're hiring developers, designers, and engineers who are passionate about innovation and growth."
@@ -27,30 +58,28 @@ const JoinOurTeam = () => {
 
             {/* Job Table */}
             <div className="overflow-auto shadow-sm rounded-xl border border-gray-200">
-              <table className="min-w-full text-sm sm:text-base">
-                <thead className="bg-gray-50 text-gray-700 font-medium">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Position</th>
-                    <th className="px-4 py-3 text-left">Vacancy</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["Frontend Developer", 2],
-                    ["Backend Developer", 3],
-                    ["Full Stack Developer", 1],
-                    ["Mobile App Developer", 2],
-                    ["DevOps Engineer", 1],
-                    ["QA Engineer", 2],
-                    ["UI/UX Designer", 1],
-                  ].map(([position, vacancy], i) => (
-                    <tr key={i} className="border-t">
-                      <td className="px-4 py-2">{position}</td>
-                      <td className="px-4 py-2">{vacancy}</td>
+              {loading ? (
+                <p className="p-4 text-center">Loading careers...</p>
+              ) : careers.length === 0 ? (
+                <p className="p-4 text-center">No careers available at the moment.</p>
+              ) : (
+                <table className="min-w-full text-sm sm:text-base">
+                  <thead className="bg-gray-50 text-gray-700 font-medium">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Position</th>
+                      <th className="px-4 py-3 text-left">Vacancy</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {careers.map(({ position, vacancies }, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="px-4 py-2">{position}</td>
+                        <td className="px-4 py-2">{vacancies}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Company Culture */}
@@ -69,13 +98,13 @@ const JoinOurTeam = () => {
 
           {/* Image Section */}
           <div className="w-full flex justify-center lg:justify-end">
-                <img
-                  src={img}
-                  alt="Team collaboration illustration"
-                  className="w-full max-w-lg lg:max-w-xl object-contain"
-                  style={{ backgroundColor: "transparent" }}
-                />
-              </div>
+            <img
+              src={img}
+              alt="Team collaboration illustration"
+              className="w-full max-w-lg lg:max-w-xl object-contain"
+              style={{ backgroundColor: "transparent" }}
+            />
+          </div>
         </div>
       </section>
     </>

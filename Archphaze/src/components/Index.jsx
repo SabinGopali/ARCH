@@ -8,6 +8,9 @@ import Whyus from './Whyus';
 import Testimonial from './Testimonial';
 import { Link } from 'react-router-dom';
 import ThreeDModel from './ThreeDmodel';
+import Shopbanner from './Shopbanner';
+import Trustedpartners from './Trustedpartners';
+import ClosingPage from './Closingpage';
 
 export default function Index() {
   useEffect(() => {
@@ -70,7 +73,10 @@ export default function Index() {
       
       <Services />
       <Whyus />
+      <Shopbanner/>
       <Testimonial />
+      <Trustedpartners/>
+      <ClosingPage/>
     </>
   );
 }

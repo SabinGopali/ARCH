@@ -26,10 +26,21 @@
   import Scrollingcards from './shop/Scrollingcards';
   import Techintro from './shop/Techintro';
   import Partners from './components/Partners';
-import Adlogin from './admin/Adlogin';
+  import Trustedpartners from './components/Trustedpartners';
+  import Closingpage from './components/Closingpage';
 import  Sidebar  from './admin/Sidebar';
 import Signup from './components/Signup';
 import Login from './components/Login';
+import Privateroute from './components/privateroute';
+import Userinfo from './admin/Userinfo';
+import Dashboard from './admin/Dashboard';
+import Careerinfo from './admin/Careerinfo';
+import Addcareerinfo from './admin/Addcareerinfo';
+import Servicesinfo from './admin/Servicesinfo';
+import Addservicesinfo from './admin/Addservicesinfo';
+import Partnersinfo from './admin/Partnersinfo';
+import Addpartnersinfo from './admin/Addpartnersinfo';
+import Category from './shop/Category';
 
 
 
@@ -70,8 +81,25 @@ import Login from './components/Login';
             <Route path="/scrollingcards" element={<Scrollingcards/>}/>
             <Route path="/techintro" element={<Techintro/>}/>
             <Route path="/partners" element={<Partners/>}/>
-            <Route path="/adlogin" element={<Adlogin/>}/>
+            <Route path="/category" element={<Category/>}/>
+            <Route path="/trustedpartners" element={<Trustedpartners/>}/>
+            <Route path="/closingpage" element={<Closingpage/>}/>
+
+
             <Route path="/sidebar" element={<Sidebar/>}/>
+            <Route path="/userinfo" element={<Userinfo/>}/>
+            <Route path="/dashboard" element={<Dashboard/>}/>
+            <Route path="/careerinfo" element={<Careerinfo/>}/>
+            <Route path="/addcareerinfo" element={<Addcareerinfo/>}/>
+            <Route path="/servicesinfo" element={<Servicesinfo/>}/>
+            <Route path="/addservicesinfo" element={<Addservicesinfo/>}/>
+            <Route path="/partnersinfo" element={<Partnersinfo/>}/>
+            <Route path="/addpartnersinfo" element={<Addpartnersinfo/>}/>
+            {/* private route */}
+            <Route element={<Privateroute />} >
+            </Route>
+            {/* private route */}
+
           </Routes>
           
           <SecondaryFooter/>
