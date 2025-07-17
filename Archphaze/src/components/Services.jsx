@@ -1,43 +1,49 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { Helmet } from 'react-helmet';
-import WebDevImg from '../assets/webimg.jpg';
-import MobileAppImg from '../assets/mobimg.jpg';
-import UIUXImg from '../assets/uiimg.jpg';
-import ApiImg from '../assets/apiimg.jpg';
-
-const data = [
-  {
-    img: WebDevImg,
-    title: 'Custom Software Development',
-    para: 'We build secure, scalable, and high-performance software tailored to your business needs — from internal tools to full enterprise systems.',
-    cta: 'Request a quote',
-  },
-  {
-    img: MobileAppImg,
-    title: 'Mobile App Development',
-    para: 'Deliver seamless mobile experiences across iOS and Android with native and cross-platform apps that users love.',
-    cta: 'Start your app',
-  },
-  {
-    img: UIUXImg,
-    title: 'UI/UX Design Services',
-    para: 'Design intuitive user interfaces and meaningful experiences that boost engagement and simplify interaction across platforms.',
-    cta: 'View our design work',
-  },
-  {
-    img: ApiImg,
-    title: 'API Development & Integration',
-    para: 'Create and connect RESTful or GraphQL APIs to enable data exchange, third-party services, and system interoperability.',
-    cta: 'Explore API solutions',
-  }
-];
+import { useNavigate } from 'react-router-dom';
+import { FaArrowRight } from 'react-icons/fa';
 
 export default function Services() {
+  const navigate = useNavigate();
+  const { currentUser } = useSelector((state) => state.user);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await fetch("/backend/services/getservice");
+        const data = await res.json();
+
+        if (res.ok && Array.isArray(data.services)) {
+          setServices(data.services);
+        } else if (res.ok && Array.isArray(data)) {
+          setServices(data);
+        } else {
+          console.error("Unexpected response:", data);
+          setServices([]);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error.message);
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    
+      fetchServices();
+  }, []);
+
   useEffect(() => {
     AOS.init({ duration: 600, once: true, easing: 'ease-in-out' });
   }, []);
+
+  const isVideo = (link) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(link || "");
+  const backendURL = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3000").replace(/\/$/, "");
 
   return (
     <div className="bg-white py-20 px-6 md:px-12">
@@ -56,45 +62,71 @@ export default function Services() {
           Empowering your ideas with technology that works.
         </p>
 
-        <div className="space-y-20">
-          {data.map((item, index) => {
-            const isReversed = index % 2 === 1;
-            const aosAnimation = isReversed ? 'fade-left' : 'fade-right';
+        {loading ? (
+          <p className="text-center text-gray-500">Loading services...</p>
+        ) : services.length === 0 ? (
+          <p className="text-center text-gray-500">No services available.</p>
+        ) : (
+          <div className="space-y-20">
+            {services.map((item, index) => {
+              const isReversed = index % 2 === 1;
+              const aosAnimation = isReversed ? 'fade-right' : 'fade-left';
+              const mediaSrc = item.s_link?.startsWith("/uploads/")
+                ? `${backendURL}${item.s_link}`
+                : item.s_link;
 
-            return (
-              <div
-                key={index}
-                data-aos={aosAnimation}
-                className={`flex flex-col-reverse md:flex-row items-center gap-10 ${
-                  isReversed ? 'md:flex-row-reverse' : ''
-                }`}
-              >
-                {/* Text Section */}
-                <div className="md:w-1/2">
-                  <h3 className="text-3xl font-bold mb-4 text-gray-900">{item.title}</h3>
-                  <p className="text-gray-700 text-base mb-4 leading-relaxed">{item.para}</p>
-                  <button className="bg-white text-black border border-black px-5 py-2.5 rounded hover:bg-black hover:text-white transition font-medium">
-                    {item.cta}
-                  </button>
-                </div>
-
-                {/* Image Section */}
-                <div className="md:w-1/2 flex justify-center">
-                  <div className="w-56 h-56 rounded-3xl bg-gradient-to-br from-red-100 via-white to-blue-100 p-[3px] shadow-lg transform transition duration-300 hover:scale-105 hover:-translate-y-1">
-                    <div className="w-full h-full rounded-2xl overflow-hidden bg-white">
-                      <img
-                        src={item.img}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
+              return (
+                <div
+                  key={item._id || index}
+                  data-aos={aosAnimation}
+                  className={`flex flex-col md:flex-row items-center justify-between gap-12 ${isReversed ? 'md:flex-row-reverse' : ''}`}
+                >
+                  {/* Rectangle Video Box */}
+                  <div className="md:w-1/2">
+                    <div className="bg-[#f5f6ff] p-2 w-fit mx-auto shadow-sm">
+                      <div className="relative overflow-hidden w-[320px] h-[180px]">
+                        
+                        {isVideo(mediaSrc) ? (
+                          <video
+                            src={`http://localhost:3000/${item.s_link}`}
+                            autoPlay
+                            muted
+                            loop
+                            disablePictureInPicture
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-sm text-gray-500">
+                            No video
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-              </div>
-            );
-          })}
-        </div>
+                  {/* Text Section */}
+                  <div className="md:w-1/2 px-4 md:px-6">
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                      {item.s_title}
+                    </h3>
+                    <p className="text-gray-700 mb-6 leading-relaxed text-sm md:text-base">
+                      {item.s_description}
+                    </p>
+                    <button
+                      onClick={() => {
+                        localStorage.setItem("fromLearnMore", "true");
+                        navigate("/#closing-section");
+                      }}
+                      className="inline-flex items-center gap-2 bg-white text-black border border-black hover:bg-black hover:text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-200"
+                    >
+                      {item.cta || "Learn More"} <FaArrowRight className="text-xs" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

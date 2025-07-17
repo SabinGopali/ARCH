@@ -1,5 +1,5 @@
 import React from "react";
-import ProductImage from "/archphaze.webp"; // Replace with your product/3D logo
+import ProductImage from "../assets/frontshop.jpg"; 
 
 export default function Shopbanner() {
   return (

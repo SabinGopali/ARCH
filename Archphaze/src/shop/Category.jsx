@@ -1,24 +1,23 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import BibCards from "./Bibcards";
-import Platecards from "./Platecards";
-// Import your other card components as needed
+import Earphonecards from "./Earphonecards";
+import Speakercards from "./Speakercards";
 // import BowlCards from "./BowlCards";
 // import SnackCupCards from "./SnackCupCards";
 // import GlassCards from "./GlassCards";
 // import CoveredCards from "./CoveredCards";
 
-const categories = ["Bib", "Plate", "Bowl", "Snack cup", "Glass", "Covered"];
+const categories = ["Earphone", "Speaker", "Bowl", "Snack cup", "Glass", "Covered"];
 
 export default function Category() {
   const [selected, setSelected] = useState("Bib");
 
   const renderCards = () => {
     switch (selected) {
-      case "Plate":
-        return <Platecards />;
-      // case "Bowl":
-      //   return <BowlCards />;
+      case "Earphone":
+        return <Earphonecards />;
+      case "Speaker":
+        return <Speakercards />;
       // case "Snack cup":
       //   return <SnackCupCards />;
       // case "Glass":
@@ -26,7 +25,7 @@ export default function Category() {
       // case "Covered":
       //   return <CoveredCards />;
       default:
-        return <BibCards />;
+        return <Earphonecards />;
     }
   };
 
@@ -44,10 +43,10 @@ export default function Category() {
             onClick={() => setSelected(cat)}
             whileTap={{ scale: 0.95 }}
             whileHover={{ scale: 1.05 }}
-            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 border backdrop-blur-md ${
+            className={`px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 border ${
               selected === cat
-                ? "bg-black text-white shadow-lg shadow-red-200 border-transparent"
-                : "bg-white/50 text-gray-700 border-gray-300 hover:text-black hover:border-black"
+                ? "bg-black text-white shadow-md"
+                : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100 hover:border-black"
             }`}
           >
             {cat}
@@ -69,13 +68,6 @@ export default function Category() {
             {renderCards()}
           </motion.div>
         </AnimatePresence>
-      </div>
-
-      {/* CTA Button */}
-      <div className="flex justify-center mt-14">
-        <button className="px-6 py-3 bg-white text-black rounded-full shadow-lg hover:bg-black hover:text-white transition duration-300 font-semibold tracking-wide text-sm">
-          See all our products
-        </button>
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "./Sidebar";
+import Sidebar from "../Sidebar";
 
-export default function Addpartnersinfo() {
+export default function Viewpartnersinfo() {
   const [logo, setLogo] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -124,27 +124,8 @@ export default function Addpartnersinfo() {
               />
             </div>
 
-            {/* Buttons */}
-            <div className="flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={handleCancelOrBack}
-                className="bg-gray-200 text-gray-800 px-5 py-2 rounded-lg hover:bg-gray-300 transition-all shadow-md hover:shadow-lg"
-              >
-                {logo === "" &&
-                name === "" &&
-                description === "" &&
-                url === ""
-                  ? "Back"
-                  : "Clear"}
-              </button>
-              <button
-                type="submit"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-xl"
-              >
-                Save
-              </button>
-            </div>
+            
+        
           </form>
         </div>
       </main>

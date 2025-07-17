@@ -1,117 +1,240 @@
-import React from "react";
+import React, { useState } from "react";
+import { MdDelete, MdEdit } from "react-icons/md";
+import logo from "/logo.webp";
 
-const products = [
+const productsData = [
   {
-    name: "Apple AirPods",
-    color: "Grey Space",
-    price: 100.5,
-    qty: 2,
-    image: "/airpods.webp",
+    name: "Cute worm baby toys",
+    desc: "Perfect plush worm toy for infants",
+    size: "One Size",
+    color: "Multi",
+    price: 45.2,
+    originalPrice: 50,
+    qty: 1,
+    image: logo,
   },
   {
-    name: "Apple iPhone 12",
-    color: "Pacific Blue",
-    price: 450,
-    qty: 3,
-    image: "/iphone12.webp",
+    name: "Cute crab baby toys",
+    desc: "Soft crab plush with embroidered details",
+    size: "One Size",
+    color: "Red",
+    price: 45.2,
+    originalPrice: 50,
+    qty: 1,
+    image: logo,
   },
   {
-    name: "Apple iPad Pro",
-    color: "Pink Gold",
-    price: 445,
-    qty: 2,
-    image: "/ipadpro.webp",
+    name: "Plush toys for babies",
+    desc: "Adorable cuddly plush toy safe for babies",
+    size: "One Size",
+    color: "Blue",
+    price: 45.2,
+    originalPrice: 50,
+    qty: 1,
+    image: logo,
+  },
+  {
+    name: "Cute snail baby toys",
+    desc: "Snail plush toy with soft fabric",
+    size: "One Size",
+    color: "Yellow",
+    price: 16.2,
+    originalPrice: 20,
+    qty: 1,
+    image: logo,
   },
 ];
 
 export default function ShoppingCart() {
-  const subtotal = products.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const discount = subtotal * 0.15;
-  const shipping = 7.99;
-  const tax = 0.07 * (subtotal - discount);
-  const total = (subtotal - discount + shipping + tax).toFixed(2);
+  const [products, setProducts] = useState(productsData);
+  const [selectedIndexes, setSelectedIndexes] = useState([]);
+
+  const couponDiscount = 2.5;
+
+  const toggleSelection = (index) => {
+    setSelectedIndexes((prev) =>
+      prev.includes(index)
+        ? prev.filter((i) => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  const updateQty = (index, delta) => {
+    setProducts((prev) =>
+      prev.map((p, i) =>
+        i === index ? { ...p, qty: Math.max(1, p.qty + delta) } : p
+      )
+    );
+  };
+
+  const removeItem = (index) => {
+    setProducts((prev) => prev.filter((_, i) => i !== index));
+    setSelectedIndexes((prev) => prev.filter((i) => i !== index));
+  };
+
+  const selectedProducts = products.filter((_, i) => selectedIndexes.includes(i));
+  const totalPrice = selectedProducts.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10 md:px-16 text-gray-900">
-      {/* Breadcrumb */}
-      <div className="text-sm text-gray-400 mb-2">
-        Main / <span className="text-gray-700">Shopping Cart</span>
+    <div className="min-h-screen bg-white px-4 md:px-12 py-8 text-black">
+      <h2 className="text-3xl font-semibold mb-6">Cart</h2>
+
+
+      
+
+      {/* Selected Items Summary */}
+      <div className="mb-4 text-sm font-medium text-gray-700">
+        {selectedIndexes.length} of {products.length} items selected
       </div>
 
-      {/* Title */}
-      <h1 className="text-3xl font-bold mb-10">Your Cart</h1>
-
-      <div className="grid md:grid-cols-3 gap-10">
-        {/* Cart Items */}
-        <div className="md:col-span-2 space-y-8">
-          {products.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between border-b pb-6">
-              <div className="flex items-center gap-6">
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-24 h-24 rounded-lg object-cover bg-white shadow-sm"
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Product Cards */}
+        <div className="w-full md:w-2/3 space-y-6">
+          {products.map((item, idx) => {
+            const isSelected = selectedIndexes.includes(idx);
+            return (
+              <label
+                key={idx}
+                htmlFor={`checkbox-${idx}`}
+                className={`group cursor-pointer flex justify-between items-center p-4 border rounded-xl transition relative ${
+                  isSelected
+                    ? "border-black bg-gray-50 shadow"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                {/* Hidden Checkbox */}
+                <input
+                  id={`checkbox-${idx}`}
+                  type="checkbox"
+                  className="hidden"
+                  checked={isSelected}
+                  onChange={() => toggleSelection(idx)}
                 />
-                <div>
-                  <h3 className="text-lg font-medium">{item.name}</h3>
-                  <p className="text-sm text-gray-500">Color: {item.color}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <select
-                  defaultValue={item.qty}
-                  className="border px-3 py-1 rounded-md bg-white shadow-sm text-sm"
-                >
-                  {[1, 2, 3, 4].map(q => (
-                    <option key={q} value={q}>{q}</option>
-                  ))}
-                </select>
-                <p className="text-md font-semibold">${(item.price * item.qty).toFixed(2)}</p>
-                <button className="text-gray-400 hover:text-red-500 text-xl">&times;</button>
-              </div>
-            </div>
-          ))}
 
-          <button className="text-sm px-5 py-2 border rounded-md hover:bg-gray-100 transition w-fit">
-            ← Continue Shopping
-          </button>
+                {/* Left: Image and Info */}
+                <div className="flex items-center gap-4">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-24 h-24 rounded-lg object-cover"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">{item.name}</h3>
+                    <p className="text-sm text-gray-500 mb-2 truncate">
+                      {item.desc}
+                    </p>
+                    <div className="text-sm text-gray-700 flex gap-4">
+                      <span>
+                        Size <span className="font-medium">{item.size}</span>
+                      </span>
+                      <span>
+                        Color <span className="font-medium">{item.color}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Price, Qty Controls & Actions */}
+                <div className="text-right flex flex-col justify-between h-full">
+                  <div>
+                    <p className="font-semibold text-lg">${item.price}</p>
+                    <p className="text-sm text-gray-400 line-through">
+                      ${item.originalPrice}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="w-8 h-8 rounded border text-xl font-bold disabled:opacity-40"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateQty(idx, -1);
+                        }}
+                        aria-label="Decrease quantity"
+                        disabled={item.qty === 1}
+                      >
+                        −
+                      </button>
+                      <span className="text-sm font-medium">{item.qty}</span>
+                      <button
+                        className="w-8 h-8 rounded border text-xl font-bold"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateQty(idx, 1);
+                        }}
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="flex gap-3 text-gray-600">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeItem(idx);
+                        }}
+                        aria-label="Delete"
+                      >
+                        <MdDelete size={20} />
+                      </button>
+                      
+                    </div>
+                  </div>
+                </div>
+              </label>
+            );
+          })}
         </div>
 
-        {/* Summary Section */}
-        <div className="border rounded-xl p-6 bg-white shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-          <div className="space-y-4 text-sm">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+        {/* Right Panel */}
+        <div className="w-full md:w-1/3 space-y-6">
+          {/* Gifting */}
+          <div className="bg-purple-50 p-4 rounded-xl shadow-sm">
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium">Buying for a loved one?</p>
+              <span className="text-purple-600 text-xl">🎁</span>
             </div>
-            <div className="flex justify-between">
-              <span>Shipping</span>
-              <span>${shipping.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-green-600 font-medium">
-              <span>Discount (15%)</span>
-              <span>-${discount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax</span>
-              <span>${tax.toFixed(2)}</span>
-            </div>
-            <hr />
-            <div className="flex justify-between font-semibold text-base">
-              <span>Total</span>
-              <span>${total}</span>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <button className="text-sm text-blue-600 hover:underline">
-              Apply Discount Code
+            <p className="text-sm text-gray-600">
+              Send personalized message at $20
+            </p>
+            <button className="text-sm text-blue-600 hover:underline mt-2">
+              Add gift wrap
             </button>
           </div>
 
-          <button className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition">
-            Proceed to Checkout
+          {/* Price Details */}
+          <div className="border rounded-xl p-5 bg-white shadow-sm">
+            <h4 className="font-semibold mb-3">Price Details</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>
+                  {selectedProducts.length} item
+                  {selectedProducts.length !== 1 ? "s" : ""}
+                </span>
+                <span>${totalPrice.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-green-600">
+                <span>Coupon discount</span>
+                <span>-${couponDiscount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery Charges</span>
+                <span className="text-green-600">Free Delivery</span>
+              </div>
+              <hr />
+              <div className="flex justify-between font-semibold">
+                <span>Total Amount</span>
+                <span>${(totalPrice - couponDiscount).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <button className="w-full bg-black text-white py-3 rounded-lg text-sm font-medium hover:opacity-90 transition">
+            Place order →
           </button>
         </div>
       </div>

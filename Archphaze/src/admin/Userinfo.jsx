@@ -8,7 +8,6 @@ export default function Userinfo() {
   const [users, setUsers] = useState([]);
   const [showMore, setShowMore] = useState(true);
 
-  // ✅ Fetch users initially
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -32,7 +31,6 @@ export default function Userinfo() {
     }
   }, [currentUser]);
 
-  // ✅ Delete user
   const handleDeleteUser = async (userId) => {
     const confirm = window.confirm("Are you sure you want to delete this user?");
     if (!confirm) return;
@@ -53,10 +51,15 @@ export default function Userinfo() {
     }
   };
 
-  // ✅ Format Date
   const formatDate = (iso) => {
     const options = { year: "numeric", month: "short", day: "numeric" };
     return new Date(iso).toLocaleDateString(undefined, options);
+  };
+
+  const getUserRole = (user) => {
+    if (user.isAdmin) return "Admin";
+    if (user.isSupplier) return "Supplier";
+    return "User";
   };
 
   return (
@@ -72,6 +75,7 @@ export default function Userinfo() {
                   <th className="py-2 px-4">S.No.</th>
                   <th className="py-2 px-4">Name</th>
                   <th className="py-2 px-4">Email Address</th>
+                  <th className="py-2 px-4">Role</th>
                   <th className="py-2 px-4">Created Date</th>
                   <th className="py-2 px-4">Actions</th>
                 </tr>
@@ -85,6 +89,9 @@ export default function Userinfo() {
                       <a href={`mailto:${user.email}`} className="hover:underline">
                         {user.email}
                       </a>
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">
+                      {getUserRole(user)}
                     </td>
                     <td className="py-3 px-4 text-gray-600">
                       {formatDate(user.createdAt)}

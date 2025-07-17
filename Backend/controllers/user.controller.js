@@ -1,6 +1,70 @@
 import User from '../models/user.model.js';
 import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
+import jwt from 'jsonwebtoken';
+
+
+export const loginUser = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) return next(errorHandler(401, "Invalid credentials"));
+
+    // Check password match
+    const isMatch = await bcryptjs.compare(password, user.password);
+    if (!isMatch) return next(errorHandler(401, "Invalid credentials"));
+
+    // Create JWT payload with id and isSupplier
+    const tokenPayload = {
+      id: user._id.toString(),
+      isSupplier: user.isSupplier,
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+    // Send token as httpOnly cookie
+    res
+      .cookie('access_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+      })
+      .status(200)
+      .json({ message: "Login successful" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+// Get supplier/user info by id - only owner can access
+export const getUserById = async (req, res, next) => {
+  try {
+    // Check if user is supplier
+    if (!req.user?.isSupplier) {
+      return next(errorHandler(403, "Only suppliers can access this route"));
+    }
+
+    // Check if user is requesting own data
+    if (req.user.id !== req.params.id) {
+      return next(errorHandler(403, "You are not authorized to access this user"));
+    }
+
+    // Fetch user without password
+    const user = await User.findById(req.params.id).select("-password");
+
+    if (!user) {
+      return next(errorHandler(404, "User not found"));
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
 
 
 export const test = (req, res) => {

@@ -30,10 +30,18 @@ export default function Login() {
       const data = await res.json();
       if (data.success === false) {
         dispatch(signInFailure(data.message));
+        return;
       }
       if (res.ok) {
         dispatch(signInSuccess(data));
-        navigate('/');
+        // Redirect based on account type
+        if (data.isAdmin) {
+          navigate('/dashboard');
+        } else if (data.isSupplier) {
+          navigate('/supplierdashboard');
+        } else {
+          navigate('/');
+        }
       }
     } catch (error) {
       dispatch(signInFailure(error.message));

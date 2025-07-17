@@ -1,162 +1,215 @@
-import React from "react";
-import { ArrowUpRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
-export default function ClosingPage() {
+export default function Closingpage() {
+  const navigate = useNavigate();
+  const { currentUser } = useSelector((state) => state.user);
+
+  const [formData, setFormData] = useState({
+    fullname: '',
+    email: '',
+    phone: '',
+    exisiting_website: '',
+    service_select: '',
+    description: '',
+  });
+
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
+
+  // Auto-dismiss success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+
+    if (!formData.fullname || !formData.email || !formData.phone || !formData.service_select || !formData.description) {
+      return setError("Please fill all required fields.");
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await fetch("/backend/form/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...formData,
+          userRef: currentUser?._id,
+          userMail: currentUser?.email
+        })
+      });
+
+      const data = await res.json();
+      setLoading(false);
+
+      if (!res.ok || data.success === false) {
+        return setError(data.message || "Submission failed.");
+      }
+
+      setSuccessMessage("Form submitted successfully!");
+      setFormData({
+        fullname: '',
+        email: '',
+        phone: '',
+        exisiting_website: '',
+        service_select: '',
+        description: '',
+      });
+    } catch (err) {
+      setLoading(false);
+      setError("An error occurred. Please try again.");
+    }
+  };
+
   return (
-    <div className="relative min-h-[60vh] bg-white text-gray-900 flex flex-col items-center justify-center px-8 py-16 overflow-hidden">
-      {/* Layered Background Glow + Floating Particles */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Soft central radial glow */}
-        <div
-          className="
-            absolute
-            top-1/2 left-1/2
-            w-[600px] h-[600px]
-            -translate-x-1/2 -translate-y-1/2
-            rounded-full
-            bg-white
-            blur-[140px]
-            opacity-60
-            animate-[pulse_8s_ease-in-out_infinite]
-          "
-        />
-        {/* Bottom right warm glow */}
-        <div
-          className="
-            absolute bottom-12 right-12
-            w-[35%] h-[35%]
-            bg-white
-            rounded-full
-            blur-[110px]
-            opacity-50
-            animate-[pulse_10s_ease-in-out_infinite]
-          "
-        />
-        {/* Top left cool undertone */}
-        <div
-          className="
-            absolute top-10 left-10
-            w-[30%] h-[30%]
-            bg-white
-            rounded-full
-            blur-[100px]
-            opacity-40
-            animate-[pulse_10s_ease-in-out_infinite]
-          "
-        />
+    <section className="bg-white w-full py-20 px-6 md:px-12">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start gap-12">
+        {/* Left Section */}
+        <div className="w-full md:w-1/2" data-aos="fade-up">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-6 leading-snug uppercase">
+            Let’s Build Something <br />
+            <span className="text-red-500">Great Together!</span>
+          </h2>
+          <p className="text-gray-600 text-lg leading-relaxed max-w-xl">
+            Have a project in mind or need expert advice? We’re here to help!
+            Reach out to us for a consultation, and let’s bring your vision to life
+            with innovative, people-friendly digital solutions.
+          </p>
+        </div>
 
-        {/* Floating subtle particles */}
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className={`
-              absolute
-              bg-white
-              rounded-full
-              opacity-10
-              blur-sm
-              ${i % 2 === 0 ? "w-2 h-2" : "w-3 h-3"}
-              animate-float-smooth
-            `}
-            style={{
-              top: `${18 + i * 13}%`,
-              left: `${12 + i * 11}%`,
-              animationDuration: `${9 + i * 2}s`,
-              animationDelay: `${i * 1.7}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* SVG Dotted Wave Background */}
-      <div className="absolute bottom-0 right-0 w-full max-w-4xl z-0 pointer-events-none opacity-20">
-        <svg
-          viewBox="0 0 600 200"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-auto"
+        {/* Right Section (Form) */}
+        <div
+          className="w-full md:w-[650px] bg-white shadow-2xl rounded-[40px] border border-gray-200 p-8 md:p-14"
+          data-aos="fade-up"
         >
-          <defs>
-            <pattern
-              id="dots"
-              x="0"
-              y="0"
-              width="12"
-              height="12"
-              patternUnits="userSpaceOnUse"
-            >
-              <circle cx="2" cy="2" r="1.5" fill="#f87171" />
-            </pattern>
-          </defs>
-          <path
-            d="M0 100 C 110 160, 220 60, 330 110 C 440 160, 550 60, 600 110"
-            fill="url(#dots)"
-            opacity="0.85"
-          />
-        </svg>
+          <h3 className="text-3xl font-bold text-gray-800 mb-10 text-center">
+            Get In Touch Now
+          </h3>
+
+          {/* Success Alert */}
+          {successMessage && (
+            <div className="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form className="space-y-7" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <input
+                type="text"
+                name="fullname"
+                value={formData.fullname}
+                onChange={handleChange}
+                placeholder="Full Name*"
+                className="w-full border border-gray-300 p-4 text-lg rounded-xl shadow-sm"
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Email*"
+                className="w-full border border-gray-300 p-4 text-lg rounded-xl shadow-sm"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Phone No*"
+                className="w-full border border-gray-300 p-4 text-lg rounded-xl shadow-sm"
+                required
+              />
+              <input
+                type="text"
+                name="exisiting_website"
+                value={formData.exisiting_website}
+                onChange={handleChange}
+                placeholder="Existing Website"
+                className="w-full border border-gray-300 p-4 text-lg rounded-xl shadow-sm"
+              />
+            </div>
+
+            <div>
+              <select
+                name="service_select"
+                value={formData.service_select}
+                onChange={handleChange}
+                className="w-full border border-gray-300 p-4 text-lg rounded-xl shadow-sm"
+                required
+              >
+                <option value="">Select Service*</option>
+                <option value="Developer">Web Development</option>
+                <option value="Designer">UI/UX Design</option>
+                <option value="Manager">Project Management</option>
+                <option value="CEO">Business Strategy</option>
+                <option value="CTO">Technical Consulting</option>
+              </select>
+            </div>
+
+            <div>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Share Your Requirement*"
+                className="w-full border border-gray-300 p-4 text-lg rounded-xl h-32 resize-none shadow-sm"
+                required
+              />
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-white text-black border border-black py-4 text-lg rounded-xl font-semibold hover:bg-black hover:text-white transition shadow-lg"
+              >
+                {loading ? "Submitting..." : "Submit Now"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-
-      {/* Main Text */}
-      <h1 className="relative text-4xl md:text-5xl font-extrabold text-center z-10 leading-snug max-w-xl uppercase tracking-wide text-gray-900 drop-shadow-md">
-        Ready to build something <br />
-        <span className="text-red-600">amazing together?</span> <br />
-        <span className="text-gray-700 font-semibold text-2xl md:text-3xl mt-2 block">
-          Let’s chat.
-        </span>
-      </h1>
-
-      {/* CTA Button */}
-      <Link
-        to="/contactus"
-        className="
-          mt-10
-          inline-flex
-          items-center
-          px-8
-          py-3
-          bg-white
-          text-black
-          border border-black
-          rounded-full
-          shadow-lg
-          hover:bg-black
-          hover:text-white
-          transition
-          duration-300
-          ease-in-out
-          font-semibold
-          text-lg
-          select-none
-          group
-          drop-shadow-md
-        "
-      >
-        Talk to Us
-        <ArrowUpRight className="ml-3 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
-      </Link>
-
-      {/* Tailwind Custom Animation */}
-      <style>
-        {`
-          @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 0.9; }
-          }
-          .animate-pulse-slow {
-            animation: pulse 8s ease-in-out infinite;
-          }
-          .animate-pulse-slower {
-            animation: pulse 10s ease-in-out infinite;
-          }
-          @keyframes float-smooth {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-          }
-          .animate-float-smooth {
-            animation: float-smooth 6s ease-in-out infinite;
-          }
-        `}
-      </style>
-    </div>
+    </section>
   );
 }

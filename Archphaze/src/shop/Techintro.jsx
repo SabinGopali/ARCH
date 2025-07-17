@@ -4,11 +4,12 @@ import logo from '/logo.webp';
 export default function TechIntro() {
   return (
     <section className="flex flex-col-reverse md:flex-row items-center bg-white min-h-screen">
+      
       {/* Left Content Section */}
       <div className="md:w-1/2 w-full p-8">
         <p className="text-center text-gray-500 text-sm italic">-Innovating Everyday Experiences-</p>
         <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-800 mb-4 uppercase">
-          Empowering Businesses with <span className="text-red-500">Software Intelligence</span>  & Smart <span className="text-red-500">Tech products</span>
+          Empowering Businesses with <span className="text-red-500">Software Intelligence</span> & Smart <span className="text-red-500">Tech products</span>
         </h2>
         <p className="text-center text-gray-600 max-w-xl mx-auto mb-6">
           At Archphaze, we blend cutting-edge software development with product-driven innovation. 
@@ -34,25 +35,22 @@ export default function TechIntro() {
             <p className="text-sm text-gray-500">Global Users</p>
           </div>
         </div>
-
-        {/* Quote */}
-        
-
-        {/* Button */}
-        <div className="text-center">
-          <button className="bg-white text-black border border-black px-6 py-2 rounded hover:bg-[black] hover:text-[white] transition">
-            Discover Our Platform
-          </button>
-        </div>
       </div>
 
-      {/* Right Image Section */}
-      <div className="md:w-1/2 w-full p-8">
-        <div className="rounded-r-[200px] overflow-hidden shadow-lg">
+      {/* Right Image Section with Enhanced Shape */}
+      <div className="md:w-1/2 w-full p-8 flex justify-center">
+        <div className="overflow-hidden shadow-xl bg-gray-50 p-6 max-w-md w-full"
+             style={{
+               borderTopLeftRadius: '150px',
+               borderTopRightRadius: '50px',
+               borderBottomRightRadius: '150px',
+               borderBottomLeftRadius: '50px'
+             }}
+        >
           <img
             src={logo}
-            alt="TechNova Logo"
-            className="w-full h-full object-contain bg-gray-50 p-8"
+            alt="Tech Product Visual"
+            className="w-full h-full object-contain"
           />
         </div>
       </div>

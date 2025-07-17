@@ -1,6 +1,21 @@
 import React, { useState } from "react";
-import logo from "/archphaze.webp";
 import { Link } from "react-router-dom";
+import careerfront from "../assets/careerfront.jpg";
+import CV from "../assets/CV.jpg";
+import Invitation from "../assets/Invitation.jpg";
+import Interview from "../assets/Interview.jpg";
+import Test from "../assets/Test.jpg";
+import Choosen from "../assets/Choosen.jpg";
+import hours from "../assets/flexible_working_hours.jpg";
+import work from "../assets/remote_work.jpg";
+import tools from "../assets/tools_and_software.jpg";
+import hardware from "../assets/hardware.jpg";
+import contract from "../assets/empolyment_contract.jpg";
+import salary from "../assets/salary_reviews.jpg";
+import team from "../assets/team_building.jpg";
+import feedback from "../assets/feedback.jpg";
+import works from "../assets/work.jpg";
+
 
 export default function Careers() {
   const [activeStep, setActiveStep] = useState(0);
@@ -10,54 +25,47 @@ export default function Careers() {
       title: "Review applications and CV's",
       description:
         "Send us your portfolio (please make it relevant) and a CV (please make it 1 page only). You can apply for one of the open positions or send us your application anyway.",
-      image: logo,
+      image: CV,
     },
     {
       title: "Interview invitation",
       description:
         "If your CV and portfolio match our needs, we’ll invite you for an interview.",
-      image: logo,
+      image: Invitation,
     },
     {
       title: "The interview",
       description:
         "You’ll have a conversation with our team where we’ll talk about your experience, skills, and ambitions.",
-      image: logo,
+      image: Interview,
     },
     {
       title: "Test task",
       description:
         "You'll be given a task that reflects real work we do. It's your time to shine.",
-      image: logo,
+      image: Test,
     },
     {
       title: "Now you're one of us!",
       description: "Once everything’s cleared, we welcome you aboard!",
-      image: logo,
+      image: Choosen,
     },
   ];
 
   const benefits = [
-    { title: "Flexible working hours", image: logo },
-    { title: "Remote work", image: logo },
-    { title: "Access to top tools and software", image: logo },
-    { title: "Latest hardware", image: logo },
-    { title: "Office next to the National Stadium", image: logo },
-    { title: "Animal-friendly office", image: logo },
-    { title: "Various forms of employment contracts", image: logo },
-    { title: "Salary reviews", image: logo },
-    { title: "Referral bonuses", image: logo },
-    { title: "Paid time off", image: logo },
-    { title: "Unlimited sick leave", image: logo },
-    { title: "Flexible career path", image: logo },
-    { title: "Team building events", image: logo },
-    { title: "Feedback culture", image: logo },
-    { title: "International team", image: logo },
-    { title: "No dress code", image: logo },
+    { title: "Flexible working hours", image: hours },
+    { title: "Remote work", image: work },
+    { title: "Access to top tools and software", image: tools },
+    { title: "Latest hardware", image: hardware },
+    { title: "Various forms of employment contracts", image: contract },
+    { title: "Salary reviews", image: salary },
+    { title: "Team building events", image: team },
+    { title: "Feedback culture", image: feedback },
   ];
 
   return (
     <div className="bg-white text-black">
+      
       {/* HERO SECTION */}
       <div className="min-h-screen py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-20">
@@ -87,9 +95,9 @@ export default function Careers() {
             {[...Array(6)].map((_, idx) => (
               <img
                 key={idx}
-                src={logo}
+                src={careerfront}
                 alt={`image-${idx}`}
-                className="rounded-2xl object-cover w-full h-52 md:h-64 shadow-md"
+                className="rounded-2xl object-cover w-full h-64 md:h-80 shadow-md"
               />
             ))}
           </div>
@@ -116,7 +124,7 @@ export default function Careers() {
               </p>
             </div>
             <div className="flex-1">
-              <img src={logo} alt="Work illustration" className="w-full max-w-md mx-auto" />
+              <img src={works} alt="Work illustration" className="w-full max-w-md mx-auto" />
             </div>
           </div>
 
@@ -172,21 +180,33 @@ export default function Careers() {
 
       {/* RECRUITMENT PROCESS SECTION */}
       <div className="py-16">
-        <div className="flex flex-col md:flex-row gap-8 px-4 lg:px-20 max-w-7xl mx-auto">
-          <div className="w-full md:w-2/3 bg-white rounded-xl shadow-lg overflow-hidden">
-            <img
-              src={steps[activeStep].image}
-              alt={steps[activeStep].title}
-              className="w-full h-64 object-cover"
-            />
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-2">{steps[activeStep].title}</h3>
-              <p className="text-gray-600">{steps[activeStep].description}</p>
+        <div className="flex flex-col md:flex-row gap-8 px-4 lg:px-20 max-w-7xl mx-auto h-full items-stretch">
+          
+          {/* LEFT IMAGE + TEXT CARD */}
+          <div className="w-full md:w-2/3 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col flex-1 h-full">
+            <div className="w-full h-64 md:h-72">
+              <img
+                src={steps[activeStep].image}
+                alt={steps[activeStep].title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-6 space-y-4 flex-1 flex flex-col">
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
+                {`Step 0${activeStep + 1}:`} {steps[activeStep].title}
+              </h3>
+              <p className="text-gray-700 text-lg leading-relaxed flex-1">
+                {steps[activeStep].description}
+              </p>
             </div>
           </div>
-          <div className="w-full md:w-1/3">
-            <h2 className="text-2xl font-extrabold mb-6 uppercase">Recruitment process</h2>
-            <div className="space-y-3">
+
+          {/* RIGHT STEP SELECTOR */}
+          <div className="w-full md:w-1/3 flex flex-col flex-1 h-full">
+            <h2 className="text-3xl font-extrabold mb-6 uppercase text-gray-900">
+              Recruitment Process
+            </h2>
+            <div className="space-y-4 flex-1">
               {steps.map((step, index) => (
                 <button
                   key={index}
@@ -202,29 +222,31 @@ export default function Careers() {
               ))}
             </div>
           </div>
+          
         </div>
       </div>
 
       {/* CTA BANNER SECTION */}
       <div className="bg-gradient-to-r from-black via-gray-800 to-gray-600 rounded-2xl px-6 py-12 mx-4 md:mx-20 my-16 shadow-lg">
-  <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between text-center md:text-left space-y-6 md:space-y-0 md:space-x-6">
-    <div>
-      <h2 className="text-3xl font-bold text-white">
-        Stay up to date and learn more about us
-      </h2>
-      <p className="text-white text-opacity-80 mt-2 max-w-md">
-        Get the latest insights, product updates, and stories from the Archphaze team.
-      </p>
-    </div>
-    <div>
-      <Link
-        to="/career"
-        className="inline-block bg-white text-black font-semibold px-8 py-4 rounded-lg shadow hover:bg-black hover:text-white transition duration-300">
-Join Our Team      </Link>
-    </div>
-  </div>
-</div>
-
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between text-center md:text-left space-y-6 md:space-y-0 md:space-x-6">
+          <div>
+            <h2 className="text-3xl font-bold text-white">
+              Stay up to date and learn more about us
+            </h2>
+            <p className="text-white text-opacity-80 mt-2 max-w-md">
+              Get the latest insights, product updates, and stories from the Archphaze team.
+            </p>
+          </div>
+          <div>
+            <Link
+              to="/career"
+              className="inline-block bg-white text-black font-semibold px-8 py-4 rounded-lg shadow hover:bg-black hover:text-white transition duration-300"
+            >
+              Join Our Team
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

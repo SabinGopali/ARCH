@@ -1,6 +1,19 @@
 import { errorHandler } from "../utils/error.js";
 import Career from "../models/career.model.js"; 
 
+
+export const getCareers = async (req, res, next) => {
+    try {
+        const career = await Career.findById(req.params.id);
+        if (!career) {
+            return next(errorHandler(404, 'career not found'))
+        }
+        res.status(200).json(career);
+    } catch (error) {
+        next(error)
+    } 
+    }
+
 export const createCareer = async (req, res, next) => {
   try {
     const newCareer = await Career.create(req.body); 
@@ -17,37 +30,42 @@ export const deleteCareer = async (req, res, next) =>{
     if (!DCareer) {
         return next (errorHandler(404, 'Application not found'));
     }
-    if ( !req.user.isAdmin && req.user.id !== application.userRef.toString()) {
-        return next(errorHandler(401, 'You can only delete your own applications!'));
-    }
+    if (!req.user.isAdmin && req.user.id !== DCareer.userRef.toString()) {
+    return next(errorHandler(401, 'You can only update your own application!'));
+}
     try {
-        await Application.findByIdAndDelete(req.params.id);
+        await Career.findByIdAndDelete(req.params.id);
         res.status(200).json('Application has been deleted! ')
     } catch (error) {
         next(error);
     }
 }
 
-export const updateCareer = async (req, res, next) =>{
+export const updateCareer = async (req, res, next) => {
+  try {
     const UCareer = await Career.findById(req.params.id);
     if (!UCareer) {
-        return next (errorHandler(404, 'Post not found'));
+      return next(errorHandler(404, "Career not found"));
     }
-    if (!req.user.isAdmin && req.user.id !== application.userRef) {
-        return next(errorHandler(401, 'You can only update your own application!'));
+    // Assuming userRef field exists on Career document to check ownership
+    if (!req.user.isAdmin && req.user.id !== UCareer.userRef.toString()) {
+      return next(errorHandler(401, "You can only update your own career info!"));
     }
 
-    try {
-        const updatedCareer = await Career.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        );
-        res.status(200).json(updatedCareer);
-    } catch (error) {
-        next(error)
-    }
-}
+    const updatedCareer = await Career.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.status(200).json({
+      success: true,
+      career: updatedCareer,
+      message: "Career info updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 
 

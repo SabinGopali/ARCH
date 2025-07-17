@@ -6,6 +6,28 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
+    company_name: {
+        type: String,
+        required: true,
+    },
+    company_location: {
+        type: String,
+        required: true,
+    },
+    phone: {
+        type: Number,
+        required: true,
+    },
+    businessTypes: {
+      type: [String], // array of string values
+      enum: [
+        "Export Internationally",
+        "Online Store",
+        "Wholesale Supplier",
+        "Manufacturer",
+      ],
+      default: [],
+    },
     email: {
         type: String,
         required: true,
@@ -17,9 +39,16 @@ const userSchema = new mongoose.Schema({
     },
     profilePicture: {
         type: String,
-        default: "https://github.com/iAmVip1/serviceaggregator/blob/main/images/avatar.jpg?raw=true",
+        default: function () {
+        const seed = Math.random().toString(36).substring(2, 15);
+        return `https://avatars.dicebear.com/api/avataaars/${seed}.svg`;
+      },
     },
     isAdmin: {
+        type: Boolean,
+        default: false,
+    },
+     isSupplier: {
         type: Boolean,
         default: false,
     },

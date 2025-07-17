@@ -1,6 +1,6 @@
   import React, { lazy, Suspense } from 'react';
   import Navbar from './components/Navbar';
-  import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+  import { Route, BrowserRouter as Router, Routes  } from "react-router-dom";
   // import Index from './components/Index';
   import Services from './components/Services';
   import Whyus from './components/Whyus';
@@ -31,30 +31,60 @@
 import  Sidebar  from './admin/Sidebar';
 import Signup from './components/Signup';
 import Login from './components/Login';
-import Privateroute from './components/privateroute';
+import Privateroute from './components/Privateroute';
 import Userinfo from './admin/Userinfo';
 import Dashboard from './admin/Dashboard';
-import Careerinfo from './admin/Careerinfo';
-import Addcareerinfo from './admin/Addcareerinfo';
-import Servicesinfo from './admin/Servicesinfo';
-import Addservicesinfo from './admin/Addservicesinfo';
-import Partnersinfo from './admin/Partnersinfo';
-import Addpartnersinfo from './admin/Addpartnersinfo';
+import Careerinfo from './admin/career/Careerinfo';
+import Addcareerinfo from './admin/career/Addcareerinfo';
+import Servicesinfo from './admin/services/Servicesinfo';
+import Addservicesinfo from './admin/services/Addservicesinfo';
+import Partnersinfo from './admin/partners/Partnersinfo';
+import Addpartnersinfo from './admin/partners/Addpartnersinfo';
 import Category from './shop/Category';
+import Updatecareerinfo from './admin/career/Updatecareerinfo';
+import Viewcareerinfo from './admin/career/Viewcareerinfo';
+import Updatepartnersinfo from './admin/partners/Updatepartnersinfo';
+import Updateservicesinfo from './admin/services/Updateservicesinfo';
+import Clienttestimonial from './components/Clienttestimonial';
+import Clientinfo from './admin/client/Clientinfo';
+import Addclientinfo from './admin/client/Addclientinfo';
+import Updateclientinfo from './admin/client/Updateclientinfo';
+import Queriesinfo from './admin/userqueries/Queriesinfo';
+import Viewqueriesinfo from './admin/userqueries/Viewqueriesinfo';
+import Teamsinfo from './admin/teams/Teamsinfo';
+import Updateteamsinfo from './admin/teams/Updateteamsinfo';
+import Addteamsinfo from './admin/teams/Addteamsinfo';
+import Updatespeakerinfo from './admin/shop/earphone/speaker/Updatespeakerinfo';
+import Addspeakerinfo from './admin/shop/earphone/speaker/Addspeakerinfo';
+import Speakerinfo from './admin/shop/earphone/speaker/Speakerinfo';
+import Profile from './components/Profile';
+import Suppliersignup from './supplier/Suppliersignup';
+import Supplierlogin from './supplier/Supplierlogin';
+import Supplierinfo from './admin/Supplierinfo';
+import Supplierdashboard from './supplier/Supplierdashboard';
+import Checkout from './shop/Checkout';
+import Addproduct from './supplier/Addproduct';
+import Suppliersidebar from './supplier/Suppliersidebar';
+import Manageproduct from './supplier/Manageproduct';
+import Mediacenter from './supplier/Mediacenter';
+
 
 
 
   const Index = lazy(() => import('./components/Index'));
   const Aboutus = lazy(() => import('./components/Aboutus'));
+
+  
   
 
 
   export default function App() {
+
     return (
       <div>
         <Router>
           <ScrollToTop/>
-          <Navbar />
+           <Navbar />
           <Suspense fallback={<Preloader/>}>
           <Routes>
             <Route path="/" element={<Index/>}/>
@@ -84,6 +114,12 @@ import Category from './shop/Category';
             <Route path="/category" element={<Category/>}/>
             <Route path="/trustedpartners" element={<Trustedpartners/>}/>
             <Route path="/closingpage" element={<Closingpage/>}/>
+            <Route path="/clienttestimonial" element={<Clienttestimonial/>}/>
+            <Route path="/profile" element={<Profile/>}/>
+            <Route path="/suppliersignup" element={<Suppliersignup/>}/>
+            <Route path="/supplierlogin" element={<Supplierlogin/>}/>
+            <Route path="/checkout" element={<Checkout/>}/>
+            
 
 
             <Route path="/sidebar" element={<Sidebar/>}/>
@@ -91,10 +127,34 @@ import Category from './shop/Category';
             <Route path="/dashboard" element={<Dashboard/>}/>
             <Route path="/careerinfo" element={<Careerinfo/>}/>
             <Route path="/addcareerinfo" element={<Addcareerinfo/>}/>
+            <Route path="/updatecareerinfo" element={<Updatecareerinfo/>}/>
+            <Route path="/viewcareerinfo" element={<Viewcareerinfo/>}/>
             <Route path="/servicesinfo" element={<Servicesinfo/>}/>
+            <Route path="/updateservicesinfo/:id" element={<Updateservicesinfo/>}/>
             <Route path="/addservicesinfo" element={<Addservicesinfo/>}/>
             <Route path="/partnersinfo" element={<Partnersinfo/>}/>
             <Route path="/addpartnersinfo" element={<Addpartnersinfo/>}/>
+            <Route path="/updatepartnersinfo/:id" element={<Updatepartnersinfo/>}/>
+            <Route path="/updatecareerinfo/:id" element={<Updatecareerinfo />} />
+            <Route path="/clientinfo" element={<Clientinfo />} />
+            <Route path="/addclientinfo" element={<Addclientinfo />} />
+            <Route path="/updateclientinfo/:id" element={<Updateclientinfo />} />
+            <Route path="/queriesinfo" element={<Queriesinfo />} />
+            <Route path="/viewqueriesinfo/:id" element={<Viewqueriesinfo />} />
+            <Route path="/teamsinfo" element={<Teamsinfo />} />
+            <Route path="/addteamsinfo" element={<Addteamsinfo />} />
+            <Route path="/updateteamsinfo/:id" element={<Updateteamsinfo />} />
+            <Route path="/speakerinfo" element={<Speakerinfo />} />
+            <Route path="/updatespeakerinfo/:id" element={<Updatespeakerinfo/>} />
+            <Route path="/addspeakerinfo" element={<Addspeakerinfo />} />
+            <Route path="/supplierinfo" element={<Supplierinfo />} />
+
+
+            <Route path="/supplierdashboard" element={<Supplierdashboard />} />
+            <Route path="/addproduct" element={<Addproduct/>} />
+            <Route path="/suppliersidebar" element={<Suppliersidebar/>} />
+            <Route path="/manageproduct" element={<Manageproduct/>} />
+            <Route path="/mediacenter" element={<Mediacenter/>} />
             {/* private route */}
             <Route element={<Privateroute />} >
             </Route>

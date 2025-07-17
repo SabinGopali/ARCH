@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { CiUser } from 'react-icons/ci';
 import logo from '/logo.webp';
 import { useSelector, useDispatch } from 'react-redux';
 import { signoutSuccess } from '../redux/user/userslice';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
 
   const handleSignout = async () => {
@@ -19,11 +20,19 @@ export default function Navbar() {
         console.log(data.message);
       } else {
         dispatch(signoutSuccess());
+        navigate('/');
       }
     } catch (error) {
       console.log(error.message);
     }
   };
+
+
+  const getDashboardLink = () => {
+  if (currentUser.isAdmin) return '/dashboard';
+  if (currentUser.isSupplier) return '/supplierdashboard';
+  return '/userdashboard';
+};
 
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isServicesOpen, setServicesOpen] = useState(false);
@@ -63,15 +72,37 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center justify-center flex-1">
           <ul className="flex flex-wrap space-x-4 md:space-x-6 lg:space-x-10 bg-[#f7f8fc] px-4 md:px-6 lg:px-8 py-3 md:py-3.5 lg:py-4 rounded-xl font-medium text-gray-600 text-sm md:text-base">
-            <li><NavLink to="/" className={({ isActive }) => isActive ? 'text-black font-semibold' : 'hover:text-black'}>Home</NavLink></li>
-            <li><NavLink to="/Services" className={({ isActive }) => isActive ? 'text-black font-semibold' : 'hover:text-black'}>Arch Services</NavLink></li>
-            <li><NavLink to="/productmodal" className={({ isActive }) => isActive ? 'text-black font-semibold' : 'hover:text-black'}>Arch Shop</NavLink></li>
-            <li><NavLink to="/partners" className={({ isActive }) => isActive ? 'text-black font-semibold' : 'hover:text-black'}>Partners</NavLink></li>
+            <li>
+              <NavLink to="/" className={({ isActive }) => (isActive ? 'text-black font-semibold' : 'hover:text-black')}>
+                Home
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/Services" className={({ isActive }) => (isActive ? 'text-black font-semibold' : 'hover:text-black')}>
+                Arch Services
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/productmodal" className={({ isActive }) => (isActive ? 'text-black font-semibold' : 'hover:text-black')}>
+                Arch Shop
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/partners" className={({ isActive }) => (isActive ? 'text-black font-semibold' : 'hover:text-black')}>
+                Partners
+              </NavLink>
+            </li>
             <li className="relative group">
               <div className="flex items-center gap-1 cursor-pointer hover:text-black">
                 <span className="flex items-center">
-                  <li to="" className={({ isActive }) => isActive ?'text-black font-semibold' : ''}>Company</li>
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <li className={({ isActive }) => (isActive ? 'text-black font-semibold' : '')}>Company</li>
+                  <svg
+                    className="w-4 h-4 ml-1"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </span>
@@ -81,23 +112,51 @@ export default function Navbar() {
                   <div>
                     <p className="text-xs font-semibold text-red-500 mb-2">COMPANY INFO</p>
                     <ul className="space-y-1">
-                      <li><NavLink to="/Aboutus" className="block hover:text-black">About Us</NavLink></li>
-                      <li><NavLink to="/careers" className="block hover:text-black">Careers</NavLink></li>
-                      <li><NavLink to="/Testimonial" className="block hover:text-black">Meet the Team</NavLink></li>
+                      <li>
+                        <NavLink to="/Aboutus" className="block hover:text-black">
+                          About Us
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink to="/careers" className="block hover:text-black">
+                          Careers
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink to="/Testimonial" className="block hover:text-black">
+                          Meet the Team
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink to="/Contactus" className="block hover:text-black">
+                          Contact Us
+                        </NavLink>
+                      </li>
                     </ul>
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-red-500 mb-2">TRUST & SAFETY</p>
                     <ul className="space-y-1">
-                      <li><NavLink to="/privacynotice" className="block hover:text-black">Privacy Notice</NavLink></li>
-                      <li><NavLink to="/privacyrights" className="block hover:text-black">Privacy Rights</NavLink></li>
-                      <li><NavLink to="/termsofuse" className="block hover:text-black">Terms of Use</NavLink></li>
+                      <li>
+                        <NavLink to="/privacynotice" className="block hover:text-black">
+                          Privacy Notice
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink to="/privacyrights" className="block hover:text-black">
+                          Privacy Rights
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink to="/termsofuse" className="block hover:text-black">
+                          Terms of Use
+                        </NavLink>
+                      </li>
                     </ul>
                   </div>
                 </div>
               </div>
             </li>
-            <li><NavLink to="/Contactus" className={({ isActive }) => isActive ? 'text-black font-semibold' : 'hover:text-black'}>Contact Us</NavLink></li>
           </ul>
         </div>
 
@@ -121,51 +180,85 @@ export default function Navbar() {
                     👤 Profile
                   </Link>
 
-    {/* START Help Section */}
-              <div className="relative">
-                <div className="peer flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black cursor-pointer">
-                  ❓ Help
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  
+                    <Link
+                      to={getDashboardLink()}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black flex items-center gap-2"
+                    >
+                      📊 Dashboard
+                    </Link>
+          
 
-                {/* This dropdown will now only open when Help is hovered */}
-                <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible peer-hover:visible peer-hover:opacity-100 hover:visible hover:opacity-100 transition-all duration-300 z-50">
-                  <Link to="/privacynotice" className="block px-4 py-2 text-sm hover:bg-gray-100">
-                    Privacy Notice
-                  </Link>
-                  <Link to="/privacyrights" className="block px-4 py-2 text-sm hover:bg-gray-100">
-                    Privacy Rights
-                  </Link>
-                  <Link to="/termsofuse" className="block px-4 py-2 text-sm hover:bg-gray-100">
-                    Terms of Use
-                  </Link>
+                  {/* Help Section */}
+                  <div className="relative">
+                    <div className="peer flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black cursor-pointer">
+                      ❓ Help
+                      <svg
+                        className="w-4 h-4 ml-1"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+
+                    <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible peer-hover:visible peer-hover:opacity-100 hover:visible hover:opacity-100 transition-all duration-300 z-50">
+                      <Link to="/privacynotice" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                        Privacy Notice
+                      </Link>
+                      <Link to="/privacyrights" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                        Privacy Rights
+                      </Link>
+                      <Link to="/termsofuse" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                        Terms of Use
+                      </Link>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSignout}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    🚪 Logout
+                  </button>
                 </div>
               </div>
-              {/* END Help Section */}
-
-              <button
-                onClick={handleSignout}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
-              >
-                🚪 Logout
-              </button>
-            </div>
-          </div>
 
               <Link to="/cart" aria-label="cart">
                 <span className="text-2xl">🛒</span>
               </Link>
+
+              {/* Conditional Button */}
+              {currentUser.isSupplier ? (
+                <Link to="/Contactus">
+                  <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+                    Any Question?
+                  </button>
+                </Link>
+              ) : (
+                <Link to="/supplierlogin">
+                  <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+                    Become a Supplier
+                  </button>
+                </Link>
+              )}
             </>
           ) : (
-            <Link to="/login" aria-label="login">
-              <CiUser className="text-2xl cursor-pointer hover:scale-110 transition-transform" />
-            </Link>
+            <>
+              <Link to="/login" aria-label="login">
+                <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+                  Log In
+                </button>
+              </Link>
+              <Link to="/supplierlogin">
+                <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+                  Become a Supplier
+                </button>
+              </Link>
+            </>
           )}
-          <Link to="/Contactus">
-            <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">Any Question?</button>
-          </Link>
         </div>
 
         <div className="flex md:hidden items-center space-x-4">
@@ -177,14 +270,25 @@ export default function Navbar() {
                 </button>
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                    <Link to="/profile" onClick={toggleMobileMenu} className="block px-4 py-2 text-sm hover:bg-gray-100">👤 Profile</Link>
+                    <Link to="/profile" onClick={toggleMobileMenu} className="block px-4 py-2 text-sm hover:bg-gray-100">
+                      👤 Profile
+                    </Link>
+
+                    
+                      <Link to={getDashboardLink()} onClick={toggleMobileMenu} className="block px-4 py-2 text-sm hover:bg-gray-100">
+                        📊 Dashboard
+                      </Link>
+                  
+
                     <button
                       className="w-full text-left flex items-center justify-between focus:outline-none px-4 py-2 text-sm hover:bg-gray-100"
                       onClick={() => setHelpOpen(!isHelpOpen)}
                     >
                       ❓ Help
                       <svg
-                        className={`w-4 h-4 ml-1 transform transition-transform duration-300 ${isHelpOpen ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 ml-1 transform transition-transform duration-300 ${
+                          isHelpOpen ? 'rotate-180' : ''
+                        }`}
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
@@ -195,25 +299,52 @@ export default function Navbar() {
                     </button>
                     {isHelpOpen && (
                       <ul className="pl-6 py-2 text-sm space-y-1">
-                        <li><Link to="/privacynotice" onClick={toggleMobileMenu}>Privacy Notice</Link></li>
-                        <li><Link to="/privacyrights" onClick={toggleMobileMenu}>Privacy Rights</Link></li>
-                        <li><Link to="/termsofuse" onClick={toggleMobileMenu}>Terms of Use</Link></li>
+                        <li>
+                          <Link to="/privacynotice" onClick={toggleMobileMenu}>
+                            Privacy Notice
+                          </Link>
+                        </li>
+                        <li>
+                          <Link to="/privacyrights" onClick={toggleMobileMenu}>
+                            Privacy Rights
+                          </Link>
+                        </li>
+                        <li>
+                          <Link to="/termsofuse" onClick={toggleMobileMenu}>
+                            Terms of Use
+                          </Link>
+                        </li>
                       </ul>
                     )}
-                    <button onClick={handleSignout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">🚪 Logout</button>
+                    <button onClick={handleSignout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                      🚪 Logout
+                    </button>
                   </div>
                 )}
               </div>
               <Link to="/cart" aria-label="cart">
                 <span className="text-2xl">🛒</span>
-              </Link>
+              </Link>  
             </>
           ) : (
-            <Link to="/signup" aria-label="login">
-              <CiUser className="text-2xl cursor-pointer hover:scale-110 transition-transform" />
-            </Link>
+            <>
+              <Link to="/login" aria-label="login">
+                <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+                  Log In
+                </button>
+              </Link>
+              <Link to="/supplierlogin">
+                <button className="px-4 py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm">
+                  Become a Supplier
+                </button>
+              </Link>
+            </>
           )}
-          <button onClick={toggleMobileMenu} className="text-gray-700 p-3 rounded focus:outline-none focus:ring-2 focus:ring-gray-200">
+          <button
+            onClick={toggleMobileMenu}
+            className="text-gray-700 p-3 rounded focus:outline-none focus:ring-2 focus:ring-gray-200"
+            aria-label="Toggle Menu"
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -221,16 +352,45 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className={`md:hidden bg-gray-50 border-t border-gray-200 overflow-y-auto transition-[max-height,opacity] duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-[calc(100vh-96px)] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div
+        className={`md:hidden bg-gray-50 border-t border-gray-200 overflow-y-auto transition-[max-height,opacity] duration-300 ease-in-out ${
+          isMobileMenuOpen ? 'max-h-[calc(100vh-96px)] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
         <ul className="flex flex-col px-6 py-4 text-gray-700 font-medium space-y-3 text-sm">
-          <li><NavLink to="/" onClick={toggleMobileMenu}>Home</NavLink></li>
-          <li><NavLink to="/Services" onClick={toggleMobileMenu}>Arch Services</NavLink></li>
-          <li><NavLink to="/productmodal" onClick={toggleMobileMenu}>Arch Shop</NavLink></li>
-          <li><NavLink to="/partners" onClick={toggleMobileMenu}>Partners</NavLink></li>
           <li>
-            <button className="w-full text-left flex items-center justify-between focus:outline-none" onClick={toggleServicesMenu}>
+            <NavLink to="/" onClick={toggleMobileMenu}>
+              Home
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/Services" onClick={toggleMobileMenu}>
+              Arch Services
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/productmodal" onClick={toggleMobileMenu}>
+              Arch Shop
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/partners" onClick={toggleMobileMenu}>
+              Partners
+            </NavLink>
+          </li>
+          <li>
+            <button
+              className="w-full text-left flex items-center justify-between focus:outline-none"
+              onClick={toggleServicesMenu}
+            >
               <span>Company</span>
-              <svg className={`w-4 h-4 transform transition-transform duration-300 ${isServicesOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg
+                className={`w-4 h-4 transform transition-transform duration-300 ${isServicesOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -239,27 +399,67 @@ export default function Navbar() {
                 <li>
                   <p className="text-xs font-semibold text-red-500">COMPANY INFO</p>
                   <ul className="pl-2 mt-1 space-y-1">
-                    <li><NavLink to="/Aboutus" onClick={toggleMobileMenu}>About Us</NavLink></li>
-                    <li><NavLink to="/careers" onClick={toggleMobileMenu}>Careers</NavLink></li>
-                    <li><NavLink to="/Testimonial" onClick={toggleMobileMenu}>Meet The Team</NavLink></li>
+                    <li>
+                      <NavLink to="/Aboutus" onClick={toggleMobileMenu}>
+                        About Us
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/careers" onClick={toggleMobileMenu}>
+                        Careers
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/Testimonial" onClick={toggleMobileMenu}>
+                        Meet The Team
+                      </NavLink>
+                    </li>
                   </ul>
                 </li>
                 <li>
                   <p className="text-xs font-semibold text-red-500">TRUST & SAFETY</p>
                   <ul className="pl-2 mt-1 space-y-1">
-                    <li><NavLink to="/privacynotice" onClick={toggleMobileMenu}>Privacy Notice</NavLink></li>
-                    <li><NavLink to="/privacyrights" onClick={toggleMobileMenu}>Privacy Rights</NavLink></li>
-                    <li><NavLink to="/termsofuse" onClick={toggleMobileMenu}>Terms of Use</NavLink></li>
+                    <li>
+                      <NavLink to="/privacynotice" onClick={toggleMobileMenu}>
+                        Privacy Notice
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/privacyrights" onClick={toggleMobileMenu}>
+                        Privacy Rights
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink to="/termsofuse" onClick={toggleMobileMenu}>
+                        Terms of Use
+                      </NavLink>
+                    </li>
                   </ul>
                 </li>
               </ul>
             )}
           </li>
-          <li><NavLink to="/Contactus" onClick={toggleMobileMenu}>Contact Us</NavLink></li>
           <li>
-            <Link to="/Contactus">
-              <button className="w-full text-center cursor-pointer px-5 py-2 border border-black rounded-md hover:bg-black hover:text-white transition" onClick={toggleMobileMenu}>Build With Us</button>
-            </Link>
+            <NavLink to="/Contactus" onClick={toggleMobileMenu}>
+              Contact Us
+            </NavLink>
+          </li>
+
+          {/* Conditional Button inside mobile sidebar */}
+          <li>
+            {currentUser && currentUser.isSupplier ? (
+              <Link to="/Contactus" onClick={toggleMobileMenu} className="w-full block">
+                <button className="w-full px-4 py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm">
+                  Any Question?
+                </button>
+              </Link>
+            ) : (
+              <Link to="/supplierlogin" onClick={toggleMobileMenu} className="w-full block">
+                <button className="w-full px-4 py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm">
+                  Become a Supplier
+                </button>
+              </Link>
+            )}
           </li>
         </ul>
       </div>

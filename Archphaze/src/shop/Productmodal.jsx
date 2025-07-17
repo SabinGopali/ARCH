@@ -4,6 +4,9 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 
 import logo from "/archphaze.webp";
+import front from "../assets/frontshop.jpg";
+import leftfront from "../assets/leftfront.jpg";
+import rightfront from "../assets/rightfront.jpg";
 import Scrollingcards from "./Scrollingcards";
 import Techintro from "./Techintro";
 import Category from "./Category";
@@ -15,6 +18,8 @@ export default function ProductShowcase() {
       once: true,
     });
   }, []);
+
+  const productImages = [logo, logo]; // Replace with real product URLs as needed
 
   return (
     <div className="min-h-screen bg-white px-4 py-16 flex flex-col items-center text-center">
@@ -50,39 +55,45 @@ export default function ProductShowcase() {
       >
         {/* Left Side */}
         <div className="flex flex-col gap-8 items-center">
-          <img
-            src={logo}
-            alt="Product1"
-            className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-xl border border-gray-300 shadow-lg"
-          />
-          <img
-            src={logo}
-            alt="Product2"
-            className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-xl border border-gray-300 shadow-lg"
-          />
+          {productImages.map(( i) => (
+            <div
+              key={i}
+              className="w-36 sm:w-40 aspect-square rounded-2xl border border-gray-200 shadow-lg bg-gray-100 hover:shadow-xl hover:scale-105 transition-transform duration-300 ease-in-out overflow-hidden"
+            >
+              <img
+                src={leftfront}
+                alt={`Product ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
         </div>
 
         {/* Center Main Product */}
         <div className="flex justify-center">
-          <img
-            src={logo}
-            alt="Main Product"
-            className="w-full max-w-md rounded-2xl border border-gray-300 shadow-xl"
-          />
+          <div className="w-64 sm:w-80 md:w-96 aspect-square rounded-3xl border border-gray-300 shadow-2xl bg-gray-100 hover:shadow-2xl hover:scale-105 transition-all duration-300 ease-in-out overflow-hidden">
+            <img
+              src={front}
+              alt="Main Product"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
 
         {/* Right Side */}
         <div className="flex flex-col gap-8 items-center">
-          <img
-            src={logo}
-            alt="Product3"
-            className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-xl border border-gray-300 shadow-lg"
-          />
-          <img
-            src={logo}
-            alt="Product4"
-            className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-xl border border-gray-300 shadow-lg"
-          />
+          {productImages.map((i) => (
+            <div
+              key={i + 2}
+              className="w-36 sm:w-40 aspect-square rounded-2xl border border-gray-200 shadow-lg bg-gray-100 hover:shadow-xl hover:scale-105 transition-transform duration-300 ease-in-out overflow-hidden"
+            >
+              <img
+                src={rightfront}
+                alt={`Product ${i + 3}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
         </div>
       </div>
 
