@@ -161,104 +161,141 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-x-4 lg:gap-x-6">
-          {currentUser ? (
-            <>
-              {/* User Dropdown */}
-              <div className="relative group">
-                <div className="cursor-pointer font-medium text-gray-700 hover:text-black flex items-center gap-1">
-                  Hello, {currentUser.username}
-                  <svg className="w-4 h-4 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+        {currentUser ? (
+  <>
+    <div className="relative group">
+      <div className="cursor-pointer font-medium text-gray-700 hover:text-black flex items-center gap-1">
+        Hello, {currentUser.username}
+        <svg className="w-4 h-4 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
 
-                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-300 z-50">
-                  <Link
-                    to="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black flex items-center gap-2"
-                  >
-                    👤 Profile
-                  </Link>
-
-                  
-                    <Link
-                      to={getDashboardLink()}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black flex items-center gap-2"
-                    >
-                      📊 Dashboard
-                    </Link>
-          
-
-                  {/* Help Section */}
-                  <div className="relative">
-                    <div className="peer flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black cursor-pointer">
-                      ❓ Help
-                      <svg
-                        className="w-4 h-4 ml-1"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-
-                    <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible peer-hover:visible peer-hover:opacity-100 hover:visible hover:opacity-100 transition-all duration-300 z-50">
-                      <Link to="/privacynotice" className="block px-4 py-2 text-sm hover:bg-gray-100">
-                        Privacy Notice
-                      </Link>
-                      <Link to="/privacyrights" className="block px-4 py-2 text-sm hover:bg-gray-100">
-                        Privacy Rights
-                      </Link>
-                      <Link to="/termsofuse" className="block px-4 py-2 text-sm hover:bg-gray-100">
-                        Terms of Use
-                      </Link>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSignout}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
-                  >
-                    🚪 Logout
-                  </button>
-                </div>
+      <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-300 z-50">
+        {(!currentUser.isAdmin && !currentUser.isSupplier) ? (
+          <>
+            <Link to="/profile" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              👤 Profile
+            </Link>
+            <Link to="/userdashboard" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              📊 Dashboard
+            </Link>
+            <Link to="/sales-statistic" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              📈 Sales Statistic
+            </Link>
+            <Link to="/my-product" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              🛍 My 
+            </Link>
+            <Link to="/order-history" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              📦 Order History
+            </Link>
+            <Link to="/my-revenue" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              💰 My Revenue
+            </Link>
+            <Link to="/customer-data" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              🙂 Customer Data
+            </Link>
+            <Link to="/help" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              ❓ Help
+            </Link>
+            <Link to="/settings" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+              ⚙️ Settings
+            </Link>
+            <button
+              onClick={handleSignout}
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+            >
+              🚪 Logout
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Admin/Supplier Menu */}
+            <Link
+              to="/profile"
+              className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            >
+              👤 Profile
+            </Link>
+            <Link
+              to={getDashboardLink()}
+              className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            >
+              📊 Dashboard
+            </Link>
+            <div className="relative">
+              <div className="peer flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black cursor-pointer">
+                ❓ Help
+                <svg
+                  className="w-4 h-4 ml-1"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
 
-              <Link to="/cart" aria-label="cart">
-                <span className="text-2xl">🛒</span>
-              </Link>
+              <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible peer-hover:visible peer-hover:opacity-100 hover:visible hover:opacity-100 transition-all duration-300 z-50">
+                <Link to="/privacynotice" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                  Privacy Notice
+                </Link>
+                <Link to="/privacyrights" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                  Privacy Rights
+                </Link>
+                <Link to="/termsofuse" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                  Terms of Use
+                </Link>
+              </div>
+            </div>
+            <button
+              onClick={handleSignout}
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+            >
+              🚪 Logout
+            </button>
+          </>
+        )}
+      </div>
+    </div>
 
-              {/* Conditional Button */}
-              {currentUser.isSupplier ? (
-                <Link to="/Contactus">
-                  <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
-                    Any Question?
-                  </button>
-                </Link>
-              ) : (
-                <Link to="/supplierlogin">
-                  <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
-                    Become a Supplier
-                  </button>
-                </Link>
-              )}
-            </>
-          ) : (
-            <>
-              <Link to="/login" aria-label="login">
-                <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
-                  Log In
-                </button>
-              </Link>
-              <Link to="/supplierlogin">
-                <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
-                  Become a Supplier
-                </button>
-              </Link>
-            </>
-          )}
+    {/* Cart Icon */}
+    <Link to="/cart" aria-label="cart">
+      <span className="text-2xl">🛒</span>
+    </Link>
+
+    {/* Conditional Button */}
+    {currentUser.isSupplier ? (
+      <Link to="/Contactus">
+        <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+          Any Question?
+        </button>
+      </Link>
+    ) : (
+      <Link to="/supplierlogin">
+        <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+          Become a Supplier
+        </button>
+      </Link>
+    )}
+  </>
+) : (
+  <>
+    <Link to="/login" aria-label="login">
+      <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+        Log In
+      </button>
+    </Link>
+    <Link to="/supplierlogin">
+      <button className="px-4 md:px-5 py-1.5 md:py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm md:text-base">
+        Become a Supplier
+      </button>
+    </Link>
+  </>
+)}
+
+
         </div>
 
         <div className="flex md:hidden items-center space-x-4">

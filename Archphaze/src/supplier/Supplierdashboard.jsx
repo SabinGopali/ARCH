@@ -90,77 +90,72 @@ export default function Supplierdashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-5">
-      {/* Mobile Toggle */}
-      <div className="px-4 lg:hidden mb-4">
-        <button
-          aria-label="Open sidebar menu"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 bg-white border shadow rounded-md hover:bg-gray-100 transition"
-        >
-          <AiOutlineMenu size={22} />
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 pt-5 pb-10">
+      <div className="container mx-auto max-w-screen-2xl px-4">
+        <div className="lg:flex lg:gap-6">
+          {/* Sidebar */}
+          <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+            <Suppliersidebar />
+          </aside>
 
-      {/* Container */}
-      <div className="max-w-screen-2xl mx-auto px-4 lg:flex lg:gap-6">
-        {/* Sidebar */}
-        <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+          {/* Main Content */}
+          <main className="flex-1">
+            <section className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-8">
+              <div className="flex justify-between items-center mb-9 flex-wrap gap-4">
+                <div>
+                  <h1 className="text-2xl font-semibold text-gray-800">
+                    {greeting} {supplierData?.username || currentUser?.username || "Supplier"}{" "}
+                    <span className="text-sm text-gray-500">({currentTime})</span>
+                  </h1>
+                  <p className="text-sm text-gray-500">Let's make your day productive</p>
+                </div>
 
-        {/* Main Content */}
-        <main className="flex-1">
-          <div className="flex justify-between items-center mb-9">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-800">
-                {greeting} {supplierData?.username || currentUser?.username || "Supplier"}! <span className="text-sm text-gray-500">({currentTime})</span>
-              </h1>
-              <p className="text-sm text-gray-500">Let's make your day productive</p>
-            </div>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={toggleLanguage}
+                    className="px-3 py-1 rounded-md border border-gray-400 bg-white hover:bg-gray-100 transition text-gray-700 font-medium"
+                    title={`Switch to ${language === "en" ? "नेपाली" : "English"}`}
+                  >
+                    {language === "en" ? "English" : "नेपाली"}
+                  </button>
 
-            <div className="flex items-center space-x-6">
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1 rounded-md border border-gray-400 bg-white hover:bg-gray-100 transition text-gray-700 font-medium"
-                title={`Switch to ${language === "en" ? "नेपाली" : "English"}`}
-              >
-                {language === "en" ? "English" : "नेपाली"}
-              </button>
+                  <button className="bg-green-100 text-green-700 px-4 py-2 rounded-md flex items-center gap-2 hover:bg-green-200 transition">
+                    <FaPlus /> Add New
+                  </button>
+                  <FaBell className="text-gray-600 text-xl cursor-pointer hover:text-gray-800 transition" />
+                </div>
+              </div>
 
-              <button className="bg-green-100 text-green-700 px-4 py-2 rounded-md flex items-center gap-2 hover:bg-green-200 transition">
-                <FaPlus /> Add New
-              </button>
-              <FaBell className="text-gray-600 text-xl cursor-pointer hover:text-gray-800 transition" />
-            </div>
-          </div>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                <StatCard title="Product Sold" value="48,951" change="+4.13%" chartColor="blue" />
+                <StatCard title="Total Balance" value="43,956" change="-63.1%" chartColor="red" />
+                <StatCard title="Sales Profit" value="28,971" change="+66.3%" chartColor="yellow" />
+                <StatCard title="Abandoned Cart" value="1,526" change="-24.8%" chartColor="green" />
+              </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-            <StatCard title="Product Sold" value="48,951" change="+4.13%" chartColor="blue" />
-            <StatCard title="Total Balance" value="43,956" change="-63.1%" chartColor="red" />
-            <StatCard title="Sales Profit" value="28,971" change="+66.3%" chartColor="yellow" />
-            <StatCard title="Abandoned Cart" value="1,526" change="-24.8%" chartColor="green" />
-          </div>
-
-          {/* Subscriptions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
-            <SubscriptionCard
-              color="yellow"
-              title="Asset Management Subscription"
-              daysLeft={84}
-              message="Manage your assets efficiently"
-              description="Track asset tools, usage, and renew or upgrade as needed."
-              buttonText="UPGRADE"
-            />
-            <SubscriptionCard
-              color="blue"
-              title="Shop Management Subscription"
-              daysLeft={100}
-              message="Control your store operations"
-              description="Your shop tools are active. Upgrade to unlock more features."
-              buttonText="UPGRADE"
-            />
-          </div>
-        </main>
+              {/* Subscriptions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SubscriptionCard
+                  color="yellow"
+                  title="Asset Management Subscription"
+                  daysLeft={84}
+                  message="Manage your assets efficiently"
+                  description="Track asset tools, usage, and renew or upgrade as needed."
+                  buttonText="UPGRADE"
+                />
+                <SubscriptionCard
+                  color="blue"
+                  title="Shop Management Subscription"
+                  daysLeft={100}
+                  message="Control your store operations"
+                  description="Your shop tools are active. Upgrade to unlock more features."
+                  buttonText="UPGRADE"
+                />
+              </div>
+            </section>
+          </main>
+        </div>
       </div>
     </div>
   );

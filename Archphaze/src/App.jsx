@@ -67,6 +67,12 @@ import Addproduct from './supplier/Addproduct';
 import Suppliersidebar from './supplier/Suppliersidebar';
 import Manageproduct from './supplier/Manageproduct';
 import Mediacenter from './supplier/Mediacenter';
+import Profilesettings from './supplier/Profilesettings';
+import Supplierprofile from './supplier/Supplierprofile';
+import Businessinfo from './supplier/Businessinfo';
+import Accountinfo from './supplier/Accountinfo';
+import Order from './supplier/Order';
+import Store from './supplier/Store';
 
 
 
@@ -155,6 +161,12 @@ import Mediacenter from './supplier/Mediacenter';
             <Route path="/suppliersidebar" element={<Suppliersidebar/>} />
             <Route path="/manageproduct" element={<Manageproduct/>} />
             <Route path="/mediacenter" element={<Mediacenter/>} />
+            <Route path="/profilesettings" element={<Profilesettings/>} />
+            <Route path="/supplierprofile" element={<Supplierprofile/>} />
+            <Route path="/businessinfo" element={<Businessinfo/>} />
+            <Route path="/accountinfo" element={<Accountinfo/>} />
+            <Route path="/order" element={<Order/>} />
+            <Route path="/store" element={<Store/>} />
             {/* private route */}
             <Route element={<Privateroute />} >
             </Route>

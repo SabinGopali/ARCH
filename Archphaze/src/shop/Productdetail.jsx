@@ -1,182 +1,172 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
-import gsap from "gsap";
+import React, { useState, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+import { FaStar } from "react-icons/fa";
+import { AiOutlineShoppingCart } from "react-icons/ai";
+import logo from "/logo.webp";
+import arch from "/archphaze.webp";
 
-export default function ProductDetail() {
-  const location = useLocation();
-  const { item, rect } = location.state || {};
-  const imageRef = useRef(null);
-  const [animating, setAnimating] = useState(!!rect);
+const sizes = ["S", "M", "L", "XL", "XXL"];
 
-  const product = {
-    title: item?.title || "Headphones",
-    price: "Rs.1178.00",
-    images: {
-      red: item?.image || "/archphaze.webp",
-      white: item?.image || "/archphaze.webp",
-      cyan: item?.image || "/archphaze.webp",
-    },
-    description:
-      "Simple but cool. A blend of streetwear and minimalism. This piece combines bold color choices with clean lines for everyday confident wear.",
-    sizes: ["XS", "S", "M", "L", "XL"],
-    colors: ["red", "white", "cyan"],
-  };
-
-  const [selectedColor, setSelectedColor] = useState("red");
-  const [selectedSize, setSelectedSize] = useState(null);
-  const currentImage = product.images[selectedColor];
-
-  useEffect(() => {
-    // Check if animation already ran during this session
-    const animationRan = sessionStorage.getItem("product-detail-animation-ran");
-
-    if (rect && imageRef.current && !animationRan) {
-      sessionStorage.setItem("product-detail-animation-ran", "true");
-
-      const final = imageRef.current.getBoundingClientRect();
-
-      const temp = document.createElement("img");
-      temp.src = item.image;
-      Object.assign(temp.style, {
-        position: "fixed",
-        top: `${rect.top}px`,
-        left: `${rect.left}px`,
-        width: `${rect.width}px`,
-        height: `${rect.height}px`,
-        objectFit: "cover",
-        zIndex: 9999,
-        borderRadius: "12px",
-        transition: "none",
-      });
-      document.body.appendChild(temp);
-
-      gsap.to(temp, {
-        top: final.top,
-        left: final.left,
-        width: final.width,
-        height: final.height,
-        duration: 0.6,
-        ease: "power3.inOut",
-        onComplete: () => {
-          document.body.removeChild(temp);
-          setAnimating(false);
-        },
-      });
-    } else {
-      // No animation, just show image immediately
-      setAnimating(false);
-    }
-  }, [rect, item]);
-
-  useEffect(() => {
-    if (imageRef.current && !animating) {
-      gsap.fromTo(
-        imageRef.current,
-        { scale: 0.9, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.4, ease: "power3.out" }
-      );
-    }
-  }, [selectedColor, animating]);
-
-  const addToCart = () => {
-    if (!selectedSize) {
-      alert("Please select a size before adding to cart.");
-      return;
-    }
-
-    const cartItem = {
-      id: item?.id || Math.random().toString(36).substr(2, 9),
-      title: product.title,
-      price: product.price,
-      color: selectedColor,
-      size: selectedSize,
-      image: currentImage,
-      quantity: 1,
-    };
-
-    const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
-
-    const existingIndex = existingCart.findIndex(
-      (ci) =>
-        ci.id === cartItem.id &&
-        ci.color === cartItem.color &&
-        ci.size === cartItem.size
-    );
-
-    if (existingIndex !== -1) {
-      existingCart[existingIndex].quantity += 1;
-    } else {
-      existingCart.push(cartItem);
-    }
-
-    localStorage.setItem("cart", JSON.stringify(existingCart));
-    alert(`Added ${product.title} (${selectedColor}, ${selectedSize}) to cart!`);
-  };
+export default function ProductPage() {
+  const [selectedSize, setSelectedSize] = useState("M");
+  const ratingRef = useRef(null);
+  const isInView = useInView(ratingRef, { once: true, margin: "-100px" });
 
   return (
-    <div className="min-h-screen bg-white p-6 flex justify-center items-center">
-      <div className="bg-white max-w-6xl w-full rounded-xl shadow-2xl flex flex-col md:flex-row overflow-hidden border border-gray-200">
-        <div className="w-full md:w-1/2 p-4 flex justify-center items-center">
-          <div className="rounded-2xl overflow-hidden shadow-xl">
-            <img
-              ref={imageRef}
-              src={currentImage}
-              alt={`${product.title} - ${selectedColor}`}
-              className="w-full h-auto object-cover transition-all duration-300"
-              style={{ opacity: animating ? 0 : 1 }}
-            />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-sans text-gray-800">
+      {/* Product Top Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        {/* Image Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-6"
+        >
+          <img
+            src={logo}
+            alt="Hoodie"
+            className="rounded-2xl shadow-md w-full object-cover"
+          />
+
+          <div className="flex gap-4">
+            {[1, 2, 3].map((_, idx) => (
+              <img
+                key={idx}
+                src={arch}
+                alt="Thumbnail"
+                className="w-20 h-20 sm:w-16 sm:h-16 rounded-lg object-cover hover:scale-105 transition-transform duration-300"
+              />
+            ))}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="p-8 w-full md:w-1/2">
-          <h2 className="text-4xl font-extrabold mb-2 text-gray-900">
-            {product.title}
-          </h2>
-          <p className="text-2xl text-gray-800 mb-4">{product.price}</p>
-          <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
+        {/* Details Section */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+          className="md:sticky md:top-24 h-fit self-start"
+        >
+          <div className="min-h-screen flex flex-col justify-between space-y-10">
+            {/* Product Info */}
+            <div className="space-y-3">
+              <h2 className="text-2xl sm:text-3xl font-semibold">Loose Fit Hoodie</h2>
+              <p className="text-lg sm:text-xl text-gray-600">$24.99</p>
+              <p className="text-sm text-green-600">
+                Order in 03:20:36 to get next day delivery
+              </p>
+            </div>
 
-          <div className="mb-6">
-            <h4 className="text-md font-semibold mb-2">SELECT SIZES</h4>
-            <div className="flex gap-3">
-              {product.sizes.map((size) => (
+            {/* Size Selection */}
+            <div className="flex flex-wrap gap-3">
+              {sizes.map((size) => (
                 <button
                   key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`border px-4 py-2 rounded-md transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-full border transition-all duration-300 ${
                     selectedSize === size
-                      ? "bg-black text-white border-black"
-                      : "hover:bg-black hover:text-white"
+                      ? "bg-black text-white"
+                      : "bg-white text-black hover:bg-gray-100"
                   }`}
+                  onClick={() => setSelectedSize(size)}
                 >
                   {size}
                 </button>
               ))}
             </div>
-          </div>
 
-          <div className="mb-6">
-            <h4 className="text-md font-semibold mb-2">SELECT COLOR</h4>
-            <div className="flex gap-4">
-              {product.colors.map((color) => (
-                <div
-                  key={color}
-                  onClick={() => setSelectedColor(color)}
-                  className={`w-8 h-8 rounded-full cursor-pointer border-2 transition-all duration-200 ${
-                    selectedColor === color ? "ring-4 ring-black" : ""
-                  }`}
-                  style={{ backgroundColor: color }}
-                ></div>
-              ))}
+            {/* Add to Cart Button */}
+            <button className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:opacity-90 transition-all">
+              <AiOutlineShoppingCart size={20} /> Add to Cart
+            </button>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">Description & Fit</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Loose fit sweatshirt hoodie in medium-weight cotton-blend fabric with a
+                generous, but not oversized silhouette. Jersey-lined, drawstring hood,
+                dropped shoulders, long sleeves, and a kangaroo pocket. Wide ribbing at
+                cuffs and hem. Soft, brushed inside.
+              </p>
+            </div>
+
+            {/* Shipping Info */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-center text-sm">
+              <div>
+                <p className="font-semibold">Discount</p>
+                <p>Upto 50%</p>
+              </div>
+              <div>
+                <p className="font-semibold">Package</p>
+                <p>Regular Package</p>
+              </div>
+              <div>
+                <p className="font-semibold">Delivery</p>
+                <p>3-4 Working Days</p>
+                <p className="text-gray-500 text-xs">10 - 12 October 2024</p>
+              </div>
             </div>
           </div>
+        </motion.div>
+      </div>
 
-          <button
-            onClick={addToCart}
-            className="mt-4 w-full px-6 py-3 bg-white text-black border border-black rounded-lg text-lg font-semibold hover:bg-black hover:text-white transition-all duration-200"
+      {/* Rating & Review Section */}
+      <div ref={ratingRef} className="mt-20">
+        {isInView && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="space-y-10"
           >
-            ADD TO CART
-          </button>
-        </div>
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Rating & Reviews</h3>
+              <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                <div className="text-4xl sm:text-5xl font-bold">
+                  4.5 <span className="text-lg text-gray-600">/ 5</span>
+                </div>
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                  {[5, 4, 3, 2, 1].map((star) => (
+                    <div key={star} className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-gray-200 rounded">
+                        <div className="h-2 bg-yellow-400 rounded w-1/2"></div>
+                      </div>
+                      <span className="w-6 text-sm">{star}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Review Card */}
+            <div className="p-5 bg-gray-50 rounded-xl shadow-sm space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={logo}
+                    className="w-10 h-10 rounded-full"
+                    alt="user"
+                  />
+                  <div>
+                    <p className="font-semibold text-sm sm:text-base">Alex Mathio</p>
+                    <div className="flex text-yellow-400">
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <FaStar key={idx} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-sm text-gray-500">13 Oct 2024</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                "NeoGen's dedication to sustainability and ethical practices resonates
+                strongly with today's consumers, positioning the brand as a responsible
+                choice in the fashion world."
+              </p>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

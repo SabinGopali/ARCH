@@ -1,113 +1,116 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
-  AiOutlineHome,
-  AiOutlineBarChart,
-  AiOutlineAppstore,
-  AiOutlineShoppingCart,
-  AiOutlineUsergroupAdd,
-  AiOutlineShop,
-  AiOutlineSetting,
-  AiOutlineClose,
-} from "react-icons/ai";
-import { FaBullhorn } from "react-icons/fa";
+  FiGrid,
+  FiShoppingBag,
+  FiUsers,
+  FiMessageSquare,
+  FiBox,
+  FiRepeat,
+  FiBarChart2,
+  FiFileText,
+  FiPercent,
+  FiSettings,
+  FiShield,
+  FiHelpCircle,
+  FiMenu,
+  FiX,
+} from "react-icons/fi";
+import SidebarItem from "./SidebarItem";
 
-export default function Suppliersidebar({ sidebarOpen, setSidebarOpen }) {
-  const [activeIndex, setActiveIndex] = useState(null);
-  const navigate = useNavigate();
+const sections = [
+  {
+    title: "Menu",
+    items: [
+      { name: "Dashboard", icon: <FiGrid />, link: "/supplierdashboard" },
+      { name: "Order", icon: <FiShoppingBag />, badge: 16, link: "/order" },
+      { name: "Customers", icon: <FiUsers />, link: "/customers" },
+      { name: "Message", icon: <FiMessageSquare />, link: "/messages" },
+    ],
+  },
+  {
+    title: "Tools",
+    items: [
+      {
+        name: "Product",
+        icon: <FiBox />,
+        children: [
+          { name: "Manage Products ", link: "/manageproduct" },
+          { name: "Add Product", link: "/addproduct" },
+          { name: "Media Center", link: "/mediacenter" },
+        ],
+      },
+      { name: "Integrations", icon: <FiRepeat />, link: "/integrations" },
+      { name: "Analytic", icon: <FiBarChart2 />, link: "/analytics" },
+      { name: "Invoice", icon: <FiFileText />, link: "/invoices" },
+      { name: "Discount", icon: <FiPercent />, link: "/discounts" },
+    ],
+  },
+  {
+    title: "Settings",
+    items: [
+      { name: "Settings", icon: <FiSettings />, link: "/profilesettings" },
+      { name: "Security", icon: <FiShield />, link: "/security" },
+      { name: "Get Help", icon: <FiHelpCircle />, link: "/help" },
+    ],
+  },
+];
 
-  const menuItems = [
-    { icon: <AiOutlineHome />, label: "Dashboard", route: "/supplierdashboard" },
-    {
-      icon: <AiOutlineBarChart />,
-      label: "Products",
-      children: [
-        { label: "Manage Products", route: "/manageproduct" },
-        { label: "Add Product", route: "/addproduct" },
-        { label: "Media Center", route: "/mediacenter" },
-      ],
-    },
-    { icon: <AiOutlineAppstore />, label: "Inventory", route: "/inventory" },
-    { icon: <AiOutlineShoppingCart />, label: "Orders", route: "/orders" },
-    { icon: <AiOutlineUsergroupAdd />, label: "Customers", route: "/customers" },
-    { icon: <FaBullhorn />, label: "Marketing", route: "/marketing" },
-    { icon: <AiOutlineShop />, label: "Stores", route: "/stores" },
-    { icon: <AiOutlineSetting />, label: "Settings", route: "/settings" },
-  ];
+export default function Suppliersidebar() {
+  const [active, setActive] = useState("Dashboard");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleSidebar = () => setIsOpen(!isOpen);
 
   return (
-    <aside
-      className={`bg-white border rounded-lg shadow-md w-64
-        lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:relative lg:translate-x-0 lg:z-auto
-        ${sidebarOpen ? "block" : "hidden"} lg:block`}
-    >
-      <div className="flex justify-between items-center p-4 lg:hidden border-b">
-        <span className="text-lg font-bold">Menu</span>
+    <>
+      {/* Sidebar */}
+      <div
+        className={`sticky top-24 z-30 h-[calc(100vh-96px)] w-64 bg-white shadow-md border-r p-4 overflow-auto hide-scrollbar
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+      >
+        {sections.map((section, index) => (
+          <div key={index} className="mb-6">
+            <h3 className="text-xs text-gray-500 uppercase mb-2">{section.title}</h3>
+            <ul>
+              {section.items.map((item) => (
+                <SidebarItem
+                  key={item.name}
+                  name={item.name}
+                  icon={item.icon}
+                  active={active === item.name}
+                  badge={item.badge}
+                  children={item.children}
+                  link={item.link}
+                  onClick={() => {
+                    setActive(item.name);
+                    setIsOpen(false); // close sidebar on mobile after click
+                  }}
+                />
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {/* Toggle button - fixed at top right */}
+      <div className="md:hidden fixed top-24 right-0 z-40">
         <button
-          onClick={() => setSidebarOpen(false)}
-          className="hover:text-gray-700 transition"
+          onClick={toggleSidebar}
+          className="m-2 p-2 rounded-md bg-white shadow-md border"
+          aria-label="Toggle sidebar"
         >
-          <AiOutlineClose size={20} />
+          {isOpen ? <FiX size={20} /> : <FiMenu size={20} />}
         </button>
       </div>
 
-      <nav className="px-4 pt-4 pb-6 space-y-2 overflow-y-auto h-full">
-        {menuItems.map((item, index) => {
-          const isDropdown = !!item.children;
-          const isActive = activeIndex === index;
-          const isOpen = isDropdown && isActive;
-
-          const handleClick = () => {
-            if (isDropdown) {
-              setActiveIndex((prev) => (prev === index ? null : index));
-            } else {
-              navigate(item.route);
-              setActiveIndex(index);
-            }
-          };
-
-          return (
-            <div key={index}>
-              <button
-                onClick={handleClick}
-                className={`flex items-center justify-between w-full px-4 py-2 rounded-lg text-sm font-medium transition
-                  ${isActive ? "bg-gray-100 text-black font-semibold" : "text-gray-600 hover:bg-gray-50 hover:text-black"}`}
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-xl">{item.icon}</span>
-                  <span>{item.label}</span>
-                </div>
-                {isDropdown && (
-                  <svg
-                    className={`w-4 h-4 transform transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                )}
-              </button>
-
-              {isOpen &&
-                item.children.map((child, subIndex) => (
-                  <button
-                    key={subIndex}
-                    onClick={() => navigate(child.route)}
-                    className="ml-12 mt-1 mb-1 block w-full text-left text-sm text-gray-600 hover:text-black hover:underline transition"
-                  >
-                    {child.label}
-                  </button>
-                ))}
-            </div>
-          );
-        })}
-      </nav>
-    </aside>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          onClick={toggleSidebar}
+          className="fixed inset-0 bg-black opacity-30 z-20 md:hidden"
+        />
+      )}
+    </>
   );
 }
