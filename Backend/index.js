@@ -12,6 +12,7 @@ import serviceroute from './routes/services.route.js';
 import clientroute from './routes/client.route.js';
 import teamroute from './routes/team.route.js';
 import formroute from './routes/form.route.js'
+import productroute from './routes/product.route.js'
 
 
 
@@ -42,6 +43,7 @@ app.use('/backend/services', serviceroute);
 app.use('/backend/client', clientroute);
 app.use('/backend/team', teamroute);
 app.use('/backend/form', formroute);
+app.use('/backend/product', productroute);
 
 
 

@@ -138,32 +138,14 @@ function Mediacenter() {
     : staticImages;
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-6 pb-10">
-      {/* Mobile Sidebar Toggle */}
-      <div className="px-4 lg:hidden mb-5">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 bg-white border shadow rounded-md hover:bg-gray-100 transition"
-          aria-label="Toggle Sidebar"
-        >
-          <svg
-            className="w-6 h-6 text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 pt-6 pb-10">  
 
       <div className="max-w-screen-2xl mx-auto px-4 lg:flex lg:gap-8">
-        {/* Sidebar */}
-        <aside className="sticky top-6 self-start hidden lg:block w-64">
-          <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        </aside>
+       
+         <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+                     <Suppliersidebar />
+          </aside>
+       
 
         {/* Main Content */}
         <main className="flex-1">

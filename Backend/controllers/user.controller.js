@@ -2,6 +2,40 @@ import User from '../models/user.model.js';
 import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
+import Product from '../models/product.model.js';
+
+
+
+
+
+export const getUserProduct = async (req, res, next) => {
+  if (req.user.id === req.params.id) {
+    try {
+      const products = await Product.find({ userRef: req.params.id});
+      res.status(200).json(products);
+    } catch (error) {
+      next (error)
+    }
+  } else {
+    return next (errorHandler(401, 'You can only view your own applications!'));
+  }
+}
+
+
+
+export const getCurrentUser = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(errorHandler(401, "Not authenticated"));
+    }
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return next(errorHandler(404, "User not found"));
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 
 export const loginUser = async (req, res, next) => {

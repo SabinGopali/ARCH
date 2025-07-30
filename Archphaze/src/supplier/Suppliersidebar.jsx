@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   FiGrid,
   FiShoppingBag,
@@ -23,7 +24,7 @@ const sections = [
     items: [
       { name: "Dashboard", icon: <FiGrid />, link: "/supplierdashboard" },
       { name: "Order", icon: <FiShoppingBag />, badge: 16, link: "/order" },
-      { name: "Customers", icon: <FiUsers />, link: "/customers" },
+      { name: "Customers", icon: <FiUsers />, badge: 8,  link: "/customers" },
       { name: "Message", icon: <FiMessageSquare />, link: "/messages" },
     ],
   },
@@ -34,7 +35,7 @@ const sections = [
         name: "Product",
         icon: <FiBox />,
         children: [
-          { name: "Manage Products ", link: "/manageproduct" },
+          { name: "Manage Products", link: "/manageproduct" },
           { name: "Add Product", link: "/addproduct" },
           { name: "Media Center", link: "/mediacenter" },
         ],
@@ -42,13 +43,14 @@ const sections = [
       { name: "Integrations", icon: <FiRepeat />, link: "/integrations" },
       { name: "Analytic", icon: <FiBarChart2 />, link: "/analytics" },
       { name: "Invoice", icon: <FiFileText />, link: "/invoices" },
-      { name: "Discount", icon: <FiPercent />, link: "/discounts" },
+      { name: "Store", icon: <FiShoppingBag />, link: "/store" },
     ],
   },
   {
     title: "Settings",
     items: [
       { name: "Settings", icon: <FiSettings />, link: "/profilesettings" },
+      { name: "User Management", icon: <FiUsers />, link: "/usermanagement" },
       { name: "Security", icon: <FiShield />, link: "/security" },
       { name: "Get Help", icon: <FiHelpCircle />, link: "/help" },
     ],
@@ -56,8 +58,9 @@ const sections = [
 ];
 
 export default function Suppliersidebar() {
-  const [active, setActive] = useState("Dashboard");
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+  const activePath = location.pathname;
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -71,29 +74,34 @@ export default function Suppliersidebar() {
       >
         {sections.map((section, index) => (
           <div key={index} className="mb-6">
-            <h3 className="text-xs text-gray-500 uppercase mb-2">{section.title}</h3>
+            <h3 className="text-xs text-gray-500 uppercase mb-2">
+              {section.title}
+            </h3>
             <ul>
-              {section.items.map((item) => (
-                <SidebarItem
-                  key={item.name}
-                  name={item.name}
-                  icon={item.icon}
-                  active={active === item.name}
-                  badge={item.badge}
-                  children={item.children}
-                  link={item.link}
-                  onClick={() => {
-                    setActive(item.name);
-                    setIsOpen(false); // close sidebar on mobile after click
-                  }}
-                />
-              ))}
+              {section.items.map((item) => {
+                const isActive =
+                  activePath === item.link ||
+                  item.children?.some((child) => activePath === child.link);
+
+                return (
+                  <SidebarItem
+                    key={item.name}
+                    name={item.name}
+                    icon={item.icon}
+                    link={item.link}
+                    badge={item.badge}
+                    children={item.children}
+                    active={isActive}
+                    onClick={() => setIsOpen(false)}
+                  />
+                );
+              })}
             </ul>
           </div>
         ))}
       </div>
 
-      {/* Toggle button - fixed at top right */}
+      {/* Toggle button - top right for mobile */}
       <div className="md:hidden fixed top-24 right-0 z-40">
         <button
           onClick={toggleSidebar}

@@ -73,6 +73,14 @@ import Businessinfo from './supplier/Businessinfo';
 import Accountinfo from './supplier/Accountinfo';
 import Order from './supplier/Order';
 import Store from './supplier/Store';
+import Security from './supplier/Security';
+import Usermanagement from './supplier/Usermanagement';
+import AddUserForm from './supplier/Adduserform';
+import Supplierproduct from './shop/Supplierproduct';
+import SupplierProfile from './supplier/Supplierprofile';
+import ProductShowcase from './shop/Productshowcase';
+import Supplierprofileshop from './shop/Supplierprofileshop';
+import Updateproduct from './supplier/Updateproduct';
 
 
 
@@ -122,9 +130,13 @@ import Store from './supplier/Store';
             <Route path="/closingpage" element={<Closingpage/>}/>
             <Route path="/clienttestimonial" element={<Clienttestimonial/>}/>
             <Route path="/profile" element={<Profile/>}/>
-            <Route path="/suppliersignup" element={<Suppliersignup/>}/>
+            <Route path="/suppliersignup" element={<Suppliersignup/>}/> 
             <Route path="/supplierlogin" element={<Supplierlogin/>}/>
             <Route path="/checkout" element={<Checkout/>}/>
+            <Route path="/supplierproduct" element={<Supplierproduct/>}/>
+            <Route path="/supplierprofile" element={<SupplierProfile/>}/>
+            <Route path="/productshowcase" element={<ProductShowcase/>}/>
+            <Route path="/supplierprofileshop" element={<Supplierprofileshop/>}/>
             
 
 
@@ -167,6 +179,11 @@ import Store from './supplier/Store';
             <Route path="/accountinfo" element={<Accountinfo/>} />
             <Route path="/order" element={<Order/>} />
             <Route path="/store" element={<Store/>} />
+            <Route path="/security" element={<Security/>} />
+            <Route path="/usermanagement" element={<Usermanagement/>} />
+            <Route path="/adduserform" element={<AddUserForm/>} />
+            <Route path="/updateproduct/:id" element={<Updateproduct/>} />
+            
             {/* private route */}
             <Route element={<Privateroute />} >
             </Route>

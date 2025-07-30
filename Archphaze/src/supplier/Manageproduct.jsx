@@ -1,126 +1,316 @@
-import { useState } from "react";
-import { FiMoreVertical } from "react-icons/fi";
-import Suppliersidebar from "./Suppliersidebar"; // Ensure this component exists
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import Suppliersidebar from "./Suppliersidebar";
 
-export default function ManageProduct({ products = [] }) {
+export default function ManageProduct() {
+  const { currentUser } = useSelector((state) => state.user);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    outOfStock: false,
+    inStock: false,
+    warrantyOnly: false,
+    hasVariants: false,
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!currentUser?._id) return;
+      try {
+        const res = await fetch(`/backend/user/product/${currentUser._id}`);
+        if (!res.ok) throw new Error("Failed to fetch products");
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setProducts(data);
+        } else if (data && Array.isArray(data.products)) {
+          setProducts(data.products);
+        } else {
+          setProducts([]);
+        }
+      } catch {
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [currentUser?._id]);
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesOutOfStock = !filters.outOfStock || product.stock === 0;
+    const matchesInStock = !filters.inStock || product.stock > 0;
+    const matchesWarranty = !filters.warrantyOnly || !!product.warranty?.type;
+    const matchesVariants = !filters.hasVariants || (product.variants?.length > 0);
+
+    return (
+      matchesSearch &&
+      matchesOutOfStock &&
+      matchesInStock &&
+      matchesWarranty &&
+      matchesVariants
+    );
+  });
+
+  const handleDelete = async (product) => {
+    if (window.confirm(`Are you sure you want to delete "${product.productName}"?`)) {
+      try {
+        const res = await fetch(`/backend/product/delete/${product._id}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (res.ok) {
+          setProducts((prev) => prev.filter((p) => p._id !== product._id));
+          setSelectedProducts((prev) => prev.filter((id) => id !== product._id));
+          alert(`${product.productName} deleted successfully!`);
+        } else {
+          alert("Failed to delete the product.");
+        }
+      } catch {
+        alert("An error occurred while deleting the product.");
+      }
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (
+      selectedProducts.length === 0 ||
+      !window.confirm(`Are you sure you want to delete ${selectedProducts.length} product(s)?`)
+    )
+      return;
+
+    for (const productId of selectedProducts) {
+      try {
+        const res = await fetch(`/backend/product/delete/${productId}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error();
+        setProducts((prev) => prev.filter((p) => p._id !== productId));
+      } catch {
+        console.error(`Failed to delete product with ID: ${productId}`);
+      }
+    }
+
+    setSelectedProducts([]);
+    alert("Selected products deleted successfully.");
+  };
+
+  const handleCheckboxChange = (productId) => {
+    setSelectedProducts((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map((p) => p._id));
+    }
+  };
+
+  const handleModify = (product) => {
+    navigate(`/updateproduct/${product._id}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Loading products...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-6 pb-10">
-      {/* Mobile Sidebar Toggle */}
       <div className="px-4 lg:hidden mb-5">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="p-2 bg-white border shadow rounded-md hover:bg-gray-100 transition"
-          aria-label="Toggle Sidebar"
         >
-          <svg
-            className="w-6 h-6 text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
+          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </div>
 
       <div className="max-w-screen-2xl mx-auto px-4 lg:flex lg:gap-8">
-        {/* Sidebar */}
         <aside className="sticky top-6 self-start hidden lg:block w-64">
           <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1">
           <section className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 border-b pb-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <h2 className="text-2xl font-bold text-gray-900">Manage Products</h2>
-              <button className="bg-white text-black border border-black hover:bg-black hover:text-white  text-sm px-5 py-2.5 rounded-md shadow">
-                + Add Product
-              </button>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={selectedProducts.length === 0}
+                  className={`border text-sm px-4 py-2.5 rounded-md shadow ${
+                    selectedProducts.length === 0
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-red-600 text-white hover:bg-red-700"
+                  }`}
+                >
+                  Delete Selected
+                </button>
+                <button
+                  onClick={() => navigate("/addproduct")}
+                  className="bg-white text-black border border-black hover:bg-black hover:text-white text-sm px-5 py-2.5 rounded-md shadow"
+                >
+                  + Add Product
+                </button>
+              </div>
             </div>
 
-            {/* Filter Buttons */}
-            <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-4">
-              {["All 1257", "Out of stock 27", "Low stock 135", "Expected 12", "Returned 7"].map(
-                (text, idx) => (
-                  <button
-                    key={idx}
-                    className="bg-gray-100 px-3 py-1.5 rounded hover:bg-gray-200 transition"
-                  >
-                    {text}
-                  </button>
-                )
-              )}
+            <hr className="mb-4" />
+
+            <div className="mb-4">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by SKU..."
+                className="w-full sm:w-80 border border-gray-300 px-4 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
             </div>
 
-            {/* Product Table */}
+            <div className="flex flex-wrap gap-4 mb-6 text-sm text-gray-700">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={filters.outOfStock}
+                  onChange={() => setFilters((prev) => ({ ...prev, outOfStock: !prev.outOfStock }))}
+                />
+                Out of Stock
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={filters.inStock}
+                  onChange={() => setFilters((prev) => ({ ...prev, inStock: !prev.inStock }))}
+                />
+                In Stock
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={filters.warrantyOnly}
+                  onChange={() => setFilters((prev) => ({ ...prev, warrantyOnly: !prev.warrantyOnly }))}
+                />
+                Warranty Only
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={filters.hasVariants}
+                  onChange={() => setFilters((prev) => ({ ...prev, hasVariants: !prev.hasVariants }))}
+                />
+                Has Variants
+              </label>
+            </div>
+
             <div className="overflow-x-auto rounded-lg border border-gray-200">
               <table className="min-w-full text-sm text-left text-gray-800">
                 <thead className="bg-gray-50 text-xs uppercase text-gray-500 border-b">
                   <tr>
                     <th className="px-4 py-3">
-                      <input type="checkbox" />
+                      <input
+                        type="checkbox"
+                        onChange={handleSelectAll}
+                        checked={
+                          selectedProducts.length === filteredProducts.length &&
+                          filteredProducts.length > 0
+                        }
+                      />
                     </th>
                     <th className="px-4 py-3 whitespace-nowrap">Product Name</th>
-                    <th className="px-4 py-3">Seller SKU</th>
-                    <th className="px-4 py-3">Barcode</th>
+                    <th className="px-4 py-3">SKU</th>
                     <th className="px-4 py-3">Stock</th>
-                    <th className="px-4 py-3">Availability</th>
-                    <th className="px-4 py-3">Backorder</th>
-                    <th className="px-4 py-3">Warehouse</th>
+                    <th className="px-4 py-3">Warranty</th>
+                    <th className="px-4 py-3">Variants</th>
+                    <th className="px-4 py-3">Managed By</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {products.length === 0 ? (
+                  {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="text-center py-6 text-gray-400">
+                      <td colSpan={8} className="text-center py-6 text-gray-500">
                         No products found.
                       </td>
                     </tr>
                   ) : (
-                    products.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50 transition text-sm">
-                        <td className="px-4 py-4">
-                          <input type="checkbox" checked={item.checked} readOnly />
-                        </td>
-                        <td className="px-4 py-4 flex items-center gap-3 min-w-[180px]">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-10 h-10 rounded object-cover border"
-                          />
-                          <span className="font-medium text-gray-800">{item.name}</span>
-                        </td>
-                        <td className="px-4 py-4">{item.sku}</td>
-                        <td className="px-4 py-4">{item.barcode}</td>
-                        <td className="px-4 py-4">{item.onHand}</td>
-                        <td className="px-4 py-4">{item.available}</td>
-                        <td className="px-4 py-4">{item.backorder}</td>
-                        <td className="px-4 py-4">
-                          <img
-                            src={item.flag}
-                            alt="flag"
-                            className="w-6 h-4 object-cover rounded"
-                          />
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <FiMoreVertical className="text-gray-500" />
-                        </td>
-                      </tr>
-                    ))
+                    filteredProducts.map((product) => {
+                      let imageUrl = product.images?.[0] || "";
+                      imageUrl = imageUrl.replace(/\\/g, "/");
+                      if (!imageUrl.startsWith("http")) {
+                        imageUrl = `http://localhost:3000/${imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl}`;
+                      }
+
+                      const variantsStr = product.variants?.map((v) => v.name).join(", ") || "-";
+
+                      return (
+                        <tr key={product._id} className="hover:bg-gray-50 transition text-sm">
+                          <td className="px-4 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.includes(product._id)}
+                              onChange={() => handleCheckboxChange(product._id)}
+                            />
+                          </td>
+                          <td className="px-4 py-4 flex items-center gap-3 min-w-[180px]">
+                            <img
+                              src={imageUrl}
+                              alt={product.productName}
+                              className="w-16 h-16 object-contain rounded border"
+                            />
+                            <span className="font-medium text-gray-800">{product.productName}</span>
+                          </td>
+                          <td className="px-4 py-4">{product.sku || "-"}</td>
+                          <td className="px-4 py-4">{product.stock}</td>
+                          <td className="px-4 py-4">{product.warranty?.type || "No"}</td>
+                          <td className="px-4 py-4">{variantsStr}</td>
+                          <td className="px-4 py-4">
+                            {product.managedBy || currentUser?.name || currentUser?.username || "You"}
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                className="text-blue-600 hover:text-blue-800 text-xs border border-blue-600 hover:bg-blue-50 px-3 py-1 rounded"
+                                onClick={() => handleModify(product)}
+                              >
+                                Modify
+                              </button>
+                              <button
+                                className="text-red-600 hover:text-red-800 text-xs border border-red-600 hover:bg-red-50 px-3 py-1 rounded"
+                                onClick={() => handleDelete(product)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
 
-            {/* Footer */}
             <div className="px-4 pt-4 text-sm text-gray-500 text-right">
-              Showing 1–{products?.length || 0} of {products?.length || 0}
+              Showing {filteredProducts.length} of {products.length} total {products.length === 1 ? "product" : "products"}
             </div>
           </section>
         </main>

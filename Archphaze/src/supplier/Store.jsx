@@ -4,6 +4,7 @@ import Slider from "@mui/material/Slider";
 import { Dialog, DialogActions, DialogContent } from "@mui/material";
 import Suppliersidebar from "./Suppliersidebar";
 
+// Image cropping utility
 function getCroppedImg(imageSrc, crop, zoom) {
   const createImage = (url) =>
     new Promise((resolve, reject) => {
@@ -51,62 +52,48 @@ export default function Store() {
   const [postCode, setPostCode] = useState("");
 
   const [logo, setLogo] = useState(null);
-  const [imageToCrop, setImageToCrop] = useState(null);
-  const [openCrop, setOpenCrop] = useState(false);
+  const [bgImage, setBgImage] = useState(null);
 
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const [croppingFor, setCroppingFor] = useState("logo");
+  const [openCrop, setOpenCrop] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
-  const daysOfWeek = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
-
-  const defaultHours = {
-    open: "10:00",
-    close: "18:00",
-    enabled: true,
-  };
-
+  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const [openingHours, setOpeningHours] = useState(
-    daysOfWeek.reduce((acc, day) => {
-      acc[day] = { ...defaultHours };
-      return acc;
-    }, {})
+    daysOfWeek.map((day) => ({
+      day,
+      open: "10:00",
+      close: "18:00",
+      enabled: true,
+    }))
   );
 
   const handleToggle = (day) => {
-    setOpeningHours((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        enabled: !prev[day].enabled,
-      },
-    }));
+    setOpeningHours((prev) =>
+      prev.map((entry) =>
+        entry.day === day ? { ...entry, enabled: !entry.enabled } : entry
+      )
+    );
   };
 
   const updateTime = (day, field, value) => {
-    setOpeningHours((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [field]: value,
-      },
-    }));
+    setOpeningHours((prev) =>
+      prev.map((entry) =>
+        entry.day === day ? { ...entry, [field]: value } : entry
+      )
+    );
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = (e, type) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = () => {
         setImageToCrop(reader.result);
+        setCroppingFor(type);
         setOpenCrop(true);
       };
       reader.readAsDataURL(file);
@@ -119,11 +106,14 @@ export default function Store() {
 
   const handleCropSave = async () => {
     const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels, zoom);
-    setLogo(croppedImage);
+    if (croppingFor === "logo") {
+      setLogo(croppedImage);
+    } else {
+      setBgImage(croppedImage);
+    }
     setOpenCrop(false);
   };
 
-  // Simple save handler - replace with your actual save logic
   const handleSave = () => {
     const storeData = {
       storeName,
@@ -131,6 +121,7 @@ export default function Store() {
       street,
       postCode,
       logo,
+      bgImage,
       openingHours,
     };
     console.log("Saving store data:", storeData);
@@ -140,57 +131,84 @@ export default function Store() {
   const mapQuery = encodeURIComponent(`${street}, ${city}, ${postCode}`);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 lg:flex lg:gap-8">
-      <aside className="hidden lg:block w-64 sticky top-6 self-start">
-        <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
-      </aside>
+    <div className="min-h-screen bg-gray-100">
+      <div className="p-4 md:p-8 lg:flex lg:gap-8 relative z-10">
+        <aside className="hidden lg:block w-62 sticky top-6 self-start">
+          <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
+        </aside>
 
-      <main className="flex-1 bg-white shadow-md rounded-xl p-6 md:p-10 flex flex-col">
-        <h2 className="text-xl font-semibold text-gray-800">Store Profile</h2>
-        <p className="text-gray-500 mb-6">
-          Edit contact data that will be visible for your users on store’s profile
-        </p>
+        <main className="flex-1 shadow-md rounded-xl overflow-hidden bg-white p-6">
+          <h2 className="text-xl font-semibold text-gray-800">Store Profile</h2>
+          <p className="text-gray-500 mb-6">
+            Edit contact data that will be visible for your users on store’s profile
+          </p>
 
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-              {logo ? (
-                <img src={logo} alt="Logo" className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-lg font-bold text-gray-600">Logo</span>
-              )}
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mb-8">
+            {/* Logo Upload */}
+            <div className="flex flex-col items-center justify-center gap-3 w-full">
+              <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                {logo ? (
+                  <img src={logo} alt="Logo" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg font-bold text-gray-600">Logo</span>
+                )}
+              </div>
+              <input
+                id="logoUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageChange(e, "logo")}
+                className="hidden"
+              />
+              <label
+                htmlFor="logoUpload"
+                className="cursor-pointer bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-1 rounded shadow"
+              >
+                Upload Logo
+              </label>
             </div>
-            <p className="text-xs text-gray-400">JPG, GIF or PNG. Max size of 800K</p>
-            <input
-              id="logoUpload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-            <label
-              htmlFor="logoUpload"
-              className="cursor-pointer bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-1 rounded shadow"
-            >
-              Choose Image
-            </label>
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-semibold mb-1 text-gray-600">
-              Your Store Name
-            </label>
-            <input
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-4 py-2"
-            />
-          </div>
-        </div>
 
-        <div className="mt-8">
+            {/* Background Image Upload */}
+            <div className="flex flex-col items-center justify-center gap-3 w-full">
+              <div className="w-full rounded-lg overflow-hidden bg-gray-100">
+                {bgImage ? (
+                  <img
+                    src={bgImage}
+                    alt="Background Preview"
+                    className="w-full h-40 object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-40 flex items-center justify-center text-lg font-bold text-gray-600">
+                    Background Image
+                  </div>
+                )}
+              </div>
+              <input
+                id="bgUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageChange(e, "background")}
+                className="hidden"
+              />
+              <label
+                htmlFor="bgUpload"
+                className="cursor-pointer bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-1 rounded shadow"
+              >
+                Upload Background Image
+              </label>
+            </div>
+          </div>
+
+          {/* Store Name + Address */}
+          <label className="block text-sm font-semibold mb-1 text-gray-600">Your Store Name</label>
+          <input
+            value={storeName}
+            onChange={(e) => setStoreName(e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-4 py-2 mb-6"
+          />
+
           <h3 className="font-bold text-sm text-gray-600 uppercase mb-2">Store Address</h3>
-          <p className="text-xs text-gray-400 mb-4">Where your store is located?</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
               <label className="text-sm font-medium text-gray-500">City</label>
               <input
@@ -217,7 +235,8 @@ export default function Store() {
             </div>
           </div>
 
-          <div className="mt-6">
+          {/* Google Map */}
+          <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-600 mb-2">Map Preview</h4>
             <div className="border rounded-lg overflow-hidden h-64 w-full">
               <iframe
@@ -229,52 +248,53 @@ export default function Store() {
                 allowFullScreen
                 loading="lazy"
                 title="Store Location Map"
-              ></iframe>
+              />
             </div>
           </div>
-        </div>
 
-        <div className="mt-10">
-          <h3 className="font-bold text-sm text-gray-600 uppercase mb-2">Opening Hours</h3>
-          {daysOfWeek.map((day) => (
-            <div key={day} className="flex items-center gap-4 mb-4">
-              <label className="flex items-center gap-2 w-28">
+          {/* Opening Hours */}
+          <div className="mb-6">
+            <h3 className="font-bold text-sm text-gray-600 uppercase mb-2">Opening Hours</h3>
+            {openingHours.map(({ day, open, close, enabled }) => (
+              <div key={day} className="flex items-center gap-4 mb-4">
+                <label className="flex items-center gap-2 w-28">
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={() => handleToggle(day)}
+                    className="accent-purple-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700">{day}</span>
+                </label>
                 <input
-                  type="checkbox"
-                  checked={openingHours[day].enabled}
-                  onChange={() => handleToggle(day)}
-                  className="accent-purple-600"
+                  type="time"
+                  value={open}
+                  onChange={(e) => updateTime(day, "open", e.target.value)}
+                  className="border border-gray-300 rounded-md px-2 py-1 w-24"
+                  disabled={!enabled}
                 />
-                <span className="text-sm font-medium text-gray-700">{day}</span>
-              </label>
-              <input
-                type="time"
-                value={openingHours[day].open}
-                onChange={(e) => updateTime(day, "open", e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 w-24"
-                disabled={!openingHours[day].enabled}
-              />
-              <span>–</span>
-              <input
-                type="time"
-                value={openingHours[day].close}
-                onChange={(e) => updateTime(day, "close", e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 w-24"
-                disabled={!openingHours[day].enabled}
-              />
-            </div>
-          ))}
-        </div>
+                <span>–</span>
+                <input
+                  type="time"
+                  value={close}
+                  onChange={(e) => updateTime(day, "close", e.target.value)}
+                  className="border border-gray-300 rounded-md px-2 py-1 w-24"
+                  disabled={!enabled}
+                />
+              </div>
+            ))}
+          </div>
 
-        <button
-          onClick={handleSave}
-          className="mt-6 self-start bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded shadow"
-          type="button"
-        >
-          Save Store Profile
-        </button>
-      </main>
+          <button
+            onClick={handleSave}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded shadow"
+          >
+            Save Store Profile
+          </button>
+        </main>
+      </div>
 
+      {/* Cropping Dialog */}
       <Dialog open={openCrop} onClose={() => setOpenCrop(false)} maxWidth="sm" fullWidth>
         <DialogContent>
           <div className="relative w-full h-[300px] bg-black">
@@ -282,7 +302,7 @@ export default function Store() {
               image={imageToCrop}
               crop={crop}
               zoom={zoom}
-              aspect={1}
+              aspect={croppingFor === "logo" ? 1 : 16 / 9}
               onCropChange={setCrop}
               onCropComplete={onCropComplete}
               onZoomChange={setZoom}
@@ -299,16 +319,10 @@ export default function Store() {
           </div>
         </DialogContent>
         <DialogActions>
-          <button
-            onClick={() => setOpenCrop(false)}
-            className="text-sm px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-          >
+          <button onClick={() => setOpenCrop(false)} className="text-sm px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">
             Cancel
           </button>
-          <button
-            onClick={handleCropSave}
-            className="text-sm px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white"
-          >
+          <button onClick={handleCropSave} className="text-sm px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white">
             Save
           </button>
         </DialogActions>

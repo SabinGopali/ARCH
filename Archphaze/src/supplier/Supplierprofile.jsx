@@ -4,6 +4,9 @@ import { MdArrowBack } from "react-icons/md";
 import Suppliersidebar from "./Suppliersidebar";
 
 export default function Supplierprofile() {
+
+
+  
   const navigate = useNavigate(); // <-- initialize navigate
 
   const [users] = useState([
