@@ -15,7 +15,7 @@
             required: true,
         },
         phone: {
-            type: Number,
+            type: String,
             required: true,
         },
         businessTypes: {
@@ -44,6 +44,14 @@
             return `https://avatars.dicebear.com/api/avataaars/${seed}.svg`;
         },
         },
+        deletionRequested: {
+            type: Boolean,
+            default: false,
+            },
+        deletionReason: {
+            type: String,
+            default: "",
+            },
         isAdmin: {
             type: Boolean,
             default: false,

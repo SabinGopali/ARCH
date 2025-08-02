@@ -43,7 +43,14 @@ const sections = [
       { name: "Integrations", icon: <FiRepeat />, link: "/integrations" },
       { name: "Analytic", icon: <FiBarChart2 />, link: "/analytics" },
       { name: "Invoice", icon: <FiFileText />, link: "/invoices" },
-      { name: "Store", icon: <FiShoppingBag />, link: "/store" },
+      {
+        name: "Store",
+        icon: <FiShoppingBag />,
+        children: [
+          { name: "Store Profile", link: "/storeprofile" },
+          { name: "Store Settings", link: "/storesettings" },
+        ],
+      },
     ],
   },
   {

@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 
+
+
+
 import userroute from './routes/user.route.js';
 import authroute from './routes/auth.route.js';
 import careerroute from './routes/career.route.js';
@@ -13,6 +16,8 @@ import clientroute from './routes/client.route.js';
 import teamroute from './routes/team.route.js';
 import formroute from './routes/form.route.js'
 import productroute from './routes/product.route.js'
+import subuserroute from './routes/subuser.route.js'
+import storeroute from './routes/store.route.js'
 
 
 
@@ -44,6 +49,8 @@ app.use('/backend/client', clientroute);
 app.use('/backend/team', teamroute);
 app.use('/backend/form', formroute);
 app.use('/backend/product', productroute);
+app.use('/backend/subuser', subuserroute);
+app.use('/backend/store', storeroute);
 
 
 

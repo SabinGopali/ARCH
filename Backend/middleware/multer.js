@@ -26,6 +26,10 @@ const storage = multer.diskStorage({
       case "profile":
         subfolder = "profiles";
         break;
+      case "logo":
+      case "bgImage":
+        subfolder = "store-profile";
+        break;
     }
 
     const finalPath = path.join(rootUploadDir, subfolder);
@@ -39,7 +43,8 @@ const storage = multer.diskStorage({
   },
 
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + path.extname(file.originalname); // e.g. 1720453748710.jpg
+    // Use timestamp + original extension to avoid collisions
+    const uniqueSuffix = Date.now() + path.extname(file.originalname).toLowerCase();
     cb(null, uniqueSuffix);
   },
 });

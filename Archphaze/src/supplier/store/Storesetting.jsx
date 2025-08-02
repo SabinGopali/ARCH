@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Cropper from "react-easy-crop";
 import Slider from "@mui/material/Slider";
 import { Dialog, DialogActions, DialogContent } from "@mui/material";
-import Suppliersidebar from "./Suppliersidebar";
+import Suppliersidebar from "../Suppliersidebar";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
-// Image cropping utility
+// Utility for cropping image, returns a Blob
 function getCroppedImg(imageSrc, crop, zoom) {
   const createImage = (url) =>
     new Promise((resolve, reject) => {
@@ -39,20 +41,28 @@ function getCroppedImg(imageSrc, crop, zoom) {
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
-        resolve(URL.createObjectURL(blob));
+        resolve(blob);
       }, "image/jpeg");
     });
   });
 }
 
-export default function Store() {
-  const [storeName, setStoreName] = useState("Rocky Mountain High");
-  const [city, setCity] = useState("Nepal");
+export default function StoreProfile() {
+  const navigate = useNavigate();
+  const { currentUser } = useSelector((state) => state.user);
+
+  const [companyDescription, setCompanyDescription] = useState("");
+  const [city, setCity] = useState("");
   const [street, setStreet] = useState("");
   const [postCode, setPostCode] = useState("");
 
-  const [logo, setLogo] = useState(null);
-  const [bgImage, setBgImage] = useState(null);
+  // Store cropped files
+  const [logoFile, setLogoFile] = useState(null);
+  const [bgImageFile, setBgImageFile] = useState(null);
+
+  // For previewing images (createObjectURL)
+  const logoPreview = logoFile ? URL.createObjectURL(logoFile) : null;
+  const bgPreview = bgImageFile ? URL.createObjectURL(bgImageFile) : null;
 
   const [imageToCrop, setImageToCrop] = useState(null);
   const [croppingFor, setCroppingFor] = useState("logo");
@@ -61,7 +71,16 @@ export default function Store() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
-  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
   const [openingHours, setOpeningHours] = useState(
     daysOfWeek.map((day) => ({
       day,
@@ -70,6 +89,42 @@ export default function Store() {
       enabled: true,
     }))
   );
+
+  useEffect(() => {
+    async function fetchStoreProfile() {
+      try {
+        const res = await fetch("/api/store-profile");
+        if (!res.ok) throw new Error("Failed to fetch store profile");
+        const data = await res.json();
+        console.log("Fetched store profile data:", data);
+        if (data.storeProfile) {
+          const sp = data.storeProfile;
+          setCompanyDescription(sp.companyDescription || "");
+          setCity(sp.city || "");
+          setStreet(sp.street || "");
+          setPostCode(sp.postCode || "");
+
+          // If your backend stores image URLs, fetch and convert them to File is complicated,
+          // so for now we just leave logoFile and bgImageFile null. You can show image with img src URL.
+          // If you want to support editing previously uploaded images, you need more complex logic.
+
+          setOpeningHours(
+            sp.openingHours && sp.openingHours.length === 7
+              ? sp.openingHours
+              : daysOfWeek.map((day) => ({
+                  day,
+                  open: "10:00",
+                  close: "18:00",
+                  enabled: true,
+                }))
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching store profile:", err);
+      }
+    }
+    fetchStoreProfile();
+  }, []);
 
   const handleToggle = (day) => {
     setOpeningHours((prev) =>
@@ -105,30 +160,50 @@ export default function Store() {
   }, []);
 
   const handleCropSave = async () => {
-    const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels, zoom);
+    const croppedBlob = await getCroppedImg(imageToCrop, croppedAreaPixels, zoom);
+    const fileName = croppingFor === "logo" ? "logo.jpeg" : "background.jpeg";
+    const file = new File([croppedBlob], fileName, { type: "image/jpeg" });
+
     if (croppingFor === "logo") {
-      setLogo(croppedImage);
+      setLogoFile(file);
     } else {
-      setBgImage(croppedImage);
+      setBgImageFile(file);
     }
     setOpenCrop(false);
   };
 
-  const handleSave = () => {
-    const storeData = {
-      storeName,
-      city,
-      street,
-      postCode,
-      logo,
-      bgImage,
-      openingHours,
-    };
-    console.log("Saving store data:", storeData);
-    alert("Store profile saved! (check console for data)");
+  const handleSave = async () => {
+    const formData = new FormData();
+    formData.append("companyDescription", companyDescription);
+    formData.append("city", city);
+    formData.append("street", street);
+    formData.append("postCode", postCode);
+    formData.append("openingHours", JSON.stringify(openingHours));
+
+    if (logoFile) formData.append("logo", logoFile);
+    if (bgImageFile) formData.append("bgImage", bgImageFile);
+
+    try {
+      const response = await fetch("/api/store-profile", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Store profile saved response:", result);
+      alert("Store profile saved successfully!");
+    } catch (error) {
+      console.error("Error saving store profile:", error);
+      alert("Failed to save store profile.");
+    }
   };
 
-  const mapQuery = encodeURIComponent(`${street}, ${city}, ${postCode}`);
+  const fullAddress = [street, city, "Nepal", postCode].filter(Boolean).join(", ");
+  const mapQuery = encodeURIComponent(fullAddress || "Nepal");
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -140,15 +215,15 @@ export default function Store() {
         <main className="flex-1 shadow-md rounded-xl overflow-hidden bg-white p-6">
           <h2 className="text-xl font-semibold text-gray-800">Store Profile</h2>
           <p className="text-gray-500 mb-6">
-            Edit contact data that will be visible for your users on store’s profile
+            Edit contact data visible for your users on the store’s profile
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mb-8">
             {/* Logo Upload */}
             <div className="flex flex-col items-center justify-center gap-3 w-full">
               <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                {logo ? (
-                  <img src={logo} alt="Logo" className="h-full w-full object-cover" />
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo" className="h-full w-full object-cover" />
                 ) : (
                   <span className="text-lg font-bold text-gray-600">Logo</span>
                 )}
@@ -171,9 +246,9 @@ export default function Store() {
             {/* Background Image Upload */}
             <div className="flex flex-col items-center justify-center gap-3 w-full">
               <div className="w-full rounded-lg overflow-hidden bg-gray-100">
-                {bgImage ? (
+                {bgPreview ? (
                   <img
-                    src={bgImage}
+                    src={bgPreview}
                     alt="Background Preview"
                     className="w-full h-40 object-cover"
                   />
@@ -199,16 +274,33 @@ export default function Store() {
             </div>
           </div>
 
-          {/* Store Name + Address */}
-          <label className="block text-sm font-semibold mb-1 text-gray-600">Your Store Name</label>
-          <input
-            value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-4 py-2 mb-6"
+          {/* Company Description */}
+          <label className="block text-sm font-semibold mb-1 text-gray-600">
+            Company Description
+          </label>
+          <textarea
+            value={companyDescription}
+            onChange={(e) => setCompanyDescription(e.target.value)}
+            rows={4}
+            className="w-full border border-gray-300 rounded-md px-4 py-2 mb-6 resize-none"
+            placeholder="Write a brief description of your company"
           />
 
+          {/* Store Address */}
           <h3 className="font-bold text-sm text-gray-600 uppercase mb-2">Store Address</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* Country (read-only) */}
+            <div>
+              <label className="text-sm font-medium text-gray-500">Country</label>
+              <input
+                value="Nepal"
+                readOnly
+                disabled
+                className="w-full mt-1 border border-gray-300 rounded-md px-4 py-2 bg-gray-100 cursor-not-allowed"
+              />
+            </div>
+
+            {/* City */}
             <div>
               <label className="text-sm font-medium text-gray-500">City</label>
               <input
@@ -217,6 +309,8 @@ export default function Store() {
                 className="w-full mt-1 border border-gray-300 rounded-md px-4 py-2"
               />
             </div>
+
+            {/* Street */}
             <div>
               <label className="text-sm font-medium text-gray-500">Street</label>
               <input
@@ -225,6 +319,8 @@ export default function Store() {
                 className="w-full mt-1 border border-gray-300 rounded-md px-4 py-2"
               />
             </div>
+
+            {/* Post Code */}
             <div>
               <label className="text-sm font-medium text-gray-500">Post Code</label>
               <input
@@ -235,7 +331,7 @@ export default function Store() {
             </div>
           </div>
 
-          {/* Google Map */}
+          {/* Google Map Preview */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-600 mb-2">Map Preview</h4>
             <div className="border rounded-lg overflow-hidden h-64 w-full">
@@ -244,7 +340,7 @@ export default function Store() {
                 height="100%"
                 frameBorder="0"
                 style={{ border: 0 }}
-                src={`https://www.google.com/maps?q=${mapQuery || "Asia"}&output=embed`}
+                src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
                 allowFullScreen
                 loading="lazy"
                 title="Store Location Map"
@@ -294,7 +390,7 @@ export default function Store() {
         </main>
       </div>
 
-      {/* Cropping Dialog */}
+      {/* Cropper Dialog */}
       <Dialog open={openCrop} onClose={() => setOpenCrop(false)} maxWidth="sm" fullWidth>
         <DialogContent>
           <div className="relative w-full h-[300px] bg-black">
@@ -319,10 +415,16 @@ export default function Store() {
           </div>
         </DialogContent>
         <DialogActions>
-          <button onClick={() => setOpenCrop(false)} className="text-sm px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">
+          <button
+            onClick={() => setOpenCrop(false)}
+            className="text-sm px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+          >
             Cancel
           </button>
-          <button onClick={handleCropSave} className="text-sm px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white">
+          <button
+            onClick={handleCropSave}
+            className="text-sm px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white"
+          >
             Save
           </button>
         </DialogActions>

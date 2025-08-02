@@ -177,20 +177,8 @@ export default function Navbar() {
             <Link to="/profile" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
               👤 Profile
             </Link>
-            <Link to="/userdashboard" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-              📊 Dashboard
-            </Link>
-            <Link to="/sales-statistic" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-              📈 Sales Statistic
-            </Link>
-            <Link to="/my-product" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-              🛍 My 
-            </Link>
             <Link to="/order-history" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
               📦 Order History
-            </Link>
-            <Link to="/my-revenue" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-              💰 My Revenue
             </Link>
             <Link to="/customer-data" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
               🙂 Customer Data

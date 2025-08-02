@@ -72,7 +72,7 @@ import Supplierprofile from './supplier/Supplierprofile';
 import Businessinfo from './supplier/Businessinfo';
 import Accountinfo from './supplier/Accountinfo';
 import Order from './supplier/Order';
-import Store from './supplier/Store';
+import Store from './supplier/store/Storesetting';
 import Security from './supplier/Security';
 import Usermanagement from './supplier/Usermanagement';
 import AddUserForm from './supplier/Adduserform';
@@ -81,6 +81,8 @@ import SupplierProfile from './supplier/Supplierprofile';
 import ProductShowcase from './shop/Productshowcase';
 import Supplierprofileshop from './shop/Supplierprofileshop';
 import Updateproduct from './supplier/Updateproduct';
+import Updateuserform from './supplier/Updateuserform';
+import Storeprofile from './supplier/store/Storeprofile';
 
 
 
@@ -178,11 +180,13 @@ import Updateproduct from './supplier/Updateproduct';
             <Route path="/businessinfo" element={<Businessinfo/>} />
             <Route path="/accountinfo" element={<Accountinfo/>} />
             <Route path="/order" element={<Order/>} />
-            <Route path="/store" element={<Store/>} />
+            <Route path="/storesettings" element={<Store/>} />
+            <Route path="/storeprofile" element={<Storeprofile/>} />
             <Route path="/security" element={<Security/>} />
             <Route path="/usermanagement" element={<Usermanagement/>} />
             <Route path="/adduserform" element={<AddUserForm/>} />
             <Route path="/updateproduct/:id" element={<Updateproduct/>} />
+            <Route path="/updateuserform/:id" element={<Updateuserform/>} />
             
             {/* private route */}
             <Route element={<Privateroute />} >
