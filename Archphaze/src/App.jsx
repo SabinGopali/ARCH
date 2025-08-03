@@ -83,6 +83,7 @@ import Supplierprofileshop from './shop/Supplierprofileshop';
 import Updateproduct from './supplier/Updateproduct';
 import Updateuserform from './supplier/Updateuserform';
 import Storeprofile from './supplier/store/Storeprofile';
+import Updatestoresetting from './supplier/store/Updatestoresetting';
 
 
 
@@ -95,7 +96,6 @@ import Storeprofile from './supplier/store/Storeprofile';
 
 
   export default function App() {
-
     return (
       <div>
         <Router>
@@ -187,6 +187,7 @@ import Storeprofile from './supplier/store/Storeprofile';
             <Route path="/adduserform" element={<AddUserForm/>} />
             <Route path="/updateproduct/:id" element={<Updateproduct/>} />
             <Route path="/updateuserform/:id" element={<Updateuserform/>} />
+            <Route path="/updatestoresetting/:id" element={<Updatestoresetting/>} />
             
             {/* private route */}
             <Route element={<Privateroute />} >

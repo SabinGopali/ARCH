@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { FiEdit2 } from "react-icons/fi";
 import Suppliersidebar from "../Suppliersidebar";
+import { Link, useNavigate } from "react-router-dom";
 
 const Storeprofile = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [supplier, setSupplier] = useState(null);
+  const [storeProfile, setStoreProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSupplierData = async () => {
@@ -35,42 +37,87 @@ const Storeprofile = () => {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    const fetchStoreProfile = async () => {
+      if (!currentUser?._id) return;
+
+      try {
+        const res = await fetch(`/backend/store/get/${currentUser._id}`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setStoreProfile(data.storeProfile);
+        } else {
+          console.error(data.message || "Error fetching store profile");
+          setStoreProfile(null);
+        }
+      } catch (error) {
+        console.error("Error fetching store profile:", error);
+        setStoreProfile(null);
+      }
+    };
+
+    fetchStoreProfile();
+  }, [currentUser]);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="p-4 md:p-8 lg:flex lg:gap-8 relative z-10">
-        {/* Sidebar */}
         <aside className="hidden lg:block w-62 sticky top-6 self-start">
           <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 max-w-7xl mx-auto space-y-6 px-4 md:px-0">
-          {/* Banner */}
           <section className="bg-white rounded-xl p-6 border relative">
             <div className="relative h-56 md:h-64 rounded-xl overflow-hidden bg-gray-300">
               <img
-                src="https://source.unsplash.com/1200x400/?office,store"
+                src={
+                  storeProfile?.bgImage
+                    ? `http://localhost:3000/${storeProfile.bgImage}`
+                    : "https://source.unsplash.com/1200x400/?office,store"
+                }
                 alt="Banner"
                 className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://source.unsplash.com/1200x400/?office,store";
+                }}
               />
             </div>
 
             <div className="absolute bottom-6 left-6 flex items-center gap-6 bg-white rounded-xl px-6 py-3 shadow-lg border border-gray-200">
-              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-medium border-4 border-white shadow">
-                Image
+              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow overflow-hidden">
+                {storeProfile?.logo ? (
+                  <img
+                    src={`http://localhost:3000/${storeProfile.logo}`}
+                    alt="Store Logo"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://via.placeholder.com/80?text=No+Logo";
+                    }}
+                  />
+                ) : (
+                  <span className="text-gray-500 text-sm font-medium">No Image</span>
+                )}
               </div>
               <div className="text-gray-800">
-                <h2 className="text-2xl font-semibold">{supplier?.company_name || "Loading..."}</h2>
+                <h2 className="text-2xl font-semibold">
+                  {supplier?.company_name || "Loading..."}
+                </h2>
                 <p className="text-sm">{supplier?.isAdmin ? "Admin" : "Supplier"}</p>
               </div>
             </div>
           </section>
 
-          {/* Personal Info */}
+         
+
           <section className="bg-white rounded-xl p-6 border">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Personal Information
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
 
             {loading ? (
               <p className="text-gray-500">Loading...</p>
@@ -109,59 +156,65 @@ const Storeprofile = () => {
               <p className="text-gray-500 text-sm">No supplier data found.</p>
             )}
           </section>
+           
+            <div className="flex justify-end">
+              <Link to={`/updatestoresetting/${currentUser._id || ""}`}>
+  <button
+    disabled={!currentUser._id}
+    className={`font-semibold py-2 px-4 rounded-md shadow ${
+      currentUser._id
+        ? "bg-blue-600 hover:bg-blue-700 text-white"
+        : "bg-gray-400 cursor-not-allowed text-gray-200"
+    }`}
+  >
+    Update Store Profile
+  </button>
+</Link>
+            </div>
+          
 
-          {/* Keep other sections unchanged */}
-          {/* Description */}
           <section className="bg-white rounded-xl p-6 border">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Description</h3>
             <p className="text-gray-700 text-sm leading-relaxed">
-              {supplier?.description || "No description available."}
+              {storeProfile?.companyDescription || "No description available."}
             </p>
           </section>
 
-          {/* Address */}
           <section className="bg-white rounded-xl p-6 border">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
               <div>
                 <p className="text-gray-500">Country</p>
-                <p className="font-medium">{supplier?.country || "N/A"}</p>
+                <p className="font-medium">{storeProfile?.country || "Nepal"}</p>
               </div>
               <div>
                 <p className="text-gray-500">City</p>
-                <p className="font-medium">{supplier?.city || "N/A"}</p>
+                <p className="font-medium">{storeProfile?.city || "N/A"}</p>
               </div>
               <div>
                 <p className="text-gray-500">Street</p>
-                <p className="font-medium">{supplier?.street || "N/A"}</p>
+                <p className="font-medium">{storeProfile?.street || "N/A"}</p>
               </div>
               <div>
                 <p className="text-gray-500">Postal Code</p>
-                <p className="font-medium">{supplier?.postalCode || "N/A"}</p>
+                <p className="font-medium">{storeProfile?.postCode || "N/A"}</p>
               </div>
             </div>
           </section>
 
-          {/* Opening Hours */}
           <section className="bg-white rounded-xl p-6 border">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Opening Hours</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-              {[  
-                { day: "Monday", open: "09:00 AM", close: "06:00 PM", openStatus: true },
-                { day: "Tuesday", open: "09:00 AM", close: "06:00 PM", openStatus: true },
-                { day: "Wednesday", open: "09:00 AM", close: "06:00 PM", openStatus: true },
-                { day: "Thursday", open: "09:00 AM", close: "06:00 PM", openStatus: true },
-                { day: "Friday", open: "09:00 AM", close: "06:00 PM", openStatus: true },
-                { day: "Saturday", open: "", close: "", openStatus: false },
-                { day: "Sunday", open: "", close: "", openStatus: false },
-              ].map(({ day, open, close, openStatus }) => (
+              {storeProfile?.openingHours?.map(({ day, open, close, enabled }) => (
                 <div
                   key={day}
                   className="flex justify-between items-center border px-4 py-2 rounded-md bg-gray-50"
                 >
                   <span className="font-medium">{day}</span>
-                  {openStatus ? (
-                    <span className="text-green-600">{open} – {close}</span>
+                  {enabled ? (
+                    <span className="text-green-600">
+                      {open} – {close}
+                    </span>
                   ) : (
                     <span className="text-gray-400 italic">Closed</span>
                   )}

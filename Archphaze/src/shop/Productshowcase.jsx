@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FiChevronLeft, FiChevronRight, FiX } from "react-icons/fi";
+import React, { useEffect, useState, useRef } from "react";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { MdMenu } from "react-icons/md";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion"; // ✅ Framer Motion
+import { motion, AnimatePresence } from "framer-motion";
+import { useSelector } from "react-redux";
 
 const categories = [
   {
@@ -71,13 +72,53 @@ const featuredProducts = [
 ];
 
 export default function Productshowcase() {
+  const { currentUser } = useSelector((state) => state.user);
+
+  // Banner Data States
+  const [storeProfile, setStoreProfile] = useState(null);
+  const [supplier, setSupplier] = useState(null);
+  const [loadingBanner, setLoadingBanner] = useState(true);
+
+  // Filter states
   const [selectedCategory, setSelectedCategory] = useState("Mobiles");
   const [selectedPrices, setSelectedPrices] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Featured carousel
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
   const carouselRef = useRef(null);
 
+  // Fetch banner data on mount or user change
+  useEffect(() => {
+    if (!currentUser?._id) return;
+
+    async function fetchBannerData() {
+      try {
+        const supRes = await fetch("/backend/user/supplier-users", {
+          credentials: "include",
+        });
+        const supData = await supRes.json();
+        if (supRes.ok) setSupplier(supData.supplier);
+        else console.error(supData.message);
+
+        const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
+          credentials: "include",
+        });
+        const storeData = await storeRes.json();
+        if (storeRes.ok) setStoreProfile(storeData.storeProfile);
+        else console.error(storeData.message);
+      } catch (error) {
+        console.error("Error fetching banner data:", error);
+      } finally {
+        setLoadingBanner(false);
+      }
+    }
+
+    fetchBannerData();
+  }, [currentUser]);
+
+  // Featured product auto-scroll
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeatureIndex((prev) => (prev + 1) % featuredProducts.length);
@@ -85,6 +126,7 @@ export default function Productshowcase() {
     return () => clearInterval(interval);
   }, []);
 
+  // Filtered products based on filters
   const filteredProducts = products.filter((product) => {
     if (selectedCategory && product.category !== selectedCategory) return false;
     if (
@@ -96,6 +138,7 @@ export default function Productshowcase() {
     return true;
   });
 
+  // Toggle filters
   const togglePrice = (priceRange) => {
     setSelectedPrices((prev) =>
       prev.find((p) => p.id === priceRange.id)
@@ -110,6 +153,7 @@ export default function Productshowcase() {
     );
   };
 
+  // Carousel scroll
   const scrollLeft = () => {
     carouselRef.current?.scrollBy({ left: -320, behavior: "smooth" });
   };
@@ -124,19 +168,59 @@ export default function Productshowcase() {
     setSelectedBrands([]);
   };
 
+  if (loadingBanner) {
+    return <div className="text-center py-20 text-lg">Loading banner...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pt-6 pb-16 px-4 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="bg-gradient-to-l from-lime-500 via-emerald-500 to-teal-500 py-6 px-6 md:px-12 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto rounded-b-3xl shadow-lg mb-10">
-        <div className="text-center md:text-left mb-4 md:mb-0">
-          <h1 className="text-white font-extrabold text-3xl sm:text-4xl">SUPPLIER PROFILE</h1>
-          <p className="text-white text-sm sm:text-base mt-2 opacity-90">Store Information & Contact</p>
+      {/* Banner */}
+      <div className="relative py-10 px-6 md:px-12 max-w-7xl mx-auto rounded-3xl shadow-lg mb-10 mt-10 overflow-hidden">
+        <img
+          src={
+            storeProfile?.bgImage
+              ? `http://localhost:3000/${storeProfile.bgImage}`
+              : "https://via.placeholder.com/1200x300?text=Store+Banner"
+          }
+          alt="Store Banner"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "https://via.placeholder.com/1200x300?text=Store+Banner";
+          }}
+        />
+
+        <div className="relative z-10 max-w-5xl mx-auto bg-black/60 rounded-2xl px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-6 shadow-lg">
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
+              <img
+                src={
+                  storeProfile?.logo
+                    ? `http://localhost:3000/${storeProfile.logo}`
+                    : "https://via.placeholder.com/80x80?text=Logo"
+                }
+                alt="Company Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-white font-extrabold text-2xl md:text-3xl leading-snug">
+                {supplier?.company_name || "Supplier Store"}
+              </h1>
+              <p className="text-white text-sm md:text-base opacity-90 mt-1">
+                📍 {storeProfile?.city || "N/A"}, {storeProfile?.street || ""}
+              </p>
+              <p className="text-white text-sm md:text-base opacity-90">
+                📧 {supplier?.email || "N/A"}
+              </p>
+            </div>
+          </div>
+          <Link to="/supplierproduct">
+            <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
+              Back to Store
+            </button>
+          </Link>
         </div>
-        <Link to="/supplierproduct">
-          <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300 w-full sm:w-auto">
-            Back to Store
-          </button>
-        </Link>
       </div>
 
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
@@ -144,6 +228,7 @@ export default function Productshowcase() {
           <button
             onClick={() => setSidebarOpen(true)}
             className="fixed top-1/2 left-0 -translate-y-1/2 bg-pink-600 text-white px-3 py-2 rounded-r-full shadow-lg z-40 lg:hidden hover:bg-pink-700 transition"
+            aria-label="Open Filters"
           >
             <MdMenu className="w-5 h-5" />
           </button>
@@ -159,12 +244,16 @@ export default function Productshowcase() {
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden absolute top-4 right-4 text-gray-700 bg-white shadow rounded-lg p-2 hover:bg-gray-100 transition"
+            aria-label="Close Filters"
           >
-            <FiX className="w-6 h-6" />
+            <FiChevronLeft className="w-6 h-6" />
           </button>
 
           <h2 className="text-sm font-semibold text-gray-900 uppercase mb-5">Filters</h2>
-          <button onClick={resetFilters} className="mb-6 bg-pink-600 text-white px-4 py-2 rounded w-full hover:bg-pink-700 transition">
+          <button
+            onClick={resetFilters}
+            className="mb-6 bg-pink-600 text-white px-4 py-2 rounded w-full hover:bg-pink-700 transition"
+          >
             Reset Filters
           </button>
 
@@ -179,7 +268,9 @@ export default function Productshowcase() {
                     <li
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`cursor-pointer ${selectedCategory === cat ? "font-bold text-pink-600" : "hover:text-pink-600"}`}
+                      className={`cursor-pointer ${
+                        selectedCategory === cat ? "font-bold text-pink-600" : "hover:text-pink-600"
+                      }`}
                     >
                       {cat}
                     </li>
@@ -223,12 +314,16 @@ export default function Productshowcase() {
         </aside>
 
         {sidebarOpen && (
-          <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-white/40 backdrop-blur-sm z-20 lg:hidden" />
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-white/40 backdrop-blur-sm z-20 lg:hidden"
+            aria-hidden="true"
+          />
         )}
 
-        {/* Main */}
+        {/* Main Content */}
         <main className="flex-1">
-          {/* 🔁 Featured Product Carousel with Framer Motion */}
+          {/* Featured Product Carousel */}
           <div className="relative overflow-hidden bg-pink-100 rounded-xl px-6 py-10 mb-12 shadow-sm">
             <div className="flex items-center justify-center md:justify-start gap-6">
               <AnimatePresence mode="wait">
@@ -261,13 +356,13 @@ export default function Productshowcase() {
             </div>
           </div>
 
-          {/* Deals */}
+          {/* Deals Header */}
           <div className="flex justify-between items-center mb-6 px-4 sm:px-0">
             <h3 className="font-bold uppercase text-gray-900 tracking-wide text-lg sm:text-xl">Super Deals</h3>
             <button className="bg-pink-600 text-white px-5 py-2 rounded hover:bg-pink-700 transition">VIEW ALL</button>
           </div>
 
-          {/* Product Carousel */}
+          {/* Products Carousel */}
           <div className="relative">
             <button
               onClick={scrollLeft}

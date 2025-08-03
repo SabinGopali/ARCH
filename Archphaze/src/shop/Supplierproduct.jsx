@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FiSearch } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
 
 const categories = ["All", "Headphones", "Health", "Supplements", "Gadgets"];
 
@@ -40,8 +41,43 @@ const products = [
 ];
 
 export default function Supplierproduct() {
+  const { currentUser } = useSelector((state) => state.user);
+
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [storeProfile, setStoreProfile] = useState(null);
+  const [supplier, setSupplier] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser?._id) return;
+
+    async function fetchData() {
+      try {
+        // Fetch supplier data
+        const supRes = await fetch("/backend/user/supplier-users", {
+          credentials: "include",
+        });
+        const supData = await supRes.json();
+        if (supRes.ok) setSupplier(supData.supplier);
+        else console.error(supData.message);
+
+        // Fetch store profile
+        const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
+          credentials: "include",
+        });
+        const storeData = await storeRes.json();
+        if (storeRes.ok) setStoreProfile(storeData.storeProfile);
+        else console.error(storeData.message);
+      } catch (error) {
+        console.error("Error fetching store or supplier data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [currentUser]);
 
   const filteredProducts = products.filter(
     (item) =>
@@ -49,30 +85,71 @@ export default function Supplierproduct() {
       item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (loading) {
+    return <div className="text-center py-20 text-lg">Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-white pt-16">
-      {/* Header */}
-      <div className="bg-gradient-to-l from-lime-500 via-emerald-500 to-teal-500 py-8 px-6 md:px-12 flex justify-between items-center max-w-7xl mx-auto rounded-b-3xl shadow-lg mb-8">
-        <div>
-          <h1 className="text-white font-extrabold text-3xl md:text-4xl leading-snug">
-            FAST DELIVERY
-          </h1>
-          <p className="text-white text-sm md:text-base mt-2 opacity-90">
-            472 Followers | 88% Positive Ratings
-          </p>
+      {/* Header with Background Image Banner */}
+      <div className="relative py-10 px-6 md:px-12 max-w-7xl mx-auto rounded-3xl shadow-lg mb-8 overflow-hidden">
+        <img
+          src={
+            storeProfile?.bgImage
+              ? `http://localhost:3000/${storeProfile.bgImage}`
+              : "https://via.placeholder.com/1200x300?text=Store+Banner"
+          }
+          alt="Store Banner"
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "https://via.placeholder.com/1200x300?text=Store+Banner";
+          }}
+        />
+
+        {/* Dark translucent container for company info */}
+        <div className="relative z-10 max-w-5xl mx-auto bg-black/60 rounded-2xl px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-6 shadow-lg">
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
+              <img
+                src={
+                  storeProfile?.logo
+                    ? `http://localhost:3000/${storeProfile.logo}`
+                    : "https://via.placeholder.com/80x80?text=Logo"
+                }
+                alt="Company Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-white font-extrabold text-2xl md:text-3xl leading-snug">
+                {supplier?.company_name || "FAST DELIVERY"}
+              </h1>
+              <p className="text-white text-sm md:text-base opacity-90 mt-1">
+                📍 {storeProfile?.city || "Kathmandu"}, {storeProfile?.street || "Nepal"}
+              </p>
+              <p className="text-white text-sm md:text-base opacity-90">
+                📧 {supplier?.email || "N/A"}
+              </p>
+            </div>
+          </div>
+
+          {/* Profile Button */}
+          <Link to="/supplierprofileshop">
+            <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
+              Check Store Profile
+            </button>
+          </Link>
         </div>
-        <Link to="/supplierprofileshop">
-          <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
-            Check Store Profile
-          </button>
-        </Link>
       </div>
 
       {/* Tabs */}
       <div className="flex space-x-6 px-6 md:px-12 border-b py-4 text-sm md:text-base font-medium max-w-7xl mx-auto">
-        <button className="text-orange-600 border-b-2 border-orange-600 pb-1">Store</button>
+        <button className="text-orange-600 border-b-2 border-orange-600 pb-1">
+          Store
+        </button>
         <Link to="/productshowcase">
-        <button className="text-gray-500 hover:text-orange-500">Products</button>
+          <button className="text-gray-500 hover:text-orange-500">Products</button>
         </Link>
       </div>
 

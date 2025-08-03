@@ -3,6 +3,8 @@ import bcryptjs from "bcryptjs";
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
 
+
+
 export const signup = async (req, res, next) => {
   const {
     username,
@@ -71,28 +73,32 @@ export const signin = async (req, res, next) => {
       return next(errorHandler(400, 'Invalid password'));
     }
 
-    const token = jwt.sign(
-      {
-        id: validUser._id,
-        isAdmin: validUser.isAdmin,
-        isSupplier: validUser.isSupplier,
-      },
-      process.env.JWT_SECRET
-    );
+    const payload = {
+      id: validUser._id.toString(),
+      isAdmin: validUser.isAdmin,
+      isSupplier: validUser.isSupplier,
+      username: validUser.username,
+    };
 
-    const { password: pass, ...rest } = validUser._doc;
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: '1d', // optional, good practice
+    });
+
+    const { password: pass, ...userWithoutPassword } = validUser._doc;
 
     res
       .status(200)
       .cookie('access_token', token, {
         httpOnly: true,
         // secure: true, // enable in production
+    maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
       })
-      .json(rest);
+      .json(userWithoutPassword);
   } catch (error) {
     next(error);
   }
 };
+
 
 export const google = async (req, res, next) => {
   const { email, name, googlePhotoUrl } = req.body;
@@ -102,13 +108,15 @@ export const google = async (req, res, next) => {
     if (user) {
       const token = jwt.sign(
         { id: user._id, isAdmin: user.isAdmin, isSupplier: user.isSupplier },
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' } // 1 day token expiry
       );
       const { password, ...rest } = user._doc;
       res
         .status(200)
         .cookie('access_token', token, {
           httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         })
         .json(rest);
     } else {
@@ -124,19 +132,24 @@ export const google = async (req, res, next) => {
         email,
         password: hashedPassword,
         profilePicture: googlePhotoUrl,
-        isSupplier: false, // you can adjust this based on your app logic
+        isSupplier: false,
       });
+
       await newUser.save();
 
       const token = jwt.sign(
         { id: newUser._id, isAdmin: newUser.isAdmin, isSupplier: newUser.isSupplier },
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' } // 1 day token expiry
       );
+
       const { password, ...rest } = newUser._doc;
+
       res
         .status(200)
         .cookie('access_token', token, {
           httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         })
         .json(rest);
     }
@@ -144,3 +157,4 @@ export const google = async (req, res, next) => {
     next(error);
   }
 };
+

@@ -22,6 +22,7 @@ import storeroute from './routes/store.route.js'
 
 
 
+
 dotenv.config();
 
 mongoose.connect(process.env.MONGO)
@@ -51,6 +52,7 @@ app.use('/backend/form', formroute);
 app.use('/backend/product', productroute);
 app.use('/backend/subuser', subuserroute);
 app.use('/backend/store', storeroute);
+
 
 
 

@@ -1,39 +1,57 @@
-import express from "express";
-import upload from "../middleware/multer.js";
-import {
-  createStoreProfile,
-  updateStoreProfile,
-  getStoreProfile,
-  deleteStoreProfile,
-} from "../controllers/store.controller.js";
-import { verifyToken } from "../utils/verifyuser.js";
+import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { verifyToken } from '../utils/verifyuser.js';
+import { 
+  getStoreProfile, 
+  createOrUpdateStoreProfile, 
+  deleteStoreProfile 
+} from '../controllers/store.controller.js';
 
 const router = express.Router();
 
-router.get("/", getStoreProfile);
+// Ensure upload folder exists
+const uploadFolder = 'uploads/store';
+if (!fs.existsSync(uploadFolder)) {
+  fs.mkdirSync(uploadFolder, { recursive: true });
+}
 
-// Create profile route
-router.post(
-  "/create",
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadFolder);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+// Routes
+router.get('/get/:id', verifyToken, getStoreProfile);
+router.post('/create', 
   verifyToken,
   upload.fields([
     { name: "logo", maxCount: 1 },
     { name: "bgImage", maxCount: 1 },
   ]),
-  createStoreProfile
+  createOrUpdateStoreProfile
 );
-
-// Update profile route
-router.put(
-  "/",
-  verifyToken,
-  upload.fields([
-    { name: "logo", maxCount: 1 },
-    { name: "bgImage", maxCount: 1 },
-  ]),
-  updateStoreProfile
-);
-
-router.delete("/:userId", verifyToken, deleteStoreProfile);
+router.delete('/store-profile', verifyToken, deleteStoreProfile);
 
 export default router;

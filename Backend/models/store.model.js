@@ -1,26 +1,58 @@
-import mongoose from "mongoose";
+  import mongoose from 'mongoose';
 
-const storeProfileSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: "User",
-    unique: true, // Each user has only one profile
-  },
-  companyDescription: String,
-  city: String,
-  street: String,
-  postCode: String,
-  openingHours: [
-    {
-      day: String,
-      open: String,
-      close: String,
-      enabled: Boolean,
+  const storeProfileSchema = new mongoose.Schema({
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      unique: true
     },
-  ],
-  logo: String,
-  bgImage: String,
-}, { timestamps: true });
+    companyDescription: {
+      type: String,
+      default: ''
+    },
+    city: {
+      type: String,
+      default: ''
+    },
+    street: {
+      type: String,
+      default: ''
+    },
+    postCode: {
+      type: String,
+      default: ''
+    },
+    openingHours: [{
+      day: {
+        type: String,
+        required: true
+      },
+      open: {
+        type: String,
+        required: true
+      },
+      close: {
+        type: String,
+        required: true
+      },
+      enabled: {
+        type: Boolean,
+        default: true
+      }
+    }],
+    logo: {
+      type: String,
+      default: ''
+    },
+    bgImage: {
+      type: String,
+      default: ''
+    }
+  }, {
+    timestamps: true
+  });
 
-export default mongoose.model("StoreProfile", storeProfileSchema);
+  const StoreProfile = mongoose.model('StoreProfile', storeProfileSchema);
+
+  export default StoreProfile;
