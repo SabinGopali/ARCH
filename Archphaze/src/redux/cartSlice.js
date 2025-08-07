@@ -12,6 +12,11 @@ const cartSlice = createSlice({
     setCurrentUserId: (state, action) => {
       const userId = action.payload;
       
+      // Ensure cartsByUser exists
+      if (!state.cartsByUser) {
+        state.cartsByUser = {};
+      }
+      
       // Validate userId
       if (userId && (typeof userId === 'string' || typeof userId === 'number')) {
         state.currentUserId = String(userId); // Ensure consistent string format
@@ -39,6 +44,11 @@ const cartSlice = createSlice({
       if (!newItem || !newItem.productId || !newItem.name || !newItem.price) {
         console.warn('Cannot add to cart: missing required fields', newItem);
         return;
+      }
+
+      // Ensure cartsByUser exists
+      if (!state.cartsByUser) {
+        state.cartsByUser = {};
       }
 
       // Ensure cart exists for user
@@ -98,6 +108,11 @@ const cartSlice = createSlice({
         return;
       }
 
+      // Ensure cartsByUser exists
+      if (!state.cartsByUser) {
+        state.cartsByUser = {};
+      }
+
       const userCart = state.cartsByUser[userId] || [];
       const itemIndex = userCart.findIndex((item) => item.productId === productId);
       
@@ -124,6 +139,11 @@ const cartSlice = createSlice({
         return;
       }
 
+      // Ensure cartsByUser exists
+      if (!state.cartsByUser) {
+        state.cartsByUser = {};
+      }
+
       if (state.cartsByUser[userId]) {
         const initialLength = state.cartsByUser[userId].length;
         state.cartsByUser[userId] = state.cartsByUser[userId].filter(
@@ -140,6 +160,11 @@ const cartSlice = createSlice({
     clearCart: (state, action) => {
       const userIdToClear = action.payload || state.currentUserId;
       
+      // Ensure cartsByUser exists
+      if (!state.cartsByUser) {
+        state.cartsByUser = {};
+      }
+      
       if (userIdToClear && state.cartsByUser[userIdToClear]) {
         state.cartsByUser[userIdToClear] = [];
       } else if (!userIdToClear) {
@@ -150,7 +175,7 @@ const cartSlice = createSlice({
     // New action to remove items that are out of stock
     removeOutOfStockItems: (state) => {
       const userId = state.currentUserId;
-      if (!userId || !state.cartsByUser[userId]) return;
+      if (!userId || !state.cartsByUser || !state.cartsByUser[userId]) return;
       
       state.cartsByUser[userId] = state.cartsByUser[userId].filter(
         (item) => item.stock > 0
@@ -163,6 +188,11 @@ const cartSlice = createSlice({
       const userId = state.currentUserId;
       
       if (!userId || !productId || !updates) return;
+      
+      // Ensure cartsByUser exists
+      if (!state.cartsByUser) {
+        state.cartsByUser = {};
+      }
       
       const userCart = state.cartsByUser[userId] || [];
       const itemIndex = userCart.findIndex((item) => item.productId === productId);
