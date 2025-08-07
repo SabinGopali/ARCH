@@ -1,6 +1,7 @@
   import React, { lazy, Suspense } from 'react';
   import Navbar from './components/Navbar';
   import { Route, BrowserRouter as Router, Routes  } from "react-router-dom";
+  import { useCartSync } from './utils/useCartSync';
   // import Index from './components/Index';
   import Services from './components/Services';
   import Whyus from './components/Whyus';
@@ -96,6 +97,9 @@ import Updatestoresetting from './supplier/store/Updatestoresetting';
 
 
   export default function App() {
+    // Sync cart with current user
+    useCartSync();
+    
     return (
       <div>
         <Router>

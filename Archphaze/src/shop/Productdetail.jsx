@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FaStar } from "react-icons/fa";
 import { AiOutlineShoppingCart } from "react-icons/ai";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart } from "../redux/cartSlice";
 import logo from "/logo.webp";
 import arch from "/archphaze.webp";
 
@@ -11,6 +13,36 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState("M");
   const ratingRef = useRef(null);
   const isInView = useInView(ratingRef, { once: true, margin: "-100px" });
+  
+  const dispatch = useDispatch();
+  const currentUser = useSelector((state) => state.user?.currentUser);
+  
+  // Sample product data - in a real app, this would come from props or API
+  const product = {
+    productId: "sample-product-1",
+    name: "Cotton Blend Hoodie",
+    price: 45.99,
+    image: logo,
+    size: selectedSize,
+  };
+  
+  const handleAddToCart = () => {
+    if (!currentUser) {
+      alert("Please sign in to add items to cart");
+      return;
+    }
+    
+    dispatch(addToCart({
+      productId: product.productId,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      size: selectedSize,
+      qty: 1,
+    }));
+    
+    alert("Item added to cart!");
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-sans text-gray-800">
@@ -76,7 +108,10 @@ export default function ProductPage() {
             </div>
 
             {/* Add to Cart Button */}
-            <button className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:opacity-90 transition-all">
+            <button 
+              className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:opacity-90 transition-all"
+              onClick={handleAddToCart}
+            >
               <AiOutlineShoppingCart size={20} /> Add to Cart
             </button>
 
