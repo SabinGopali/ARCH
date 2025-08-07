@@ -84,6 +84,7 @@ import Updateproduct from './supplier/Updateproduct';
 import Updateuserform from './supplier/Updateuserform';
 import Storeprofile from './supplier/store/Storeprofile';
 import Updatestoresetting from './supplier/store/Updatestoresetting';
+import CartInitializer from './components/CartInitializer';
 
 
 
@@ -100,6 +101,7 @@ import Updatestoresetting from './supplier/store/Updatestoresetting';
       <div>
         <Router>
           <ScrollToTop/>
+          <CartInitializer />
            <Navbar />
           <Suspense fallback={<Preloader/>}>
           <Routes>
