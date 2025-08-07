@@ -22,8 +22,10 @@ export default function ProductPage() {
 
   // Set current user id in cart slice on user change
   useEffect(() => {
-    if (currentUser && currentUser.id) {
-      dispatch(setCurrentUserId(currentUser.id));
+    if (currentUser && (currentUser.id || currentUser._id)) {
+      const userId = currentUser.id || currentUser._id;
+      console.log('ProductPage: Setting currentUserId:', userId);
+      dispatch(setCurrentUserId(userId));
     }
   }, [currentUser, dispatch]);
 
@@ -107,6 +109,12 @@ export default function ProductPage() {
 
     if (!selectedProduct || selectedProduct.stock === 0) return;
 
+    // Ensure user ID is set in cart
+    const userId = currentUser.id || currentUser._id;
+    if (userId) {
+      dispatch(setCurrentUserId(userId));
+    }
+
     const cartItem = {
       productId: selectedProduct._id || selectedProduct.id,
       name: selectedProduct.productName,
@@ -117,6 +125,7 @@ export default function ProductPage() {
       stock: selectedProduct.stock,
     };
 
+    console.log('Adding item to cart:', cartItem);
     dispatch(addToCart(cartItem));
     
     // Show success message

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MdDelete } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
-import { updateQty, removeFromCart, addToCart } from "../redux/cartSlice";
+import { updateQty, removeFromCart, addToCart, setCurrentUserId } from "../redux/cartSlice";
 import { Link } from "react-router-dom";
 
 function getImageUrl(imagePath) {
@@ -15,20 +15,51 @@ function getImageUrl(imagePath) {
 }
 
 export default function ShoppingCart() {
+  const dispatch = useDispatch();
+  
+  // Get current user and cart state
+  const currentUser = useSelector((state) => state.user?.currentUser);
+  const currentUserId = useSelector((state) => state.cart?.currentUserId);
+  const cartState = useSelector((state) => state.cart);
+  
+  // Get products from cart
   const products = useSelector((state) => {
     const cartsByUser = state.cart?.cartsByUser || {};
-    const currentUserId = state.cart?.currentUserId;
-    return cartsByUser?.[currentUserId] || [];
+    const userId = state.cart?.currentUserId;
+    return cartsByUser?.[userId] || [];
   });
 
-  const currentUserId = useSelector((state) => state.cart?.currentUserId);
-  const currentUser = useSelector((state) => state.user?.currentUser);
-
-  const dispatch = useDispatch();
-
   const [selectedIndexes, setSelectedIndexes] = useState([]);
+  const [debugMode, setDebugMode] = useState(false);
 
-  const couponDiscountValue = 50; // Changed to Rs. 50 for consistency
+  const couponDiscountValue = 50;
+
+  // Set current user ID when user changes
+  useEffect(() => {
+    if (currentUser && currentUser.id) {
+      console.log('Setting currentUserId:', currentUser.id);
+      dispatch(setCurrentUserId(currentUser.id));
+    } else if (currentUser && currentUser._id) {
+      console.log('Setting currentUserId:', currentUser._id);
+      dispatch(setCurrentUserId(currentUser._id));
+    } else if (!currentUser) {
+      console.log('No user logged in, clearing currentUserId');
+      dispatch(setCurrentUserId(null));
+    }
+  }, [currentUser, dispatch]);
+
+  // Debug logging
+  useEffect(() => {
+    if (debugMode) {
+      console.log('Cart Debug Info:', {
+        currentUser,
+        currentUserId,
+        cartState,
+        products,
+        productsCount: products.length
+      });
+    }
+  }, [currentUser, currentUserId, cartState, products, debugMode]);
 
   const toggleSelection = (index) => {
     setSelectedIndexes((prev) =>
@@ -44,7 +75,7 @@ export default function ShoppingCart() {
     if (isNaN(currentQty)) return;
 
     const newQty = Math.max(1, currentQty + delta);
-    const maxQty = product.stock || 99; // Use product stock or default to 99
+    const maxQty = product.stock || 99;
     const finalQty = Math.min(newQty, maxQty);
     
     dispatch(updateQty({ productId: product.productId, qty: finalQty }));
@@ -82,6 +113,15 @@ export default function ShoppingCart() {
 
   // Function to add sample products for testing
   const addSampleProducts = () => {
+    console.log('Adding sample products...');
+    
+    // If no user is logged in, create a test user ID
+    if (!currentUserId) {
+      const testUserId = 'test-user-' + Date.now();
+      console.log('Creating test user ID:', testUserId);
+      dispatch(setCurrentUserId(testUserId));
+    }
+
     const sampleProducts = [
       {
         productId: 'sample1',
@@ -110,14 +150,15 @@ export default function ShoppingCart() {
     ];
 
     sampleProducts.forEach(product => {
+      console.log('Adding product to cart:', product);
       dispatch(addToCart(product));
     });
 
-    // Auto-select all added items
+    // Auto-select all added items after a delay
     setTimeout(() => {
       const newIndexes = Array.from({ length: sampleProducts.length }, (_, i) => i);
       setSelectedIndexes(newIndexes);
-    }, 100);
+    }, 200);
   };
 
   const selectAllItems = () => {
@@ -128,9 +169,45 @@ export default function ShoppingCart() {
     }
   };
 
+  // Function to manually set a test user (for debugging)
+  const setTestUser = () => {
+    const testUserId = 'test-user-123';
+    dispatch(setCurrentUserId(testUserId));
+    console.log('Set test user ID:', testUserId);
+  };
+
   return (
     <div className="min-h-screen bg-white px-4 md:px-12 py-8 text-black max-w-7xl mx-auto">
-      <h2 className="text-3xl font-semibold mb-6">Shopping Cart</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-semibold">Shopping Cart</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setDebugMode(!debugMode)}
+            className="px-3 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
+          >
+            {debugMode ? 'Hide Debug' : 'Show Debug'}
+          </button>
+          <button
+            onClick={setTestUser}
+            className="px-3 py-1 text-xs bg-yellow-200 rounded hover:bg-yellow-300"
+          >
+            Set Test User
+          </button>
+        </div>
+      </div>
+
+      {/* Debug Information */}
+      {debugMode && (
+        <div className="mb-6 p-4 bg-gray-100 rounded-lg text-sm">
+          <h3 className="font-bold mb-2">Debug Information:</h3>
+          <div className="space-y-1">
+            <p><strong>Current User:</strong> {currentUser ? JSON.stringify({id: currentUser.id || currentUser._id, username: currentUser.username, email: currentUser.email}) : 'None'}</p>
+            <p><strong>Current User ID in Cart:</strong> {currentUserId || 'None'}</p>
+            <p><strong>Products in Cart:</strong> {products.length}</p>
+            <p><strong>Cart State:</strong> {JSON.stringify(cartState, null, 2)}</p>
+          </div>
+        </div>
+      )}
 
       {/* Show authentication and cart status */}
       <div className="mb-6 space-y-2">
@@ -138,11 +215,11 @@ export default function ShoppingCart() {
           {currentUser ? (
             <span className="text-green-600">✓ Signed in as: {currentUser.username || currentUser.email || 'User'}</span>
           ) : (
-            <span className="text-orange-600">⚠ Please sign in to use the cart</span>
+            <span className="text-orange-600">⚠ Please sign in to use the cart (or use test mode)</span>
           )}
         </div>
         
-        {products.length === 0 && currentUserId ? (
+        {products.length === 0 ? (
           <div className="bg-gray-50 p-6 rounded-lg border">
             <h3 className="font-semibold text-gray-800 mb-2">Your cart is empty</h3>
             <p className="text-gray-600 mb-4">Would you like to add some sample items for testing?</p>
@@ -153,7 +230,7 @@ export default function ShoppingCart() {
               Add Sample Products
             </button>
           </div>
-        ) : products.length > 0 ? (
+        ) : (
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium text-gray-700">
               {selectedIndexes.length} of {products.length} item
@@ -166,7 +243,7 @@ export default function ShoppingCart() {
               {selectedIndexes.length === products.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
-        ) : null}
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-10">
