@@ -60,6 +60,54 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
+// 🟡 GET categories from supplier products
+export const getSupplierCategories = async (req, res) => {
+  try {
+    // Import User model to check supplier status
+    const User = (await import("../models/user.model.js")).default;
+    
+    // Get all suppliers
+    const suppliers = await User.find({ isSupplier: true });
+    const supplierIds = suppliers.map(supplier => supplier._id.toString());
+    const supplierEmails = suppliers.map(supplier => supplier.email);
+    
+    // Get products created by suppliers
+    const supplierProducts = await Product.find({
+      $or: [
+        { userRef: { $in: supplierIds } },
+        { userMail: { $in: supplierEmails } }
+      ]
+    });
+
+    // Extract unique categories
+    const categories = [...new Set(supplierProducts.map(product => product.category))];
+    
+    // Create category objects with additional info
+    const categoryData = categories.map(category => {
+      const productsInCategory = supplierProducts.filter(p => p.category === category);
+      const supplierCompanies = productsInCategory.map(p => {
+        const supplier = suppliers.find(s => s._id.toString() === p.userRef || s.email === p.userMail);
+        return supplier ? supplier.company_name : 'Unknown Supplier';
+      });
+      
+      return {
+        label: category,
+        slug: category
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, ""),
+        productCount: productsInCategory.length,
+        suppliers: [...new Set(supplierCompanies)]
+      };
+    });
+
+    res.json(categoryData);
+  } catch (error) {
+    console.error("Get supplier categories error:", error);
+    res.status(500).json({ error: "Failed to fetch supplier categories" });
+  }
+};
+
 // 🟠 GET single product by ID
 export const getProductById = async (req, res) => {
   try {

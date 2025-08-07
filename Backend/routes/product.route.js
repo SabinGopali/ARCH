@@ -4,6 +4,7 @@ import {
   createProduct,
   getAllProducts,
   getProductById,
+  getSupplierCategories,
   updateProduct,
   deleteProduct,
 } from "../controllers/product.controller.js";
@@ -45,5 +46,8 @@ router.get("/get/:id", getProductById);
 
 // Get all products (no auth)
 router.get("/getall", getAllProducts);
+
+// Get categories from supplier products (no auth)
+router.get("/supplier-categories", getSupplierCategories);
 
 export default router;
