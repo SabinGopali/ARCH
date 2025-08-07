@@ -116,12 +116,20 @@ export default function ShoppingCart() {
         {products.length === 0 && currentUserId ? (
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-gray-600 mb-3">Your cart is empty. Would you like to add some sample items for testing?</p>
-            <button 
-              onClick={addSampleProducts}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
-              Add Sample Products
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={addSampleProducts}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                Add Sample Products
+              </button>
+              <Link 
+                to="/productdetail/1"
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+              >
+                View Sample Product
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="text-sm font-medium text-gray-700">

@@ -120,7 +120,7 @@ import CartInitializer from './components/CartInitializer';
             <Route path="/developmentcenter" element={<Developmentcenter/>}/>
             <Route path="/privacyrights" element={<Privacyrights/>}/>
             <Route path="/collection" element={<Collection/>}/>
-            <Route path="/productdetail" element={<Productdetail/>}/>
+            <Route path="/productdetail/:id" element={<Productdetail/>}/>
             <Route path="/cart" element={<Cart/>}/>
             <Route path="/signup" element={<Signup/>}/>
             <Route path="/login" element={<Login/>}/>

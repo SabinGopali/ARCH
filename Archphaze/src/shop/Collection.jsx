@@ -45,7 +45,7 @@ export default function Collection() {
       ease: "power3.inOut",
       onComplete: () => {
         document.body.removeChild(clone);
-        navigate("/productdetail", {
+        navigate(`/productdetail/${gridItems[index].id}`, {
           state: { item: gridItems[index], rect },
         });
       },

@@ -45,7 +45,7 @@ export default function Speakercards() {
             transition={{ duration: 0.3 }}
             className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-sm rounded-2xl z-20"
           >
-            <Link to="/productdetail">
+            <Link to="/productdetail/speaker1">
               <button className="px-5 py-2 bg-white text-black rounded-full font-semibold text-sm hover:bg-gray-100 shadow-md">
                 View Details
               </button>

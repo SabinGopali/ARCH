@@ -91,7 +91,7 @@ export default function Scrollingcards() {
         ease: "power2.out",
         onComplete: () => {
           document.body.removeChild(clone);
-          navigate("/productdetail", {
+          navigate(`/productdetail/${model.id}`, {
             state: {
               item: {
                 title: `Model ${model.id}`,
