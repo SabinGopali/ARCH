@@ -5,27 +5,6 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 
-const categories = [
-  {
-    group: "Mobiles & Tablets",
-    items: [
-      "Mobiles",
-      "Power Bank Skins",
-      "Tablets",
-      "Mobile Accessories",
-      "Tablet Accessories",
-    ],
-  },
-];
-
-const priceRanges = [
-  { label: "100 - 999 AED", id: "p1", min: 100, max: 999 },
-  { label: "1000 - 1999 AED", id: "p2", min: 1000, max: 1999 },
-  { label: "2000 - 2999 AED", id: "p3", min: 2000, max: 2999 },
-];
-
-const brands = ["Apple", "Samsung", "LG", "Xiaomi", "Sony", "Moto", "Google"];
-
 const featuredProducts = [
   {
     image:
@@ -75,8 +54,13 @@ export default function Productshowcase() {
   const [products, setProducts] = useState(defaultProducts);
   const [loading, setLoading] = useState(true);
 
+  // Sidebar filter data derived from backend products
+  const [categories, setCategories] = useState([]); // [{ group, items: [] }]
+  const [priceRanges, setPriceRanges] = useState([]); // [{ label, id, min, max }]
+  const [brands, setBrands] = useState([]); // ["Apple", ...]
+
   // Filter states
-  const [selectedCategory, setSelectedCategory] = useState("Mobiles");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedPrices, setSelectedPrices] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -84,60 +68,122 @@ export default function Productshowcase() {
   // Featured carousel index
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
 
-  // Fetch supplier and store profile
+  // Fetch supplier, store profile, and products in parallel
   useEffect(() => {
     if (!currentUser?._id) return;
+    let aborted = false;
 
-    async function fetchData() {
+    async function fetchAll() {
       setLoading(true);
       try {
-        const supRes = await fetch("/backend/user/supplier-users", {
-          credentials: "include",
-        });
-        const supData = await supRes.json();
-        if (supRes.ok) setSupplier(supData.supplier);
-        else console.error(supData.message);
+        const [supRes, storeRes, prodRes] = await Promise.all([
+          fetch("/backend/user/supplier-users", { credentials: "include" }),
+          fetch(`/backend/store/get/${currentUser._id}`, { credentials: "include" }),
+          fetch(`/backend/user/product/${currentUser._id}`, { credentials: "include" }),
+        ]);
 
-        const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
-          credentials: "include",
-        });
-        const storeData = await storeRes.json();
-        if (storeRes.ok) setStoreProfile(storeData.storeProfile);
-        else console.error(storeData.message);
+        const [supData, storeData, prodData] = await Promise.all([
+          supRes.json().catch(() => ({})),
+          storeRes.json().catch(() => ({})),
+          prodRes.json().catch(() => ([])),
+        ]);
+
+        if (!aborted) {
+          if (supRes.ok && supData) setSupplier(supData.supplier);
+          else console.error(supData?.message || "Failed to fetch supplier");
+
+          if (storeRes.ok && storeData) setStoreProfile(storeData.storeProfile);
+          else console.error(storeData?.message || "Failed to fetch store profile");
+
+          if (prodRes.ok) {
+            if (Array.isArray(prodData)) setProducts(prodData);
+            else if (prodData && Array.isArray(prodData.products)) setProducts(prodData.products);
+            else setProducts(defaultProducts);
+          } else {
+            console.error("Failed to fetch products");
+            setProducts(defaultProducts);
+          }
+        }
       } catch (error) {
-        console.error("Error fetching supplier/store:", error);
+        console.error("Error fetching data:", error);
+        if (!aborted) setProducts(defaultProducts);
       } finally {
-        setLoading(false);
+        if (!aborted) setLoading(false);
       }
     }
-    fetchData();
+
+    fetchAll();
+    return () => {
+      aborted = true;
+    };
   }, [currentUser?._id]);
 
-  // Fetch products
+  // Derive sidebar filter data (categories, brands, price ranges) from fetched products
   useEffect(() => {
-    if (!currentUser?._id) return;
-
-    async function fetchProducts() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/backend/user/product/${currentUser._id}`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch products");
-        const data = await res.json();
-
-        if (Array.isArray(data)) setProducts(data);
-        else if (data && Array.isArray(data.products)) setProducts(data.products);
-        else setProducts(defaultProducts);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setProducts(defaultProducts);
-      } finally {
-        setLoading(false);
-      }
+    if (!products || products.length === 0) {
+      setCategories([]);
+      setBrands([]);
+      setPriceRanges([]);
+      return;
     }
-    fetchProducts();
-  }, [currentUser?._id]);
+
+    // Categories (unique by product.category)
+    const uniqueCategories = Array.from(
+      new Set(products.map((p) => p.category).filter(Boolean))
+    );
+    setCategories([
+      { group: "Categories", items: uniqueCategories },
+    ]);
+
+    // Brands (unique by product.brand)
+    const uniqueBrands = Array.from(
+      new Set(products.map((p) => p.brand).filter(Boolean))
+    );
+    setBrands(uniqueBrands);
+
+    // Price ranges from product prices (use specialPrice if discounted)
+    const prices = products
+      .map((p) => {
+        const base = Number(p.price);
+        const special = Number(p.specialPrice);
+        if (!isNaN(special) && special > 0 && special < base) return special;
+        return base;
+      })
+      .filter((n) => !isNaN(n));
+
+    if (prices.length === 0) {
+      setPriceRanges([]);
+      return;
+    }
+
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+
+    if (min === max) {
+      setPriceRanges([
+        { label: `AED ${min.toLocaleString()}`, id: "p1", min, max },
+      ]);
+      return;
+    }
+
+    const bucketCount = 3;
+    const stepRaw = (max - min) / bucketCount;
+    // Round step to nearest 50 for cleaner ranges
+    const step = Math.max(1, Math.round(stepRaw / 50) * 50);
+
+    const ranges = Array.from({ length: bucketCount }, (_, i) => {
+      const rMin = Math.round(min + i * step);
+      const rMax = i === bucketCount - 1 ? Math.round(max) : Math.round(min + (i + 1) * step - 1);
+      return {
+        label: `${rMin.toLocaleString()} - ${rMax.toLocaleString()} AED`,
+        id: `p${i + 1}`,
+        min: rMin,
+        max: rMax,
+      };
+    });
+
+    setPriceRanges(ranges);
+  }, [products]);
 
   // Featured carousel auto-scroll
   useEffect(() => {
@@ -163,7 +209,7 @@ export default function Productshowcase() {
   };
 
   const resetFilters = () => {
-    setSelectedCategory("Mobiles");
+    setSelectedCategory("All");
     setSelectedPrices([]);
     setSelectedBrands([]);
   };
@@ -174,10 +220,15 @@ export default function Productshowcase() {
     if (selectedCategory && selectedCategory !== "All" && product.category !== selectedCategory)
       return false;
 
-    // Price filter (if any selected)
+    // Price filter (use effective price if discounted)
+    const effectivePrice =
+      Number(product.specialPrice) > 0 && Number(product.specialPrice) < Number(product.price)
+        ? Number(product.specialPrice)
+        : Number(product.price);
+
     if (
       selectedPrices.length > 0 &&
-      !selectedPrices.some(({ min, max }) => product.price >= min && product.price <= max)
+      !selectedPrices.some(({ min, max }) => effectivePrice >= min && effectivePrice <= max)
     )
       return false;
 
