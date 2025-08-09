@@ -5,24 +5,13 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 
-const featuredProducts = [
+// Optional static fallback in case there are no products
+const staticFeaturedFallback = [
   {
     image:
       "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
-    title: "Redmi Note 5 Pro",
-    description: "The phone was originally released in India last month",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
-    title: "Sony Wireless Headphones",
-    description: "Noise-cancelling headphones with superior bass",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?auto=format&fit=crop&w=600&q=80",
-    title: "iPad Mini 6",
-    description: "Compact and powerful for your daily tasks",
+    title: "Featured Product",
+    description: "Explore our latest arrivals and offers",
   },
 ];
 
@@ -67,6 +56,25 @@ export default function Productshowcase() {
 
   // Featured carousel index
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+
+  // Compute featured items from fetched products (prefer highest discount)
+  const featuredItems = React.useMemo(() => {
+    if (!products || products.length === 0) return staticFeaturedFallback;
+    const withDiscount = products.map((p) => {
+      const price = Number(p.price) || 0;
+      const special = Number(p.specialPrice) || 0;
+      const discountValue = special > 0 && special < price ? price - special : 0;
+      return { product: p, discountValue };
+    });
+    withDiscount.sort((a, b) => b.discountValue - a.discountValue);
+    const top = (withDiscount[0]?.discountValue || 0) > 0 ? withDiscount : products.map((p) => ({ product: p, discountValue: 0 }));
+    return top.slice(0, 5).map(({ product: p }) => ({
+      image: getProductImageUrl(p),
+      title: p.productName || p.name || "Product",
+      description: p.brand ? `${p.brand}${p.category ? " • " + p.category : ""}` : p.category || "",
+      id: p._id,
+    }));
+  }, [products]);
 
   // Fetch supplier, store profile, and products in parallel
   useEffect(() => {
@@ -185,13 +193,23 @@ export default function Productshowcase() {
     setPriceRanges(ranges);
   }, [products]);
 
-  // Featured carousel auto-scroll
+  // Featured carousel auto-scroll using derived featuredItems
   useEffect(() => {
+    if (!featuredItems || featuredItems.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentFeatureIndex((prev) => (prev + 1) % featuredProducts.length);
+      setCurrentFeatureIndex((prev) => (prev + 1) % featuredItems.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [featuredItems]);
+
+  // Ensure index is valid when featuredItems length changes
+  useEffect(() => {
+    if (!featuredItems || featuredItems.length === 0) {
+      setCurrentFeatureIndex(0);
+      return;
+    }
+    setCurrentFeatureIndex((prev) => prev % featuredItems.length);
+  }, [featuredItems.length]);
 
   // Toggle filters
   const togglePrice = (priceRange) => {
@@ -414,21 +432,31 @@ export default function Productshowcase() {
                   transition={{ duration: 0.6 }}
                   className="flex flex-col md:flex-row items-center gap-6 w-full"
                 >
-                  <img
-                    src={featuredProducts[currentFeatureIndex].image}
-                    alt={featuredProducts[currentFeatureIndex].title}
-                    className="w-full max-w-xs md:max-w-sm object-contain rounded-lg shadow-md"
-                  />
+                  {featuredItems.length > 0 && (
+                    <img
+                      src={featuredItems[currentFeatureIndex]?.image}
+                      alt={featuredItems[currentFeatureIndex]?.title || "Featured"}
+                      className="w-full max-w-xs md:max-w-sm object-contain rounded-lg shadow-md"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/600x400?text=Product";
+                      }}
+                    />
+                  )}
                   <div className="text-center md:text-left">
                     <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">
-                      {featuredProducts[currentFeatureIndex].title}
+                      {featuredItems[currentFeatureIndex]?.title || "Featured Product"}
                     </h2>
                     <p className="text-gray-700 mb-5 max-w-md">
-                      {featuredProducts[currentFeatureIndex].description}
+                      {featuredItems[currentFeatureIndex]?.description || "Check out this product from our store."}
                     </p>
-                    <button className="bg-white text-pink-600 font-semibold px-6 py-3 rounded shadow hover:bg-pink-50 transition duration-300">
-                      BUY NOW
-                    </button>
+                    {featuredItems[currentFeatureIndex]?.id && (
+                      <Link to={`/productdetail/${featuredItems[currentFeatureIndex].id}`}>
+                        <button className="bg-white text-pink-600 font-semibold px-6 py-3 rounded shadow hover:bg-pink-50 transition duration-300">
+                          BUY NOW
+                        </button>
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
               </AnimatePresence>
