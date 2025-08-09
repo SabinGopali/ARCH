@@ -5,45 +5,13 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 
-const categories = [
-  {
-    group: "Mobiles & Tablets",
-    items: [
-      "Mobiles",
-      "Power Bank Skins",
-      "Tablets",
-      "Mobile Accessories",
-      "Tablet Accessories",
-    ],
-  },
-];
-
-const priceRanges = [
-  { label: "100 - 999 AED", id: "p1", min: 100, max: 999 },
-  { label: "1000 - 1999 AED", id: "p2", min: 1000, max: 1999 },
-  { label: "2000 - 2999 AED", id: "p3", min: 2000, max: 2999 },
-];
-
-const brands = ["Apple", "Samsung", "LG", "Xiaomi", "Sony", "Moto", "Google"];
-
-const featuredProducts = [
+// Optional static fallback in case there are no products
+const staticFeaturedFallback = [
   {
     image:
       "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
-    title: "Redmi Note 5 Pro",
-    description: "The phone was originally released in India last month",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
-    title: "Sony Wireless Headphones",
-    description: "Noise-cancelling headphones with superior bass",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?auto=format&fit=crop&w=600&q=80",
-    title: "iPad Mini 6",
-    description: "Compact and powerful for your daily tasks",
+    title: "Featured Product",
+    description: "Explore our latest arrivals and offers",
   },
 ];
 
@@ -75,8 +43,13 @@ export default function Productshowcase() {
   const [products, setProducts] = useState(defaultProducts);
   const [loading, setLoading] = useState(true);
 
+  // Sidebar filter data derived from backend products
+  const [categories, setCategories] = useState([]); // [{ group, items: [] }]
+  const [priceRanges, setPriceRanges] = useState([]); // [{ label, id, min, max }]
+  const [brands, setBrands] = useState([]); // ["Apple", ...]
+
   // Filter states
-  const [selectedCategory, setSelectedCategory] = useState("Mobiles");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedPrices, setSelectedPrices] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -84,68 +57,159 @@ export default function Productshowcase() {
   // Featured carousel index
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
 
-  // Fetch supplier and store profile
+  // Compute featured items from fetched products (prefer highest discount)
+  const featuredItems = React.useMemo(() => {
+    if (!products || products.length === 0) return staticFeaturedFallback;
+    const withDiscount = products.map((p) => {
+      const price = Number(p.price) || 0;
+      const special = Number(p.specialPrice) || 0;
+      const discountValue = special > 0 && special < price ? price - special : 0;
+      return { product: p, discountValue };
+    });
+    withDiscount.sort((a, b) => b.discountValue - a.discountValue);
+    const top = (withDiscount[0]?.discountValue || 0) > 0 ? withDiscount : products.map((p) => ({ product: p, discountValue: 0 }));
+    return top.slice(0, 5).map(({ product: p }) => ({
+      image: getProductImageUrl(p),
+      title: p.productName || p.name || "Product",
+      description: p.brand ? `${p.brand}${p.category ? " • " + p.category : ""}` : p.category || "",
+      id: p._id,
+    }));
+  }, [products]);
+
+  // Fetch supplier, store profile, and products in parallel
   useEffect(() => {
     if (!currentUser?._id) return;
+    let aborted = false;
 
-    async function fetchData() {
+    async function fetchAll() {
       setLoading(true);
       try {
-        const supRes = await fetch("/backend/user/supplier-users", {
-          credentials: "include",
-        });
-        const supData = await supRes.json();
-        if (supRes.ok) setSupplier(supData.supplier);
-        else console.error(supData.message);
+        const [supRes, storeRes, prodRes] = await Promise.all([
+          fetch("/backend/user/supplier-users", { credentials: "include" }),
+          fetch(`/backend/store/get/${currentUser._id}`, { credentials: "include" }),
+          fetch(`/backend/user/product/${currentUser._id}`, { credentials: "include" }),
+        ]);
 
-        const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
-          credentials: "include",
-        });
-        const storeData = await storeRes.json();
-        if (storeRes.ok) setStoreProfile(storeData.storeProfile);
-        else console.error(storeData.message);
+        const [supData, storeData, prodData] = await Promise.all([
+          supRes.json().catch(() => ({})),
+          storeRes.json().catch(() => ({})),
+          prodRes.json().catch(() => ([])),
+        ]);
+
+        if (!aborted) {
+          if (supRes.ok && supData) setSupplier(supData.supplier);
+          else console.error(supData?.message || "Failed to fetch supplier");
+
+          if (storeRes.ok && storeData) setStoreProfile(storeData.storeProfile);
+          else console.error(storeData?.message || "Failed to fetch store profile");
+
+          if (prodRes.ok) {
+            if (Array.isArray(prodData)) setProducts(prodData);
+            else if (prodData && Array.isArray(prodData.products)) setProducts(prodData.products);
+            else setProducts(defaultProducts);
+          } else {
+            console.error("Failed to fetch products");
+            setProducts(defaultProducts);
+          }
+        }
       } catch (error) {
-        console.error("Error fetching supplier/store:", error);
+        console.error("Error fetching data:", error);
+        if (!aborted) setProducts(defaultProducts);
       } finally {
-        setLoading(false);
+        if (!aborted) setLoading(false);
       }
     }
-    fetchData();
+
+    fetchAll();
+    return () => {
+      aborted = true;
+    };
   }, [currentUser?._id]);
 
-  // Fetch products
+  // Derive sidebar filter data (categories, brands, price ranges) from fetched products
   useEffect(() => {
-    if (!currentUser?._id) return;
-
-    async function fetchProducts() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/backend/user/product/${currentUser._id}`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch products");
-        const data = await res.json();
-
-        if (Array.isArray(data)) setProducts(data);
-        else if (data && Array.isArray(data.products)) setProducts(data.products);
-        else setProducts(defaultProducts);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setProducts(defaultProducts);
-      } finally {
-        setLoading(false);
-      }
+    if (!products || products.length === 0) {
+      setCategories([]);
+      setBrands([]);
+      setPriceRanges([]);
+      return;
     }
-    fetchProducts();
-  }, [currentUser?._id]);
 
-  // Featured carousel auto-scroll
+    // Categories (unique by product.category)
+    const uniqueCategories = Array.from(
+      new Set(products.map((p) => p.category).filter(Boolean))
+    );
+    setCategories([
+      { group: "Categories", items: uniqueCategories },
+    ]);
+
+    // Brands (unique by product.brand)
+    const uniqueBrands = Array.from(
+      new Set(products.map((p) => p.brand).filter(Boolean))
+    );
+    setBrands(uniqueBrands);
+
+    // Price ranges from product prices (use specialPrice if discounted)
+    const prices = products
+      .map((p) => {
+        const base = Number(p.price);
+        const special = Number(p.specialPrice);
+        if (!isNaN(special) && special > 0 && special < base) return special;
+        return base;
+      })
+      .filter((n) => !isNaN(n));
+
+    if (prices.length === 0) {
+      setPriceRanges([]);
+      return;
+    }
+
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+
+    if (min === max) {
+      setPriceRanges([
+        { label: `AED ${min.toLocaleString()}`, id: "p1", min, max },
+      ]);
+      return;
+    }
+
+    const bucketCount = 3;
+    const stepRaw = (max - min) / bucketCount;
+    // Round step to nearest 50 for cleaner ranges
+    const step = Math.max(1, Math.round(stepRaw / 50) * 50);
+
+    const ranges = Array.from({ length: bucketCount }, (_, i) => {
+      const rMin = Math.round(min + i * step);
+      const rMax = i === bucketCount - 1 ? Math.round(max) : Math.round(min + (i + 1) * step - 1);
+      return {
+        label: `${rMin.toLocaleString()} - ${rMax.toLocaleString()} AED`,
+        id: `p${i + 1}`,
+        min: rMin,
+        max: rMax,
+      };
+    });
+
+    setPriceRanges(ranges);
+  }, [products]);
+
+  // Featured carousel auto-scroll using derived featuredItems
   useEffect(() => {
+    if (!featuredItems || featuredItems.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentFeatureIndex((prev) => (prev + 1) % featuredProducts.length);
+      setCurrentFeatureIndex((prev) => (prev + 1) % featuredItems.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [featuredItems]);
+
+  // Ensure index is valid when featuredItems length changes
+  useEffect(() => {
+    if (!featuredItems || featuredItems.length === 0) {
+      setCurrentFeatureIndex(0);
+      return;
+    }
+    setCurrentFeatureIndex((prev) => prev % featuredItems.length);
+  }, [featuredItems.length]);
 
   // Toggle filters
   const togglePrice = (priceRange) => {
@@ -163,7 +227,7 @@ export default function Productshowcase() {
   };
 
   const resetFilters = () => {
-    setSelectedCategory("Mobiles");
+    setSelectedCategory("All");
     setSelectedPrices([]);
     setSelectedBrands([]);
   };
@@ -174,10 +238,15 @@ export default function Productshowcase() {
     if (selectedCategory && selectedCategory !== "All" && product.category !== selectedCategory)
       return false;
 
-    // Price filter (if any selected)
+    // Price filter (use effective price if discounted)
+    const effectivePrice =
+      Number(product.specialPrice) > 0 && Number(product.specialPrice) < Number(product.price)
+        ? Number(product.specialPrice)
+        : Number(product.price);
+
     if (
       selectedPrices.length > 0 &&
-      !selectedPrices.some(({ min, max }) => product.price >= min && product.price <= max)
+      !selectedPrices.some(({ min, max }) => effectivePrice >= min && effectivePrice <= max)
     )
       return false;
 
@@ -363,21 +432,31 @@ export default function Productshowcase() {
                   transition={{ duration: 0.6 }}
                   className="flex flex-col md:flex-row items-center gap-6 w-full"
                 >
-                  <img
-                    src={featuredProducts[currentFeatureIndex].image}
-                    alt={featuredProducts[currentFeatureIndex].title}
-                    className="w-full max-w-xs md:max-w-sm object-contain rounded-lg shadow-md"
-                  />
+                  {featuredItems.length > 0 && (
+                    <img
+                      src={featuredItems[currentFeatureIndex]?.image}
+                      alt={featuredItems[currentFeatureIndex]?.title || "Featured"}
+                      className="w-full max-w-xs md:max-w-sm object-contain rounded-lg shadow-md"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/600x400?text=Product";
+                      }}
+                    />
+                  )}
                   <div className="text-center md:text-left">
                     <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">
-                      {featuredProducts[currentFeatureIndex].title}
+                      {featuredItems[currentFeatureIndex]?.title || "Featured Product"}
                     </h2>
                     <p className="text-gray-700 mb-5 max-w-md">
-                      {featuredProducts[currentFeatureIndex].description}
+                      {featuredItems[currentFeatureIndex]?.description || "Check out this product from our store."}
                     </p>
-                    <button className="bg-white text-pink-600 font-semibold px-6 py-3 rounded shadow hover:bg-pink-50 transition duration-300">
-                      BUY NOW
-                    </button>
+                    {featuredItems[currentFeatureIndex]?.id && (
+                      <Link to={`/productdetail/${featuredItems[currentFeatureIndex].id}`}>
+                        <button className="bg-white text-pink-600 font-semibold px-6 py-3 rounded shadow hover:bg-pink-50 transition duration-300">
+                          BUY NOW
+                        </button>
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
               </AnimatePresence>
