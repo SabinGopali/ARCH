@@ -11,20 +11,22 @@ import SubUser from '../models/subuser.model.js';
 
 export const getSupplierUsers = async (req, res, next) => {
   try {
-    if (!req.user || !req.user.isSupplier) {
-      return res.status(403).json({ message: 'Only suppliers can access this data' });
+    const supplierId = req.user?.isSupplier
+      ? req.user.id
+      : req.user?.isSubUser
+      ? req.user.supplierRef
+      : null;
+
+    if (!supplierId) {
+      return res.status(403).json({ message: "Only suppliers or sub-users can access this data" });
     }
 
-    // Fetch main supplier user, exclude password only
-    const mainSupplier = await User.findById(req.user.id).select('-password');
-
+    const mainSupplier = await User.findById(supplierId).select("-password");
     if (!mainSupplier) {
-      return res.status(404).json({ message: 'Supplier not found' });
+      return res.status(404).json({ message: "Supplier not found" });
     }
 
-    res.status(200).json({
-      supplier: mainSupplier,
-    });
+    res.status(200).json({ supplier: mainSupplier });
   } catch (error) {
     next(error);
   }
@@ -54,13 +56,25 @@ export const getCurrentUser = async (req, res, next) => {
     if (!req.user) {
       return next(errorHandler(401, "Not authenticated"));
     }
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return next(errorHandler(404, "User not found"));
-    res.status(200).json(user);
+
+    if (req.user.isSupplier) {
+      const user = await User.findById(req.user.id).select("-password");
+      if (!user) return next(errorHandler(404, "User not found"));
+      return res.status(200).json(user);
+    }
+
+    if (req.user.isSubUser) {
+      const subUser = await SubUser.findById(req.user.id).select("-password");
+      if (!subUser) return next(errorHandler(404, "Sub-user not found"));
+      return res.status(200).json(subUser);
+    }
+
+    return next(errorHandler(403, "Access denied"));
   } catch (error) {
     next(error);
   }
 };
+
 
 
 

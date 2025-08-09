@@ -83,7 +83,7 @@ export default function Navbar() {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/productmodal" className={({ isActive }) => (isActive ? 'text-black font-semibold' : 'hover:text-black')}>
+              <NavLink to="/shopindex" className={({ isActive }) => (isActive ? 'text-black font-semibold' : 'hover:text-black')}>
                 Arch Shop
               </NavLink>
             </li>
@@ -177,17 +177,38 @@ export default function Navbar() {
             <Link to="/profile" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
               👤 Profile
             </Link>
-            <Link to="/order-history" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+            <Link to="/orderhistory" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
               📦 Order History
             </Link>
-            <Link to="/customer-data" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-              🙂 Customer Data
-            </Link>
-            <Link to="/help" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-              ❓ Help
-            </Link>
+            
+            <div className="relative">
+              <div className="peer flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-black cursor-pointer">
+                ❓ Help
+                <svg
+                  className="w-4 h-4 ml-1"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+
+              <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible peer-hover:visible peer-hover:opacity-100 hover:visible hover:opacity-100 transition-all duration-300 z-50">
+                <Link to="/privacynotice" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                  Privacy Notice
+                </Link>
+                <Link to="/privacyrights" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                  Privacy Rights
+                </Link>
+                <Link to="/termsofuse" className="block px-4 py-2 text-sm hover:bg-gray-100">
+                  Terms of Use
+                </Link>
+              </div>
+            </div>
             <Link to="/settings" className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-              ⚙️ Settings
+              ⚙️ Account
             </Link>
             <button
               onClick={handleSignout}

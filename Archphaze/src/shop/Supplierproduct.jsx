@@ -1,42 +1,47 @@
 import React, { useEffect, useState } from "react";
 import { FiSearch } from "react-icons/fi";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 
 const categories = ["All", "Headphones", "Health", "Supplements", "Gadgets"];
 
-const products = [
+// Default fallback products
+const defaultProducts = [
   {
-    name: "P9 Wireless Stereo Headphones",
+    productName: "P9 Wireless Stereo Headphones",
     price: 499,
     category: "Headphones",
-    image: "https://via.placeholder.com/150",
+    images: ["https://via.placeholder.com/300"],
     discount: "75% OFF",
+    available: true,
   },
   {
-    name: "Jaiphal Oil",
+    productName: "Jaiphal Oil",
     price: 300,
     category: "Health",
-    image: "https://via.placeholder.com/150",
+    images: ["https://via.placeholder.com/300"],
+    available: true,
   },
   {
-    name: "Moringa Capsule 90",
+    productName: "Moringa Capsule 90",
     price: 461,
     category: "Supplements",
-    image: "https://via.placeholder.com/150",
+    images: ["https://via.placeholder.com/300"],
+    available: true,
   },
   {
-    name: "Lapel Mic Set",
+    productName: "Lapel Mic Set",
     price: 799,
     category: "Gadgets",
-    image: "https://via.placeholder.com/150",
+    images: ["https://via.placeholder.com/300"],
+    available: true,
   },
   {
-    name: "Smart Watch",
+    productName: "Smart Watch",
     price: 1190,
     category: "Gadgets",
-    image: "https://via.placeholder.com/150",
+    images: ["https://via.placeholder.com/300"],
+    available: true,
   },
 ];
 
@@ -47,14 +52,31 @@ export default function Supplierproduct() {
   const [searchQuery, setSearchQuery] = useState("");
   const [storeProfile, setStoreProfile] = useState(null);
   const [supplier, setSupplier] = useState(null);
+  const [products, setProducts] = useState(defaultProducts);
   const [loading, setLoading] = useState(true);
+
+  function getProductImageUrl(product) {
+    let imageUrl = product.images?.[0] || product.image || "";
+
+    if (!imageUrl) {
+      return "https://via.placeholder.com/300";
+    }
+
+    imageUrl = imageUrl.replace(/\\/g, "/");
+
+    if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+      if (imageUrl.startsWith("/")) imageUrl = imageUrl.slice(1);
+      imageUrl = `http://localhost:3000/${imageUrl}`;
+    }
+
+    return imageUrl;
+  }
 
   useEffect(() => {
     if (!currentUser?._id) return;
 
     async function fetchData() {
       try {
-        // Fetch supplier data
         const supRes = await fetch("/backend/user/supplier-users", {
           credentials: "include",
         });
@@ -62,7 +84,6 @@ export default function Supplierproduct() {
         if (supRes.ok) setSupplier(supData.supplier);
         else console.error(supData.message);
 
-        // Fetch store profile
         const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
           credentials: "include",
         });
@@ -79,11 +100,42 @@ export default function Supplierproduct() {
     fetchData();
   }, [currentUser]);
 
-  const filteredProducts = products.filter(
-    (item) =>
-      (selectedCategory === "All" || item.category === selectedCategory) &&
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!currentUser?._id) return;
+      try {
+        const res = await fetch(`/backend/user/product/${currentUser._id}`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch products");
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setProducts(data);
+        } else if (data && Array.isArray(data.products)) {
+          setProducts(data.products);
+        } else {
+          console.log("No products found, using default products");
+          setProducts(defaultProducts);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setProducts(defaultProducts);
+      }
+    };
+    fetchProducts();
+  }, [currentUser?._id]);
+
+  // Filter only available products + category + search
+  const filteredProducts = products
+    .filter((product) => product.available) // show only available
+    .filter(
+      (item) =>
+        (selectedCategory === "All" || item.category === selectedCategory) &&
+        (item.productName || item.name)
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+    );
 
   if (loading) {
     return <div className="text-center py-20 text-lg">Loading...</div>;
@@ -91,7 +143,7 @@ export default function Supplierproduct() {
 
   return (
     <div className="min-h-screen bg-white pt-16">
-      {/* Header with Background Image Banner */}
+      {/* Store Header */}
       <div className="relative py-10 px-6 md:px-12 max-w-7xl mx-auto rounded-3xl shadow-lg mb-8 overflow-hidden">
         <img
           src={
@@ -106,11 +158,9 @@ export default function Supplierproduct() {
             e.target.src = "https://via.placeholder.com/1200x300?text=Store+Banner";
           }}
         />
-
-        {/* Dark translucent container for company info */}
         <div className="relative z-10 max-w-5xl mx-auto bg-black/60 rounded-2xl px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-6 shadow-lg">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
+            <div className="w-20 h-20 rounded-full bg-white shadow-md overflow-hidden flex items-center justify-center">
               <img
                 src={
                   storeProfile?.logo
@@ -122,8 +172,8 @@ export default function Supplierproduct() {
               />
             </div>
             <div>
-              <h1 className="text-white font-extrabold text-2xl md:text-3xl leading-snug">
-                {supplier?.company_name || "FAST DELIVERY"}
+              <h1 className="text-white font-extrabold text-2xl md:text-3xl">
+                {supplier?.company_name || "Supplier"}
               </h1>
               <p className="text-white text-sm md:text-base opacity-90 mt-1">
                 📍 {storeProfile?.city || "Kathmandu"}, {storeProfile?.street || "Nepal"}
@@ -133,10 +183,8 @@ export default function Supplierproduct() {
               </p>
             </div>
           </div>
-
-          {/* Profile Button */}
           <Link to="/supplierprofileshop">
-            <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
+            <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition">
               Check Store Profile
             </button>
           </Link>
@@ -145,15 +193,13 @@ export default function Supplierproduct() {
 
       {/* Tabs */}
       <div className="flex space-x-6 px-6 md:px-12 border-b py-4 text-sm md:text-base font-medium max-w-7xl mx-auto">
-        <button className="text-orange-600 border-b-2 border-orange-600 pb-1">
-          Store
-        </button>
+        <button className="text-orange-600 border-b-2 border-orange-600 pb-1">Store</button>
         <Link to="/productshowcase">
           <button className="text-gray-500 hover:text-orange-500">Products</button>
         </Link>
       </div>
 
-      {/* Category & Search */}
+      {/* Categories & Search */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-6 md:px-12 py-5 gap-4 max-w-7xl mx-auto">
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
@@ -174,46 +220,92 @@ export default function Supplierproduct() {
           <FiSearch className="text-gray-500" />
           <input
             type="text"
-            className="ml-2 outline-none w-full bg-transparent text-sm"
             placeholder="Search In Store"
+            className="ml-2 outline-none w-full bg-transparent text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-6 md:px-12 pb-12 max-w-7xl mx-auto">
-        {filteredProducts.map((item, index) => (
-          <motion.div
-            key={index}
-            whileHover={{ scale: 1.02 }}
-            className="relative bg-white rounded-2xl p-5 shadow-md border border-gray-100 overflow-hidden group flex flex-col items-center justify-between transition-all duration-300"
-          >
-            {/* Discount Badge */}
-            {item.discount && (
-              <span className="absolute top-3 right-3 bg-orange-500 text-white text-xs px-2 py-1 rounded-full shadow">
-                {item.discount}
-              </span>
-            )}
+      {/* Products Section */}
+      <section className="py-14 bg-gradient-to-b from-white to-gray-100">
+        <h2 className="text-3xl font-bold text-center mb-12 text-gray-800 tracking-tight">
+          <span className="inline-block w-12 h-[2px] bg-gray-800 align-middle mr-4 uppercase"></span>
+          <span className="font-extrabold uppercase">Products</span>{" "}
+          <span className="text-orange-500 uppercase font-extrabold">Just for you</span>
+          <span className="inline-block w-12 h-[2px] bg-gray-800 align-middle ml-4"></span>
+        </h2>
 
-            {/* Image */}
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-32 h-32 object-contain mb-4 drop-shadow-sm"
-            />
-
-            {/* Info */}
-            <div className="text-center">
-              <h2 className="text-base font-semibold text-gray-800 line-clamp-2">
-                {item.name}
-              </h2>
-              <p className="text-orange-600 font-bold text-sm mt-1">Rs. {item.price}</p>
+        <div className="px-6 md:px-12 max-w-7xl mx-auto">
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
             </div>
-          </motion.div>
-        ))}
-      </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {filteredProducts.map((product, index) => {
+                const hasDiscount =
+                  product.specialPrice > 0 && product.specialPrice < product.price;
+                const productImage = getProductImageUrl(product);
+
+                return (
+                  <Link
+                    key={product._id || index}
+                    to={`/productdetail/${product._id}`}
+                    className="group block bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition duration-300 overflow-hidden"
+                  >
+                    <div className="relative w-full h-52 bg-gray-100 overflow-hidden">
+                      <img
+                        src={productImage}
+                        alt={product.productName || product.name}
+                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://via.placeholder.com/300";
+                        }}
+                      />
+                      {hasDiscount && (
+                        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded shadow">
+                          -{Math.round(((product.price - product.specialPrice) / product.price) * 100)}%
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 flex flex-col justify-between h-40">
+                      <h3
+                        title={product.productName || product.name}
+                        className="text-gray-900 font-semibold text-md md:text-lg line-clamp-2 mb-2"
+                      >
+                        {product.productName || product.name}
+                      </h3>
+
+                      <div className="flex items-center space-x-3">
+                        <span className="text-red-600 font-bold text-lg md:text-xl">
+                          Rs. {(hasDiscount ? product.specialPrice : product.price).toFixed(2)}
+                        </span>
+                        <span className="text-gray-400 line-through text-sm md:text-base">
+                          Rs. {product.price.toFixed(2)}
+                        </span>
+                      </div>
+
+                      {product.stock !== undefined && (
+                        <span
+                          className={`inline-block mt-3 text-xs font-medium rounded-full px-2 py-1 ${
+                            product.stock > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

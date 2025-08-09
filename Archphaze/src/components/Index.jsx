@@ -3,7 +3,9 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { ReactTyped } from "react-typed";
 import { Helmet } from 'react-helmet';
-import { useLocation } from 'react-router-dom'; // ✅
+import { useLocation } from 'react-router-dom';
+import { motion } from "framer-motion";
+ // ✅
 
 import Services from '../components/Services';
 import Whyus from './Whyus';
@@ -64,13 +66,31 @@ export default function Index() {
               strings={['Empowering startups and enterprises with modern web and mobile technologies. Let’s create something impactful together.']}
               typeSpeed={40}
             />
-            <div>
-              <Link to="/Contactus">
-                <button className="mt-6 px-6 py-3 text-sm sm:text-base font-semibold rounded-lg bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg hover:from-pink-600 hover:to-red-500 hover:scale-105 hover:shadow-2xl transition-transform duration-300 ease-in-out">
-                  Build With Us
-                </button>
-              </Link>
-            </div>
+            <div className="mt-6">
+  <Link to="/Contactus">
+    <motion.button
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.95 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { delay: 0.2 } }}
+      className="group px-6 py-3 text-sm sm:text-base font-semibold rounded-full bg-gradient-to-r from-red-500 via-pink-500 to-yellow-500 text-white shadow-xl hover:shadow-2xl hover:brightness-110 transition-all duration-300 relative overflow-hidden"
+    >
+      <span className="relative z-10">Build With Us</span>
+
+      {/* Shimmer overlay */}
+      <motion.div
+        className="absolute inset-0 bg-white opacity-10 group-hover:opacity-20"
+        initial={{ x: "-100%" }}
+        animate={{ x: "100%" }}
+        transition={{
+          repeat: Infinity,
+          duration: 2,
+          ease: "linear",
+        }}
+      />
+    </motion.button>
+  </Link>
+</div>
           </div>
 
           {/* 3D Section */}

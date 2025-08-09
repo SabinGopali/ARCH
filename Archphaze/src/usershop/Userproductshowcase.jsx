@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { FiChevronLeft } from "react-icons/fi";
+import React, { useEffect, useState, useRef } from "react";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { MdMenu } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,13 +8,7 @@ import { useSelector } from "react-redux";
 const categories = [
   {
     group: "Mobiles & Tablets",
-    items: [
-      "Mobiles",
-      "Power Bank Skins",
-      "Tablets",
-      "Mobile Accessories",
-      "Tablet Accessories",
-    ],
+    items: ["Mobiles", "Power Bank Skins", "Tablets", "Mobile Accessories", "Tablet Accessories"],
   },
 ];
 
@@ -26,54 +20,64 @@ const priceRanges = [
 
 const brands = ["Apple", "Samsung", "LG", "Xiaomi", "Sony", "Moto", "Google"];
 
+const products = [
+  {
+    id: 1,
+    name: "Google Pixel 2 XL White 128GB 4G LTE",
+    price: 3042,
+    originalPrice: 3202,
+    discountPercent: 5,
+    category: "Mobiles",
+    brand: "Google",
+    image: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/pixel2xl-white",
+  },
+  {
+    id: 2,
+    name: "P20 Pro Dual SIM Twilight 128GB 4G LTE",
+    price: 2849,
+    originalPrice: 2999,
+    discountPercent: 5,
+    category: "Mobiles",
+    brand: "Samsung",
+    image: "https://images.samsung.com/is/image/samsung/p20pro",
+  },
+  {
+    id: 3,
+    name: "iPhone X With FaceTime Silver 64GB 4G LTE",
+    price: 3899,
+    originalPrice: 4599,
+    discountPercent: 16,
+    category: "Mobiles",
+    brand: "Apple",
+    image: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-x-silver",
+  },
+];
+
 const featuredProducts = [
   {
-    image:
-      "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
     title: "Redmi Note 5 Pro",
     description: "The phone was originally released in India last month",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
     title: "Sony Wireless Headphones",
     description: "Noise-cancelling headphones with superior bass",
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?auto=format&fit=crop&w=600&q=80",
     title: "iPad Mini 6",
     description: "Compact and powerful for your daily tasks",
   },
 ];
 
-// Fallback default products if needed
-const defaultProducts = [];
-
-function getProductImageUrl(product) {
-  let imageUrl = product.images?.[0] || product.image || "";
-
-  if (!imageUrl) {
-    return "https://via.placeholder.com/300";
-  }
-
-  imageUrl = imageUrl.replace(/\\/g, "/");
-
-  if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
-    if (imageUrl.startsWith("/")) imageUrl = imageUrl.slice(1);
-    imageUrl = `http://localhost:3000/${imageUrl}`;
-  }
-
-  return imageUrl;
-}
-
 export default function Productshowcase() {
   const { currentUser } = useSelector((state) => state.user);
 
+  // Banner Data States
   const [storeProfile, setStoreProfile] = useState(null);
   const [supplier, setSupplier] = useState(null);
-  const [products, setProducts] = useState(defaultProducts);
-  const [loading, setLoading] = useState(true);
+  const [loadingBanner, setLoadingBanner] = useState(true);
 
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState("Mobiles");
@@ -81,15 +85,15 @@ export default function Productshowcase() {
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Featured carousel index
+  // Featured carousel
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+  const carouselRef = useRef(null);
 
-  // Fetch supplier and store profile
+  // Fetch banner data on mount or user change
   useEffect(() => {
     if (!currentUser?._id) return;
 
-    async function fetchData() {
-      setLoading(true);
+    async function fetchBannerData() {
       try {
         const supRes = await fetch("/backend/user/supplier-users", {
           credentials: "include",
@@ -98,54 +102,41 @@ export default function Productshowcase() {
         if (supRes.ok) setSupplier(supData.supplier);
         else console.error(supData.message);
 
-        const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
+        const storeRes = await fetch(`/backend/store/getall/${currentUser._id}`, {
           credentials: "include",
         });
         const storeData = await storeRes.json();
         if (storeRes.ok) setStoreProfile(storeData.storeProfile);
         else console.error(storeData.message);
       } catch (error) {
-        console.error("Error fetching supplier/store:", error);
+        console.error("Error fetching banner data:", error);
       } finally {
-        setLoading(false);
+        setLoadingBanner(false);
       }
     }
-    fetchData();
-  }, [currentUser?._id]);
 
-  // Fetch products
-  useEffect(() => {
-    if (!currentUser?._id) return;
+    fetchBannerData();
+  }, [currentUser]);
 
-    async function fetchProducts() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/backend/user/product/${currentUser._id}`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch products");
-        const data = await res.json();
-
-        if (Array.isArray(data)) setProducts(data);
-        else if (data && Array.isArray(data.products)) setProducts(data.products);
-        else setProducts(defaultProducts);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setProducts(defaultProducts);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchProducts();
-  }, [currentUser?._id]);
-
-  // Featured carousel auto-scroll
+  // Featured product auto-scroll
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentFeatureIndex((prev) => (prev + 1) % featuredProducts.length);
     }, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  // Filtered products based on filters
+  const filteredProducts = products.filter((product) => {
+    if (selectedCategory && product.category !== selectedCategory) return false;
+    if (
+      selectedPrices.length > 0 &&
+      !selectedPrices.some(({ min, max }) => product.price >= min && product.price <= max)
+    )
+      return false;
+    if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
+    return true;
+  });
 
   // Toggle filters
   const togglePrice = (priceRange) => {
@@ -162,33 +153,23 @@ export default function Productshowcase() {
     );
   };
 
+  // Carousel scroll
+  const scrollLeft = () => {
+    carouselRef.current?.scrollBy({ left: -320, behavior: "smooth" });
+  };
+
+  const scrollRight = () => {
+    carouselRef.current?.scrollBy({ left: 320, behavior: "smooth" });
+  };
+
   const resetFilters = () => {
     setSelectedCategory("Mobiles");
     setSelectedPrices([]);
     setSelectedBrands([]);
   };
 
-  // Filtering products with selected filters
-  const filteredProducts = products.filter((product) => {
-    // Category filter
-    if (selectedCategory && selectedCategory !== "All" && product.category !== selectedCategory)
-      return false;
-
-    // Price filter (if any selected)
-    if (
-      selectedPrices.length > 0 &&
-      !selectedPrices.some(({ min, max }) => product.price >= min && product.price <= max)
-    )
-      return false;
-
-    // Brand filter
-    if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
-
-    return true;
-  });
-
-  if (loading) {
-    return <div className="text-center py-20 text-lg">Loading...</div>;
+  if (loadingBanner) {
+    return <div className="text-center py-20 text-lg">Loading banner...</div>;
   }
 
   return (
@@ -294,15 +275,6 @@ export default function Productshowcase() {
                       {cat}
                     </li>
                   ))}
-                  {/* Add an "All" option */}
-                  <li
-                    onClick={() => setSelectedCategory("All")}
-                    className={`cursor-pointer ${
-                      selectedCategory === "All" ? "font-bold text-pink-600" : "hover:text-pink-600"
-                    }`}
-                  >
-                    All
-                  </li>
                 </ul>
               </div>
             ))}
@@ -386,81 +358,62 @@ export default function Productshowcase() {
 
           {/* Deals Header */}
           <div className="flex justify-between items-center mb-6 px-4 sm:px-0">
-            <h3 className="font-bold uppercase text-gray-900 tracking-wide text-lg sm:text-xl">
-              Super Deals
-            </h3>
+            <h3 className="font-bold uppercase text-gray-900 tracking-wide text-lg sm:text-xl">Super Deals</h3>
+            <button className="bg-pink-600 text-white px-5 py-2 rounded hover:bg-pink-700 transition">VIEW ALL</button>
           </div>
 
-          {/* Products Grid */}
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.length ? (
-              filteredProducts.map((product) => {
-                const hasDiscount =
-                  product.specialPrice > 0 && product.specialPrice < product.price;
-                const productImage = getProductImageUrl(product);
+          {/* Products Carousel */}
+          <div className="relative">
+            <button
+              onClick={scrollLeft}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white shadow rounded-full p-2 z-20 hover:bg-pink-100 transition"
+              aria-label="Scroll Left"
+            >
+              <FiChevronLeft className="text-pink-600 w-6 h-6" />
+            </button>
 
-                return (
-                  <Link
-                    key={product._id}
-                    to={`/productdetail/${product._id}`}
-                    className="group block bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition duration-300 overflow-hidden"
+            <div
+              ref={carouselRef}
+              className="flex overflow-x-auto scroll-smooth snap-x snap-mandatory space-x-6 px-6 scrollbar-hide"
+            >
+              {filteredProducts.length ? (
+                filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="bg-white border border-gray-200 rounded-xl shadow-sm flex-shrink-0 w-56 sm:w-64 md:w-72 p-4 hover:shadow-lg transition duration-300 snap-start"
                   >
-                    <div className="relative w-full h-52 bg-gray-100 overflow-hidden">
-                      <img
-                        src={productImage}
-                        alt={product.productName}
-                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "https://via.placeholder.com/300";
-                        }}
-                      />
-                      {hasDiscount && (
-                        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded shadow">
-                          -{Math.round(((product.price - product.specialPrice) / product.price) * 100)}%
-                        </div>
-                      )}
-                    </div>
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-44 object-contain mb-4 rounded-lg"
+                    />
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 truncate">
+                      {product.name}
+                    </h4>
+                    <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Mobile</p>
+                    <p className="text-gray-900 font-semibold text-base sm:text-lg flex items-center gap-2">
+                      Rs. {product.price.toLocaleString()}
+                      <span className="line-through text-gray-400 text-sm">
+                        Rs. {product.originalPrice.toLocaleString()}
+                      </span>
+                      <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-1 rounded">
+                        {product.discountPercent}% OFF
+                      </span>
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500 p-10 w-full">No products found matching filters.</p>
+              )}
+            </div>
 
-                    <div className="p-4 flex flex-col justify-between h-40">
-                      <h3
-                        title={product.productName}
-                        className="text-gray-900 font-semibold text-md md:text-lg line-clamp-2 mb-2"
-                      >
-                        {product.productName}
-                      </h3>
-
-                      <div className="flex items-center space-x-3">
-                        <span className="text-red-600 font-bold text-lg md:text-xl">
-                          AED {hasDiscount ? product.specialPrice.toLocaleString() : product.price.toLocaleString()}
-                        </span>
-                        {hasDiscount && (
-                          <span className="text-gray-400 line-through text-sm md:text-base">
-                            AED {product.price.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-
-                      {product.stock !== undefined && (
-                        <span
-                          className={`inline-block mt-3 text-xs font-medium rounded-full px-2 py-1 ${
-                            product.stock > 0
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })
-            ) : (
-              <p className="text-center col-span-full text-gray-500 py-12">
-                No products match your filters.
-              </p>
-            )}
+            <button
+              onClick={scrollRight}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white shadow rounded-full p-2 z-20 hover:bg-pink-100 transition"
+              aria-label="Scroll Right"
+            >
+              <FiChevronRight className="text-pink-600 w-6 h-6" />
+            </button>
           </div>
         </main>
       </div>

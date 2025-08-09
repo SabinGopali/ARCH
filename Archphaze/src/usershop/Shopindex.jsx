@@ -1,0 +1,297 @@
+import React, { useState, useRef, useEffect } from "react";
+import {
+  FiArrowRight,
+  FiSearch,
+  FiX,
+  FiTruck,
+} from "react-icons/fi";
+import { MdLocalShipping, MdWorkspacePremium } from "react-icons/md";
+import { motion, AnimatePresence } from "framer-motion";
+import Categories from "./Categories";
+import Product from "./Product";
+import img from '../assets/e-commerce.jpg';
+
+const retailers = [
+  {
+    name: "Amazon",
+    logo: "https://logos-world.net/wp-content/uploads/2020/04/Amazon-Logo.png",
+  },
+  {
+    name: "Flipkart",
+    logo: "https://1000logos.net/wp-content/uploads/2021/10/Flipkart-logo.png",
+  },
+  {
+    name: "eBay",
+    logo: "https://cdn.worldvectorlogo.com/logos/ebay-13.svg",
+  },
+  {
+    name: "Etsy",
+    logo: "https://cdn.worldvectorlogo.com/logos/etsy-1.svg",
+  },
+];
+
+const whyShop = [
+  {
+    icon: <FiTruck size={30} />,
+    title: "Fast Delivery",
+    description:
+      "Get your orders delivered within 1–2 days nationwide, with real-time tracking and no hidden charges",
+  },
+  {
+    icon: <MdLocalShipping size={30} />,
+    title: "Free Shipping",
+    description:
+      "Enjoy free delivery on all orders over $49 and hassle-free returns within 30 days—no questions asked.",
+  },
+  {
+    icon: <MdWorkspacePremium size={30} />,
+    title: "Best Quality",
+    description:
+      "We partner with trusted brands to bring you handpicked, durable, and verified products with warranty.",
+  },
+];
+
+const Shopindex = () => {
+  const [isFocused, setIsFocused] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const whyRef = useRef(null);
+  const productRef = useRef(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const scrollToProducts = () => {
+    productRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  return (
+    <>
+      {/* Hero Section */}
+      <section className="min-h-screen w-full bg-white px-8 sm:px-12 md:px-16 lg:px-28 py-12 flex items-center relative">
+        <div className="w-full flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-16">
+          {/* Left Section */}
+          <motion.div
+            initial={{ x: -50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="flex-1 max-w-full sm:max-w-xl lg:max-w-lg"
+          >
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight uppercase">
+              Everything You Need,
+              <br />
+              <span className="inline-block mt-3 bg-red-500 text-black px-4 py-2 rounded-full text-3xl sm:text-4xl md:text-5xl font-semibold">
+                All in One Place
+              </span>
+            </h1>
+
+            {/* Search Bar */}
+            <div className="mt-6 w-full relative">
+              <motion.div
+                animate={{
+                  scale: isFocused ? 1.03 : 1,
+                  boxShadow: isFocused
+                    ? "0 8px 15px rgba(0,0,0,0.15)"
+                    : "0 0 0 rgba(0,0,0,0)",
+                }}
+                transition={{ duration: 0.3 }}
+                className="flex items-center bg-gray-100 rounded-full px-4 sm:px-5 py-3 transition-all relative"
+              >
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{
+                    x: 0,
+                    opacity: 1,
+                    y: searchTerm ? [0, -4, 0] : 0,
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: searchTerm ? Infinity : 0,
+                    ease: "easeInOut",
+                  }}
+                  className="text-gray-500 text-lg mr-3 flex-shrink-0"
+                >
+                  <FiSearch />
+                </motion.div>
+
+                <div className="relative flex-1">
+                  <motion.label
+                    htmlFor="search"
+                    animate={{
+                      top: isFocused || searchTerm ? "-1.1rem" : "0.5rem",
+                      left: isFocused || searchTerm ? "0.5rem" : "1rem",
+                      fontSize: isFocused || searchTerm ? "0.75rem" : "1rem",
+                      color: isFocused ? "#111827" : "#6B7280",
+                      backgroundColor:
+                        isFocused || searchTerm ? "white" : "transparent",
+                      padding: isFocused || searchTerm ? "0 0.25rem" : "0",
+                    }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute pointer-events-none select-none rounded"
+                  >
+                    Search for products, brands, categories...
+                  </motion.label>
+                  <input
+                    id="search"
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    className="bg-transparent w-full outline-none text-base pt-4 pb-2 pl-1 sm:text-lg"
+                    autoComplete="off"
+                  />
+                  <motion.div
+                    layoutId="underline"
+                    initial={{ width: 0 }}
+                    animate={{ width: isFocused ? "100%" : 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="h-[2px] bg-black absolute bottom-0 left-0 rounded"
+                  />
+                </div>
+
+                <AnimatePresence>
+                  {searchTerm && (
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setSearchTerm("")}
+                      className="ml-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      aria-label="Clear search input"
+                      type="button"
+                    >
+                      <FiX size={20} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+
+            {/* Retailers */}
+            <div className="mt-6">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 uppercase tracking-wide mb-2">
+                Trusted by Top Retailers
+              </h3>
+              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                <AnimatePresence>
+                  {retailers.map((retailer, idx) => (
+                    <motion.div
+                      key={retailer.name}
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="flex items-center gap-2"
+                    >
+                      <img
+                        src={retailer.logo}
+                        alt={retailer.name}
+                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain rounded-full bg-white border"
+                      />
+                      <span className="text-xs sm:text-sm text-gray-600">
+                        {retailer.name}
+                      </span>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.3 } }}
+              className="group mt-8 px-6 py-3 sm:px-8 bg-gradient-to-r from-red-500 via-pink-500 to-yellow-500 text-white font-semibold rounded-full flex items-center gap-3 shadow-xl transition-all duration-300 hover:shadow-2xl hover:brightness-110 relative overflow-hidden text-sm sm:text-base"
+              onClick={scrollToProducts}
+            >
+              <span className="relative z-10">Start Shopping</span>
+              <FiArrowRight className="relative z-10" />
+              <motion.div
+                className="absolute inset-0 bg-white opacity-10 group-hover:opacity-20"
+                initial={{ x: "-100%" }}
+                animate={{ x: "100%" }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 2,
+                  ease: "linear",
+                }}
+              />
+            </motion.button>
+          </motion.div>
+
+          {/* Right Section */}
+          <motion.div
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="flex-1 relative w-full max-w-full sm:max-w-3xl lg:max-w-5xl"
+          >
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              className="rounded-[30px] overflow-hidden shadow-xl max-w-md mx-auto"
+            >
+              <img
+                src={img}
+                alt="E-commerce Showcase"
+                className="w-full h-auto object-cover"
+              />
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Why Shop Section */}
+      <section
+        ref={whyRef}
+        className="bg-[#f9fafb] py-16 px-6 sm:px-12 md:px-20 lg:px-28 text-center"
+      >
+        <motion.h2
+          initial={{ opacity: 0, y: -10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          viewport={{ once: true }}
+          className="text-4xl font-extrabold text-gray-900 mb-2 uppercase"
+        >
+          Why <span className="text-red-500">Shop</span> With Us
+        </motion.h2>
+
+        <motion.div
+          className="h-1 w-16 mx-auto rounded mb-10"
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          viewport={{ once: true }}
+        />
+
+        <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {whyShop.map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.2, duration: 0.5 }}
+              viewport={{ once: true }}
+              className="bg-gray-200 text-black p-6 rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300"
+            >
+              <div className="text-black mb-4">{item.icon}</div>
+              <h3 className="text-lg sm:text-xl font-bold mb-2">{item.title}</h3>
+              <p className="text-sm sm:text-base text-black">{item.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      <Categories />
+
+      {/* Product section wrapped with ref for scrolling */}
+      <div ref={productRef}>
+        <Product />
+      </div>
+    </>
+  );
+};
+
+export default Shopindex;

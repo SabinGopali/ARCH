@@ -298,6 +298,7 @@ export default function Productbasicinformation() {
                   >
                     <option value="Test FY SOP Category 1">Test FY SOP Category 1</option>
                     <option value="Work Shoes">Work Shoes</option>
+                    <option value="Chappal">Chappal</option>
                   </select>
                 </div>
 

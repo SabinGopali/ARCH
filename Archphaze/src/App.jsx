@@ -84,6 +84,14 @@ import Updateproduct from './supplier/Updateproduct';
 import Updateuserform from './supplier/Updateuserform';
 import Storeprofile from './supplier/store/Storeprofile';
 import Updatestoresetting from './supplier/store/Updatestoresetting';
+import Shopindex from './usershop/Shopindex';
+import Categories from './usershop/Categories';
+import Product from './usershop/Product';
+import Maincategories from './usershop/Maincategories';
+import CartInitializer from './components/CartInitializer';
+import Userproductshowcase from './usershop/Userproductshowcase';
+import Orderhistory from './components/Orderhistory';
+import Accountsecurity from './components/Accountsecurity';
 
 
 
@@ -118,7 +126,7 @@ import Updatestoresetting from './supplier/store/Updatestoresetting';
             <Route path="/developmentcenter" element={<Developmentcenter/>}/>
             <Route path="/privacyrights" element={<Privacyrights/>}/>
             <Route path="/collection" element={<Collection/>}/>
-            <Route path="/productdetail" element={<Productdetail/>}/>
+            <Route path="/productdetail/:id" element={<Productdetail/>}/>
             <Route path="/cart" element={<Cart/>}/>
             <Route path="/signup" element={<Signup/>}/>
             <Route path="/login" element={<Login/>}/>
@@ -139,6 +147,14 @@ import Updatestoresetting from './supplier/store/Updatestoresetting';
             <Route path="/supplierprofile" element={<SupplierProfile/>}/>
             <Route path="/productshowcase" element={<ProductShowcase/>}/>
             <Route path="/supplierprofileshop" element={<Supplierprofileshop/>}/>
+            <Route path="/shopindex" element={<Shopindex/>}/>
+            <Route path="/categories" element={<Categories/>}/>
+            <Route path="/product" element={<Product/>}/>
+            <Route path="/allcategories" element={<Maincategories/>}/>
+            <Route path="/cartinitializer" element={<CartInitializer/>}/>
+            <Route path="/userproductshowcase" element={<Userproductshowcase/>}/>
+            <Route path="/orderhistory" element={<Orderhistory/>}/>
+            <Route path="/settings" element={<Accountsecurity/>}/>
             
 
 

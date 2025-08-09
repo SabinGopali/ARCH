@@ -34,11 +34,24 @@ export default function Login() {
       }
       if (res.ok) {
         dispatch(signInSuccess(data));
-        // Redirect based on account type
+
+        // Optional: store supplierId for sub-user
+        if (data.isSubUser && data.supplierId) {
+          localStorage.setItem('supplierId', data.supplierId);
+        }
+
+        // Redirect based on user type
         if (data.isAdmin) {
           navigate('/dashboard');
         } else if (data.isSupplier) {
           navigate('/supplierdashboard');
+        } else if (data.isSubUser) {
+          // Customize based on sub-user role if needed
+          if (data.role === 'manager') {
+            navigate('/supplierdashboard'); // or another route like '/sub-user-manager'
+          } else {
+            navigate('/supplierdashboard'); // default sub-user route
+          }
         } else {
           navigate('/');
         }
@@ -51,7 +64,7 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white to-slate-100 px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-4xl flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8">
-        
+
         {/* Left Side - Logo */}
         <div className="flex justify-center items-center w-full md:w-1/2">
           <img
