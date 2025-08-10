@@ -1,142 +1,229 @@
-import React, { useEffect, useState, useRef } from "react";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import React, { useEffect, useState } from "react";
+import { FiChevronLeft } from "react-icons/fi";
 import { MdMenu } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 
-const categories = [
+// Optional static fallback in case there are no products
+const staticFeaturedFallback = [
   {
-    group: "Mobiles & Tablets",
-    items: ["Mobiles", "Power Bank Skins", "Tablets", "Mobile Accessories", "Tablet Accessories"],
+    image:
+      "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
+    title: "Featured Product",
+    description: "Explore our latest arrivals and offers",
   },
 ];
 
-const priceRanges = [
-  { label: "100 - 999 AED", id: "p1", min: 100, max: 999 },
-  { label: "1000 - 1999 AED", id: "p2", min: 1000, max: 1999 },
-  { label: "2000 - 2999 AED", id: "p3", min: 2000, max: 2999 },
-];
+// Fallback default products if needed
+const defaultProducts = [];
 
-const brands = ["Apple", "Samsung", "LG", "Xiaomi", "Sony", "Moto", "Google"];
+function getProductImageUrl(product) {
+  let imageUrl = product.images?.[0] || product.image || "";
 
-const products = [
-  {
-    id: 1,
-    name: "Google Pixel 2 XL White 128GB 4G LTE",
-    price: 3042,
-    originalPrice: 3202,
-    discountPercent: 5,
-    category: "Mobiles",
-    brand: "Google",
-    image: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/pixel2xl-white",
-  },
-  {
-    id: 2,
-    name: "P20 Pro Dual SIM Twilight 128GB 4G LTE",
-    price: 2849,
-    originalPrice: 2999,
-    discountPercent: 5,
-    category: "Mobiles",
-    brand: "Samsung",
-    image: "https://images.samsung.com/is/image/samsung/p20pro",
-  },
-  {
-    id: 3,
-    name: "iPhone X With FaceTime Silver 64GB 4G LTE",
-    price: 3899,
-    originalPrice: 4599,
-    discountPercent: 16,
-    category: "Mobiles",
-    brand: "Apple",
-    image: "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-x-silver",
-  },
-];
+  if (!imageUrl) {
+    return "https://via.placeholder.com/300";
+  }
 
-const featuredProducts = [
-  {
-    image: "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=600&q=80",
-    title: "Redmi Note 5 Pro",
-    description: "The phone was originally released in India last month",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
-    title: "Sony Wireless Headphones",
-    description: "Noise-cancelling headphones with superior bass",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?auto=format&fit=crop&w=600&q=80",
-    title: "iPad Mini 6",
-    description: "Compact and powerful for your daily tasks",
-  },
-];
+  imageUrl = imageUrl.replace(/\\/g, "/");
 
-export default function Productshowcase() {
+  if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+    if (imageUrl.startsWith("/")) imageUrl = imageUrl.slice(1);
+    imageUrl = `http://localhost:3000/${imageUrl}`;
+  }
+
+  return imageUrl;
+}
+
+function slugify(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}
+
+export default function Userproductshowcase() {
   const { currentUser } = useSelector((state) => state.user);
+  const { slug } = useParams();
 
-  // Banner Data States
   const [storeProfile, setStoreProfile] = useState(null);
   const [supplier, setSupplier] = useState(null);
-  const [loadingBanner, setLoadingBanner] = useState(true);
+  const [products, setProducts] = useState(defaultProducts);
+  const [loading, setLoading] = useState(true);
+
+  // Sidebar filter data derived from backend products
+  const [categories, setCategories] = useState([]); // [{ group, items: [] }]
+  const [priceRanges, setPriceRanges] = useState([]); // [{ label, id, min, max }]
+  const [brands, setBrands] = useState([]); // ["Apple", ...]
 
   // Filter states
-  const [selectedCategory, setSelectedCategory] = useState("Mobiles");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedPrices, setSelectedPrices] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Featured carousel
+  // Featured carousel index
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-  const carouselRef = useRef(null);
 
-  // Fetch banner data on mount or user change
+  // Compute featured items from fetched products (prefer highest discount)
+  const featuredItems = React.useMemo(() => {
+    if (!products || products.length === 0) return staticFeaturedFallback;
+    const withDiscount = products.map((p) => {
+      const price = Number(p.price) || 0;
+      const special = Number(p.specialPrice) || 0;
+      const discountValue = special > 0 && special < price ? price - special : 0;
+      return { product: p, discountValue };
+    });
+    withDiscount.sort((a, b) => b.discountValue - a.discountValue);
+    const top = (withDiscount[0]?.discountValue || 0) > 0 ? withDiscount : products.map((p) => ({ product: p, discountValue: 0 }));
+    return top.slice(0, 5).map(({ product: p }) => ({
+      image: getProductImageUrl(p),
+      title: p.productName || p.name || "Product",
+      description: p.brand ? `${p.brand}${p.category ? " • " + p.category : ""}` : p.category || "",
+      id: p._id,
+    }));
+  }, [products]);
+
+  // Fetch supplier, store profile, and products in parallel
   useEffect(() => {
     if (!currentUser?._id) return;
+    let aborted = false;
 
-    async function fetchBannerData() {
+    async function fetchAll() {
+      setLoading(true);
       try {
-        const supRes = await fetch("/backend/user/supplier-users", {
-          credentials: "include",
-        });
-        const supData = await supRes.json();
-        if (supRes.ok) setSupplier(supData.supplier);
-        else console.error(supData.message);
+        const [supRes, storeRes, prodRes] = await Promise.all([
+          fetch("/backend/user/supplier-users", { credentials: "include" }),
+          fetch(`/backend/store/getall/${currentUser._id}`, { credentials: "include" }),
+          fetch(`/backend//product/getall`, { credentials: "include" }),
+        ]);
 
-        const storeRes = await fetch(`/backend/store/getall/${currentUser._id}`, {
-          credentials: "include",
-        });
-        const storeData = await storeRes.json();
-        if (storeRes.ok) setStoreProfile(storeData.storeProfile);
-        else console.error(storeData.message);
+        const [supData, storeData, prodData] = await Promise.all([
+          supRes.json().catch(() => ({})),
+          storeRes.json().catch(() => ({})),
+          prodRes.json().catch(() => ([])),
+        ]);
+
+        if (!aborted) {
+          if (supRes.ok && supData) setSupplier(supData.supplier);
+          else console.error(supData?.message || "Failed to fetch supplier");
+
+          if (storeRes.ok && storeData) setStoreProfile(storeData.storeProfile);
+          else console.error(storeData?.message || "Failed to fetch store profile");
+
+          if (prodRes.ok) {
+            if (Array.isArray(prodData)) setProducts(prodData);
+            else if (prodData && Array.isArray(prodData.products)) setProducts(prodData.products);
+            else setProducts(defaultProducts);
+          } else {
+            console.error("Failed to fetch products");
+            setProducts(defaultProducts);
+          }
+        }
       } catch (error) {
-        console.error("Error fetching banner data:", error);
+        console.error("Error fetching data:", error);
+        if (!aborted) setProducts(defaultProducts);
       } finally {
-        setLoadingBanner(false);
+        if (!aborted) setLoading(false);
       }
     }
 
-    fetchBannerData();
-  }, [currentUser]);
+    fetchAll();
+    return () => {
+      aborted = true;
+    };
+  }, [currentUser?._id]);
 
-  // Featured product auto-scroll
+  // Derive sidebar filter data (categories, brands, price ranges) from fetched products
   useEffect(() => {
+    if (!products || products.length === 0) {
+      setCategories([]);
+      setBrands([]);
+      setPriceRanges([]);
+      return;
+    }
+
+    // Categories (unique by product.category)
+    const uniqueCategories = Array.from(
+      new Set(products.map((p) => p.category).filter(Boolean))
+    );
+    setCategories([
+      { group: "Categories", items: uniqueCategories },
+    ]);
+
+    // If a slug exists in URL, preselect the matching category label
+    if (slug) {
+      const match = uniqueCategories.find((cat) => slugify(cat) === slug);
+      setSelectedCategory(match || "All");
+    }
+
+    // Brands (unique by product.brand)
+    const uniqueBrands = Array.from(
+      new Set(products.map((p) => p.brand).filter(Boolean))
+    );
+    setBrands(uniqueBrands);
+
+    // Price ranges from product prices (use specialPrice if discounted)
+    const prices = products
+      .map((p) => {
+        const base = Number(p.price);
+        const special = Number(p.specialPrice);
+        if (!isNaN(special) && special > 0 && special < base) return special;
+        return base;
+      })
+      .filter((n) => !isNaN(n));
+
+    if (prices.length === 0) {
+      setPriceRanges([]);
+      return;
+    }
+
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+
+    if (min === max) {
+      setPriceRanges([
+        { label: `Rs.  ${min.toLocaleString()}`, id: "p1", min, max },
+      ]);
+      return;
+    }
+
+    const bucketCount = 3;
+    const stepRaw = (max - min) / bucketCount;
+    // Round step to nearest 50 for cleaner ranges
+    const step = Math.max(1, Math.round(stepRaw / 50) * 50);
+
+    const ranges = Array.from({ length: bucketCount }, (_, i) => {
+      const rMin = Math.round(min + i * step);
+      const rMax = i === bucketCount - 1 ? Math.round(max) : Math.round(min + (i + 1) * step - 1);
+      return {
+        label: `${rMin.toLocaleString()} - ${rMax.toLocaleString()} Rs. `,
+        id: `p${i + 1}`,
+        min: rMin,
+        max: rMax,
+      };
+    });
+
+    setPriceRanges(ranges);
+  }, [products, slug]);
+
+  // Featured carousel auto-scroll using derived featuredItems
+  useEffect(() => {
+    if (!featuredItems || featuredItems.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentFeatureIndex((prev) => (prev + 1) % featuredProducts.length);
+      setCurrentFeatureIndex((prev) => (prev + 1) % featuredItems.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [featuredItems]);
 
-  // Filtered products based on filters
-  const filteredProducts = products.filter((product) => {
-    if (selectedCategory && product.category !== selectedCategory) return false;
-    if (
-      selectedPrices.length > 0 &&
-      !selectedPrices.some(({ min, max }) => product.price >= min && product.price <= max)
-    )
-      return false;
-    if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
-    return true;
-  });
+  // Ensure index is valid when featuredItems length changes
+  useEffect(() => {
+    if (!featuredItems || featuredItems.length === 0) {
+      setCurrentFeatureIndex(0);
+      return;
+    }
+    setCurrentFeatureIndex((prev) => prev % featuredItems.length);
+  }, [featuredItems.length]);
 
   // Toggle filters
   const togglePrice = (priceRange) => {
@@ -153,75 +240,44 @@ export default function Productshowcase() {
     );
   };
 
-  // Carousel scroll
-  const scrollLeft = () => {
-    carouselRef.current?.scrollBy({ left: -320, behavior: "smooth" });
-  };
-
-  const scrollRight = () => {
-    carouselRef.current?.scrollBy({ left: 320, behavior: "smooth" });
-  };
-
   const resetFilters = () => {
-    setSelectedCategory("Mobiles");
+    setSelectedCategory("All");
     setSelectedPrices([]);
     setSelectedBrands([]);
   };
 
-  if (loadingBanner) {
-    return <div className="text-center py-20 text-lg">Loading banner...</div>;
+  // Filtering products with selected filters
+  const filteredProducts = products.filter((product) => {
+    // Category filter
+    if (selectedCategory && selectedCategory !== "All" && product.category !== selectedCategory)
+      return false;
+
+    // Price filter (use effective price if discounted)
+    const effectivePrice =
+      Number(product.specialPrice) > 0 && Number(product.specialPrice) < Number(product.price)
+        ? Number(product.specialPrice)
+        : Number(product.price);
+
+    if (
+      selectedPrices.length > 0 &&
+      !selectedPrices.some(({ min, max }) => effectivePrice >= min && effectivePrice <= max)
+    )
+      return false;
+
+    // Brand filter
+    if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
+
+    return true;
+  });
+
+  if (loading) {
+    return <div className="text-center py-20 text-lg">Loading...</div>;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-6 pb-16 px-4 sm:px-6 lg:px-8">
       {/* Banner */}
-      <div className="relative py-10 px-6 md:px-12 max-w-7xl mx-auto rounded-3xl shadow-lg mb-10 mt-10 overflow-hidden">
-        <img
-          src={
-            storeProfile?.bgImage
-              ? `http://localhost:3000/${storeProfile.bgImage}`
-              : "https://via.placeholder.com/1200x300?text=Store+Banner"
-          }
-          alt="Store Banner"
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "https://via.placeholder.com/1200x300?text=Store+Banner";
-          }}
-        />
-
-        <div className="relative z-10 max-w-5xl mx-auto bg-black/60 rounded-2xl px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-6 shadow-lg">
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden">
-              <img
-                src={
-                  storeProfile?.logo
-                    ? `http://localhost:3000/${storeProfile.logo}`
-                    : "https://via.placeholder.com/80x80?text=Logo"
-                }
-                alt="Company Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-white font-extrabold text-2xl md:text-3xl leading-snug">
-                {supplier?.company_name || "Supplier Store"}
-              </h1>
-              <p className="text-white text-sm md:text-base opacity-90 mt-1">
-                📍 {storeProfile?.city || "N/A"}, {storeProfile?.street || ""}
-              </p>
-              <p className="text-white text-sm md:text-base opacity-90">
-                📧 {supplier?.email || "N/A"}
-              </p>
-            </div>
-          </div>
-          <Link to="/supplierproduct">
-            <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
-              Back to Store
-            </button>
-          </Link>
-        </div>
-      </div>
+      
 
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
         {!sidebarOpen && (
@@ -275,6 +331,15 @@ export default function Productshowcase() {
                       {cat}
                     </li>
                   ))}
+                  {/* Add an "All" option */}
+                  <li
+                    onClick={() => setSelectedCategory("All")}
+                    className={`cursor-pointer ${
+                      selectedCategory === "All" ? "font-bold text-pink-600" : "hover:text-pink-600"
+                    }`}
+                  >
+                    All
+                  </li>
                 </ul>
               </div>
             ))}
@@ -335,21 +400,31 @@ export default function Productshowcase() {
                   transition={{ duration: 0.6 }}
                   className="flex flex-col md:flex-row items-center gap-6 w-full"
                 >
-                  <img
-                    src={featuredProducts[currentFeatureIndex].image}
-                    alt={featuredProducts[currentFeatureIndex].title}
-                    className="w-full max-w-xs md:max-w-sm object-contain rounded-lg shadow-md"
-                  />
+                  {featuredItems.length > 0 && (
+                    <img
+                      src={featuredItems[currentFeatureIndex]?.image}
+                      alt={featuredItems[currentFeatureIndex]?.title || "Featured"}
+                      className="w-full max-w-xs md:max-w-sm object-contain rounded-lg shadow-md"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/600x400?text=Product";
+                      }}
+                    />
+                  )}
                   <div className="text-center md:text-left">
                     <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">
-                      {featuredProducts[currentFeatureIndex].title}
+                      {featuredItems[currentFeatureIndex]?.title || "Featured Product"}
                     </h2>
                     <p className="text-gray-700 mb-5 max-w-md">
-                      {featuredProducts[currentFeatureIndex].description}
+                      {featuredItems[currentFeatureIndex]?.description || "Check out this product from our store."}
                     </p>
-                    <button className="bg-white text-pink-600 font-semibold px-6 py-3 rounded shadow hover:bg-pink-50 transition duration-300">
-                      BUY NOW
-                    </button>
+                    {featuredItems[currentFeatureIndex]?.id && (
+                      <Link to={`/productdetail/${featuredItems[currentFeatureIndex].id}`}>
+                        <button className="bg-white text-pink-600 font-semibold px-6 py-3 rounded shadow hover:bg-pink-50 transition duration-300">
+                          BUY NOW
+                        </button>
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -358,62 +433,81 @@ export default function Productshowcase() {
 
           {/* Deals Header */}
           <div className="flex justify-between items-center mb-6 px-4 sm:px-0">
-            <h3 className="font-bold uppercase text-gray-900 tracking-wide text-lg sm:text-xl">Super Deals</h3>
-            <button className="bg-pink-600 text-white px-5 py-2 rounded hover:bg-pink-700 transition">VIEW ALL</button>
+            <h3 className="font-bold uppercase text-gray-900 tracking-wide text-lg sm:text-xl">
+              Super Deals
+            </h3>
           </div>
 
-          {/* Products Carousel */}
-          <div className="relative">
-            <button
-              onClick={scrollLeft}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white shadow rounded-full p-2 z-20 hover:bg-pink-100 transition"
-              aria-label="Scroll Left"
-            >
-              <FiChevronLeft className="text-pink-600 w-6 h-6" />
-            </button>
+          {/* Products Grid */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProducts.length ? (
+              filteredProducts.map((product) => {
+                const hasDiscount =
+                  product.specialPrice > 0 && product.specialPrice < product.price;
+                const productImage = getProductImageUrl(product);
 
-            <div
-              ref={carouselRef}
-              className="flex overflow-x-auto scroll-smooth snap-x snap-mandatory space-x-6 px-6 scrollbar-hide"
-            >
-              {filteredProducts.length ? (
-                filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-white border border-gray-200 rounded-xl shadow-sm flex-shrink-0 w-56 sm:w-64 md:w-72 p-4 hover:shadow-lg transition duration-300 snap-start"
+                return (
+                  <Link
+                    key={product._id}
+                    to={`/productdetail/${product._id}`}
+                    className="group block bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition duration-300 overflow-hidden"
                   >
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-44 object-contain mb-4 rounded-lg"
-                    />
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 truncate">
-                      {product.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Mobile</p>
-                    <p className="text-gray-900 font-semibold text-base sm:text-lg flex items-center gap-2">
-                      Rs. {product.price.toLocaleString()}
-                      <span className="line-through text-gray-400 text-sm">
-                        Rs. {product.originalPrice.toLocaleString()}
-                      </span>
-                      <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-1 rounded">
-                        {product.discountPercent}% OFF
-                      </span>
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-gray-500 p-10 w-full">No products found matching filters.</p>
-              )}
-            </div>
+                    <div className="relative w-full h-52 bg-gray-100 overflow-hidden">
+                      <img
+                        src={productImage}
+                        alt={product.productName}
+                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://via.placeholder.com/300";
+                        }}
+                      />
+                      {hasDiscount && (
+                        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded shadow">
+                          -{Math.round(((product.price - product.specialPrice) / product.price) * 100)}%
+                        </div>
+                      )}
+                    </div>
 
-            <button
-              onClick={scrollRight}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white shadow rounded-full p-2 z-20 hover:bg-pink-100 transition"
-              aria-label="Scroll Right"
-            >
-              <FiChevronRight className="text-pink-600 w-6 h-6" />
-            </button>
+                    <div className="p-4 flex flex-col justify-between h-40">
+                      <h3
+                        title={product.productName}
+                        className="text-gray-900 font-semibold text-md md:text-lg line-clamp-2 mb-2"
+                      >
+                        {product.productName}
+                      </h3>
+
+                      <div className="flex items-center space-x-3">
+                        <span className="text-red-600 font-bold text-lg md:text-xl">
+                          Rs.  {hasDiscount ? product.specialPrice.toLocaleString() : product.price.toLocaleString()}
+                        </span>
+                        {hasDiscount && (
+                          <span className="text-gray-400 line-through text-sm md:text-base">
+                            Rs.  {product.price.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+
+                      {product.stock !== undefined && (
+                        <span
+                          className={`inline-block mt-3 text-xs font-medium rounded-full px-2 py-1 ${
+                            product.stock > 0
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <p className="text-center col-span-full text-gray-500 py-12">
+                No products match your filters.
+              </p>
+            )}
           </div>
         </main>
       </div>
