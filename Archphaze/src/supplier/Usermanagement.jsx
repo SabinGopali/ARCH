@@ -8,6 +8,7 @@ import {
 } from "react-icons/fi";
 import Suppliersidebar from "../supplier/Suppliersidebar";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 export default function UserManagement() {
   const [subAccounts, setSubAccounts] = useState([]);
@@ -17,6 +18,20 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const { currentUser } = useSelector((state) => state.user);
+
+  // Deny access if logged-in sub-user is inactive
+  if (currentUser?.isSubUser && currentUser?.isActive === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-md w-full">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-gray-600">Your account is inactive. Please contact your supplier admin.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Fetch sub-users from backend on mount
   useEffect(() => {
     const fetchSubUsers = async () => {
@@ -24,11 +39,8 @@ export default function UserManagement() {
       setError(null);
 
       try {
-        const token = localStorage.getItem("token"); // Adjust if you store token differently
         const res = await fetch("/backend/subuser/list", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: "include",
         });
 
         if (!res.ok) {
@@ -41,8 +53,8 @@ export default function UserManagement() {
         const mappedData = data.map((user) => ({
           email: user.email,
           role: user.role,
-          status: user.isActive ?? true, // assuming backend has isActive or similar
-          isOwner: false, // you may want to adjust based on your data, e.g. supplier themselves?
+          status: user.isActive ?? true,
+          isOwner: false,
           id: user._id,
         }));
 
@@ -200,11 +212,11 @@ export default function UserManagement() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-3">
-<Link to={`/updateuserform/${user.id}`}>
-                                  <button className="flex items-center gap-1 text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded">
-                                    <FiEdit /> Modify
-                                  </button>
-                                </Link>
+                              <Link to={`/updateuserform/${user.id}`}>
+                                <button className="flex items-center gap-1 text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded">
+                                  <FiEdit /> Modify
+                                </button>
+                              </Link>
                               <button className="flex items-center gap-1 text-sm text-white bg-red-500 hover:bg-red-600 px-3 py-1 rounded">
                                 <FiTrash2 /> Delete
                               </button>

@@ -139,6 +139,7 @@ export const signin = async (req, res, next) => {
         isAdmin: false,
         role: subUser.role,
         supplierId: subUser.supplierRef,
+        isActive: subUser.isActive,
       });
   } catch (error) {
     next(error);
