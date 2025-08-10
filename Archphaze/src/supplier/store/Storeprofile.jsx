@@ -32,17 +32,20 @@ const Storeprofile = () => {
       }
     };
 
-    if (currentUser?._id) {
+    if (currentUser?._id || currentUser?.id) {
       fetchSupplierData();
     }
   }, [currentUser]);
 
   useEffect(() => {
     const fetchStoreProfile = async () => {
-      if (!currentUser?._id) return;
+      const supplierOwnerId = currentUser?.isSubUser
+        ? currentUser?.supplierId || currentUser?.supplierRef
+        : currentUser?._id || currentUser?.id;
+      if (!supplierOwnerId) return;
 
       try {
-        const res = await fetch(`/backend/store/get/${currentUser._id}`, {
+        const res = await fetch(`/backend/store/get/${supplierOwnerId}`, {
           method: "GET",
           credentials: "include",
         });
@@ -109,12 +112,12 @@ const Storeprofile = () => {
                 <h2 className="text-2xl font-semibold">
                   {supplier?.company_name || "Loading..."}
                 </h2>
-                <p className="text-sm">{supplier?.isAdmin ? "Admin" : "Supplier"}</p>
+                <p className="text-sm">Supplier</p>
               </div>
             </div>
           </section>
 
-         
+          
 
           <section className="bg-white rounded-xl p-6 border">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
@@ -141,7 +144,7 @@ const Storeprofile = () => {
                 </div>
                 <div>
                   <p className="text-gray-500">User Role</p>
-                  <p className="font-medium">{supplier.isAdmin ? "Admin" : "Supplier"}</p>
+                  <p className="font-medium">Supplier</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Business Type</p>
@@ -156,22 +159,21 @@ const Storeprofile = () => {
               <p className="text-gray-500 text-sm">No supplier data found.</p>
             )}
           </section>
-           
-            <div className="flex justify-end">
-              <Link to={`/updatestoresetting/${currentUser._id || ""}`}>
-  <button
-    disabled={!currentUser._id}
-    className={`font-semibold py-2 px-4 rounded-md shadow ${
-      currentUser._id
-        ? "bg-blue-600 hover:bg-blue-700 text-white"
-        : "bg-gray-400 cursor-not-allowed text-gray-200"
-    }`}
-  >
-    Update Store Profile
-  </button>
-</Link>
-            </div>
           
+          <div className="flex justify-end">
+            <Link to={`/updatestoresetting/${(currentUser?.isSubUser ? (currentUser?.supplierId || currentUser?.supplierRef) : (currentUser?._id || ""))}`}>
+              <button
+                disabled={!currentUser?._id && !currentUser?.supplierId && !currentUser?.supplierRef}
+                className={`font-semibold py-2 px-4 rounded-md shadow ${
+                  (currentUser?._id || currentUser?.supplierId || currentUser?.supplierRef)
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-gray-400 cursor-not-allowed text-gray-200"
+                }`}
+              >
+                Update Store Profile
+              </button>
+            </Link>
+          </div>
 
           <section className="bg-white rounded-xl p-6 border">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Description</h3>

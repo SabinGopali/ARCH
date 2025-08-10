@@ -16,7 +16,7 @@ export default function Supplierdashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!currentUser || !currentUser.isSupplier) {
+    if (!currentUser || !(currentUser.isSupplier || currentUser.isSubUser)) {
       navigate("/login");
     }
   }, [currentUser, navigate]);
@@ -67,7 +67,8 @@ export default function Supplierdashboard() {
       const userId = currentUser._id || currentUser.id;
 
       try {
-        const response = await fetch(`/backend/user/${userId}`, {
+        const endpoint = currentUser.isSupplier ? `/backend/user/${userId}` : `/backend/user/me`;
+        const response = await fetch(endpoint, {
           credentials: "include",
         });
 

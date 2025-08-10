@@ -18,11 +18,20 @@ export default function ManageProduct() {
   });
   const navigate = useNavigate();
 
+  const isSubUser = Boolean(currentUser?.isSubUser);
+  const subUserRole = currentUser?.role || "";
+  const canDelete = !isSubUser || subUserRole === "Full Supplier Access";
+  const canModify = !isSubUser || subUserRole !== "View Only";
+  const canAdd = !isSubUser || subUserRole !== "View Only";
+
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!currentUser?._id) return;
+      const supplierOwnerId = isSubUser
+        ? currentUser?.supplierId || currentUser?.supplierRef
+        : currentUser?._id;
+      if (!supplierOwnerId) return;
       try {
-        const res = await fetch(`/backend/user/product/${currentUser._id}`);
+        const res = await fetch(`/backend/user/product/${supplierOwnerId}`);
         if (!res.ok) throw new Error("Failed to fetch products");
         const data = await res.json();
 
@@ -40,7 +49,7 @@ export default function ManageProduct() {
       }
     };
     fetchProducts();
-  }, [currentUser?._id]);
+  }, [currentUser?._id, isSubUser, currentUser?.supplierId, currentUser?.supplierRef]);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -60,6 +69,7 @@ export default function ManageProduct() {
   });
 
   const handleDelete = async (product) => {
+    if (!canDelete) return;
     if (window.confirm(`Are you sure you want to delete "${product.productName}"?`)) {
       try {
         const res = await fetch(`/backend/product/delete/${product._id}`, {
@@ -80,6 +90,7 @@ export default function ManageProduct() {
   };
 
   const handleDeleteSelected = async () => {
+    if (!canDelete) return;
     if (
       selectedProducts.length === 0 ||
       !window.confirm(`Are you sure you want to delete ${selectedProducts.length} product(s)?`)
@@ -120,6 +131,7 @@ export default function ManageProduct() {
   };
 
   const handleModify = (product) => {
+    if (!canModify) return;
     navigate(`/updateproduct/${product._id}`);
   };
 
@@ -156,9 +168,9 @@ export default function ManageProduct() {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={handleDeleteSelected}
-                  disabled={selectedProducts.length === 0}
+                  disabled={!canDelete || selectedProducts.length === 0}
                   className={`border text-sm px-4 py-2.5 rounded-md shadow ${
-                    selectedProducts.length === 0
+                    !canDelete || selectedProducts.length === 0
                       ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                       : "bg-red-600 text-white hover:bg-red-700"
                   }`}
@@ -167,7 +179,12 @@ export default function ManageProduct() {
                 </button>
                 <button
                   onClick={() => navigate("/addproduct")}
-                  className="bg-white text-black border border-black hover:bg-black hover:text-white text-sm px-5 py-2.5 rounded-md shadow"
+                  disabled={!canAdd}
+                  className={`text-sm px-5 py-2.5 rounded-md shadow border ${
+                    canAdd
+                      ? "bg-white text-black border-black hover:bg-black hover:text-white"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300"
+                  }`}
                 >
                   + Add Product
                 </button>
@@ -233,6 +250,7 @@ export default function ManageProduct() {
                           selectedProducts.length === filteredProducts.length &&
                           filteredProducts.length > 0
                         }
+                        disabled={!canDelete}
                       />
                     </th>
                     <th className="px-4 py-3 whitespace-nowrap">Product Name</th>
@@ -268,6 +286,7 @@ export default function ManageProduct() {
                               type="checkbox"
                               checked={selectedProducts.includes(product._id)}
                               onChange={() => handleCheckboxChange(product._id)}
+                              disabled={!canDelete}
                             />
                           </td>
                           <td className="px-4 py-4 flex items-center gap-3 min-w-[180px]">
@@ -288,14 +307,24 @@ export default function ManageProduct() {
                           <td className="px-4 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                className="text-blue-600 hover:text-blue-800 text-xs border border-blue-600 hover:bg-blue-50 px-3 py-1 rounded"
+                                className={`text-xs border px-3 py-1 rounded ${
+                                  canModify
+                                    ? "text-blue-600 border-blue-600 hover:bg-blue-50 hover:text-blue-800"
+                                    : "text-gray-400 border-gray-300 cursor-not-allowed"
+                                }`}
                                 onClick={() => handleModify(product)}
+                                disabled={!canModify}
                               >
                                 Modify
                               </button>
                               <button
-                                className="text-red-600 hover:text-red-800 text-xs border border-red-600 hover:bg-red-50 px-3 py-1 rounded"
+                                className={`text-xs border px-3 py-1 rounded ${
+                                  canDelete
+                                    ? "text-red-600 border-red-600 hover:bg-red-50 hover:text-red-800"
+                                    : "text-gray-400 border-gray-300 cursor-not-allowed"
+                                }`}
                                 onClick={() => handleDelete(product)}
+                                disabled={!canDelete}
                               >
                                 Delete
                               </button>

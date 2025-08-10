@@ -174,7 +174,8 @@ export default function Productbasicinformation() {
       });
 
       // Append user information
-      body.append("userRef", currentUser._id);
+      const supplierOwnerId = currentUser.isSubUser ? (currentUser.supplierId || currentUser.supplierRef) : (currentUser._id || currentUser.id);
+      body.append("userRef", supplierOwnerId);
       body.append("userMail", currentUser.email);
 
       const res = await fetch("/backend/product/create", {
