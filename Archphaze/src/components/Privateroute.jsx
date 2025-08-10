@@ -6,7 +6,7 @@ export default function PrivateRoute() {
 
   // Check if user is logged in and has admin privileges
   if (!currentUser) {
-    return <Navigate to="/signin" />;
+    return <Navigate to="/login" />;
   }
 
   if (!currentUser.isAdmin) {
