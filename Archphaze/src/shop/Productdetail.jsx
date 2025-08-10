@@ -216,6 +216,7 @@ export default function ProductPage() {
               alt={selectedProduct.productName}
               className="w-full h-[500px] lg:h-[600px] object-cover"
               onError={(e) => {
+                e.target.onerror = null;
                 e.target.src = "https://via.placeholder.com/600x600";
               }}
             />
@@ -239,6 +240,7 @@ export default function ProductPage() {
                 alt={`Thumbnail ${idx + 1}`}
                 onClick={() => setSelectedImage(img)}
                 onError={(e) => {
+                  e.target.onerror = null;
                   e.target.src = "https://via.placeholder.com/80x80";
                 }}
                 className={`flex-shrink-0 w-20 h-20 rounded-lg object-cover cursor-pointer transition-all duration-300 ${
@@ -288,6 +290,7 @@ export default function ProductPage() {
                               alt={`Variant ${variant.name} ${i + 1}`}
                               onClick={() => handleVariantImageClick(idx, img)}
                               onError={(e) => {
+                                e.target.onerror = null;
                                 e.target.src = "https://via.placeholder.com/64x64";
                               }}
                               className={`w-12 h-12 rounded-lg object-cover cursor-pointer transition-all duration-300 ${
