@@ -59,9 +59,16 @@ const cartSlice = createSlice({
       const userCart = state.cartsByUser[userId];
       
       // Check if product already exists
-      const existingItemIndex = userCart.findIndex(
-        (item) => item.productId === newItem.productId
-      );
+      const existingItemIndex = userCart.findIndex((item) => {
+        if (item.productId !== newItem.productId) return false;
+        // If variants are provided, treat different variant selections as different cart lines
+        if (newItem.selectedVariants && item.selectedVariants) {
+          const a = JSON.stringify(newItem.selectedVariants);
+          const b = JSON.stringify(item.selectedVariants);
+          return a === b;
+        }
+        return true;
+      });
 
       if (existingItemIndex >= 0) {
         // If product already in cart, update quantity
@@ -87,6 +94,7 @@ const cartSlice = createSlice({
           image: newItem.image || '',
           stock: newItem.stock || 99,
           variantImages: newItem.variantImages || {},
+          selectedVariants: newItem.selectedVariants || [],
           addedAt: new Date().toISOString(),
         };
         
@@ -95,7 +103,7 @@ const cartSlice = createSlice({
     },
     
     updateQty: (state, action) => {
-      const { productId, qty } = action.payload;
+      const { productId, qty, selectedVariants } = action.payload;
       const userId = state.currentUserId;
       
       if (!userId) {
@@ -114,7 +122,13 @@ const cartSlice = createSlice({
       }
 
       const userCart = state.cartsByUser[userId] || [];
-      const itemIndex = userCart.findIndex((item) => item.productId === productId);
+      const itemIndex = userCart.findIndex((item) => {
+        if (item.productId !== productId) return false;
+        if (selectedVariants && item.selectedVariants) {
+          return JSON.stringify(selectedVariants) === JSON.stringify(item.selectedVariants);
+        }
+        return true;
+      });
       
       if (itemIndex >= 0) {
         const newQty = Math.max(1, Number(qty));
@@ -126,7 +140,10 @@ const cartSlice = createSlice({
     },
     
     removeFromCart: (state, action) => {
-      const productId = action.payload;
+      const payload = action.payload;
+      const isObjectPayload = typeof payload === 'object' && payload !== null;
+      const productId = isObjectPayload ? payload.productId : payload;
+      const selectedVariants = isObjectPayload ? payload.selectedVariants : undefined;
       const userId = state.currentUserId;
       
       if (!userId) {
@@ -146,9 +163,14 @@ const cartSlice = createSlice({
 
       if (state.cartsByUser[userId]) {
         const initialLength = state.cartsByUser[userId].length;
-        state.cartsByUser[userId] = state.cartsByUser[userId].filter(
-          (item) => item.productId !== productId
-        );
+        state.cartsByUser[userId] = state.cartsByUser[userId].filter((item) => {
+          if (item.productId !== productId) return true;
+          if (selectedVariants && item.selectedVariants) {
+            return JSON.stringify(selectedVariants) !== JSON.stringify(item.selectedVariants);
+          }
+          // If no selectedVariants specified, remove all with this productId
+          return false;
+        });
         
         // Log if item wasn't found
         if (state.cartsByUser[userId].length === initialLength) {
