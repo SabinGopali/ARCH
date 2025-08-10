@@ -85,6 +85,8 @@ export default function ProductPage() {
       ...prev,
       [variantIdx]: getProductImageUrl(image),
     }));
+    // Also update the main selected image to reflect the chosen variant image
+    setSelectedImage(image);
   };
 
   const hasDiscount =
@@ -121,6 +123,11 @@ export default function ProductPage() {
       qty: quantity,
       image: selectedImage,
       variantImages: selectedVariantImages,
+      // Include a structured list of selected variants for clarity in the cart
+      selectedVariants: (selectedProduct.variants || []).map((variant, idx) => ({
+        name: variant.name,
+        image: selectedVariantImages[idx] || getProductImageUrl(variant.images?.[0] || ""),
+      })),
       stock: selectedProduct.stock,
     };
 
