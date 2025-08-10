@@ -85,6 +85,7 @@ export default function ProductPage() {
       ...prev,
       [variantIdx]: getProductImageUrl(image),
     }));
+    setSelectedImage(image);
   };
 
   const hasDiscount =
@@ -121,6 +122,11 @@ export default function ProductPage() {
       qty: quantity,
       image: selectedImage,
       variantImages: selectedVariantImages,
+      // Include a structured list of selected variants for clarity in the cart
+      selectedVariants: (selectedProduct.variants || []).map((variant, idx) => ({
+        name: variant.name,
+        image: selectedVariantImages[idx] || getProductImageUrl(variant.images?.[0] || ""),
+      })),
       stock: selectedProduct.stock,
     };
 
@@ -210,6 +216,7 @@ export default function ProductPage() {
               alt={selectedProduct.productName}
               className="w-full h-[500px] lg:h-[600px] object-cover"
               onError={(e) => {
+                e.target.onerror = null;
                 e.target.src = "https://via.placeholder.com/600x600";
               }}
             />
@@ -233,6 +240,7 @@ export default function ProductPage() {
                 alt={`Thumbnail ${idx + 1}`}
                 onClick={() => setSelectedImage(img)}
                 onError={(e) => {
+                  e.target.onerror = null;
                   e.target.src = "https://via.placeholder.com/80x80";
                 }}
                 className={`flex-shrink-0 w-20 h-20 rounded-lg object-cover cursor-pointer transition-all duration-300 ${
@@ -264,8 +272,41 @@ export default function ProductPage() {
               {selectedProduct.productName}
             </h1>
 
-       
-           
+            {selectedProduct.variants?.length > 0 && (
+              <div className="space-y-4 pt-3">
+                {selectedProduct.variants.map((variant, idx) => {
+                  const selectedVariantImageUrl = selectedVariantImages[idx];
+                  return (
+                    <div key={idx} className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-800">{variant.name}</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {variant.images?.map((img, i) => {
+                          const thumbUrl = getProductImageUrl(img);
+                          const isSelected = selectedVariantImageUrl === thumbUrl;
+                          return (
+                            <img
+                              key={i}
+                              src={thumbUrl}
+                              alt={`Variant ${variant.name} ${i + 1}`}
+                              onClick={() => handleVariantImageClick(idx, img)}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "https://via.placeholder.com/64x64";
+                              }}
+                              className={`w-12 h-12 rounded-lg object-cover cursor-pointer transition-all duration-300 ${
+                                isSelected
+                                  ? "ring-2 ring-blue-500 scale-105"
+                                  : "ring-1 ring-gray-200 hover:ring-gray-300"
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -385,68 +426,7 @@ export default function ProductPage() {
         </motion.div>
       </div>
 
-      {selectedProduct.variants?.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="mt-16 bg-white rounded-2xl shadow-sm p-6 max-w-7xl mx-auto"
-        >
-          <h3 className="text-xl font-semibold text-gray-900 mb-8">
-            Product Variants
-          </h3>
-          <div className="space-y-8">
-            {selectedProduct.variants.map((variant, idx) => {
-              const selectedVariantImageUrl = selectedVariantImages[idx];
-              return (
-                <div key={idx} className="space-y-4">
-                  <h4 className="text-lg font-medium text-gray-800">{variant.name}</h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {selectedVariantImageUrl && (
-                      <div className="bg-gray-50 rounded-xl overflow-hidden">
-                        <img
-                          src={selectedVariantImageUrl}
-                          alt={`Variant ${variant.name}`}
-                          className="w-full h-64 md:h-80 object-cover"
-                          onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/400x320";
-                          }}
-                        />
-                      </div>
-                    )}
-                    <div className="space-y-3">
-                      <h5 className="font-medium text-gray-700">Available Images:</h5>
-                      <div className="flex flex-wrap gap-3">
-                        {variant.images?.map((img, i) => {
-                          const thumbUrl = getProductImageUrl(img);
-                          const isSelected = selectedVariantImageUrl === thumbUrl;
-                          return (
-                            <img
-                              key={i}
-                              src={thumbUrl}
-                              alt={`Variant Thumbnail ${i + 1}`}
-                              onClick={() => handleVariantImageClick(idx, img)}
-                              onError={(e) => {
-                                e.target.src = "https://via.placeholder.com/64x64";
-                              }}
-                              className={`w-16 h-16 rounded-lg object-cover cursor-pointer transition-all duration-300 ${
-                                isSelected
-                                  ? "border-2 border-blue-500 scale-105"
-                                  : "border border-gray-200 hover:border-gray-300"
-                              }`}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
-      )}
+      {/* Variants selector moved above product info */}
     </div>
   );
 }
