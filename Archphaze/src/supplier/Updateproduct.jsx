@@ -56,17 +56,15 @@ export default function Updateproduct() {
   // Helper function to construct image URL - improved error handling
   const getImageUrl = (imagePath) => {
     if (!imagePath) return "/placeholder-image.jpg";
-    
-    // Handle different image path formats
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-    
-    // Replace backslashes with forward slashes and construct proper URL
-    let cleanPath = imagePath.replace(/\\/g, "/");
-    // Remove leading slash if present to avoid double slashes
-    cleanPath = cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath;
-    return `http://localhost:3000/${cleanPath}`;
+
+    if (imagePath.startsWith("http")) return imagePath;
+
+    const cleanPath = imagePath.replace(/\\/g, "/");
+    const normalized = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
+    const base = (typeof window !== "undefined" && window.location && window.location.origin)
+      ? (window.location.origin.includes("localhost") ? "http://localhost:3000" : window.location.origin)
+      : "http://localhost:3000";
+    return `${base}${normalized}`;
   };
 
   // Fetch existing product data
@@ -76,7 +74,7 @@ export default function Updateproduct() {
       
       try {
         setFetchLoading(true);
-        const response = await fetch(`/backend/product/get/${id}`);
+        const response = await fetch(`/backend/product/get/${id}`, { credentials: "include" });
         const data = await response.json();
         
         if (!response.ok) {
@@ -90,15 +88,15 @@ export default function Updateproduct() {
           category: data.category || "Test FY SOP Category 1",
           brand: data.brand || "",
           description: data.description || "",
-          price: data.price || "",
-          specialPrice: data.specialPrice || "",
-          stock: data.stock || "",
+          price: data.price ?? "",
+          specialPrice: data.specialPrice ?? "",
+          stock: data.stock ?? "",
           sku: data.sku || "",
           freeItems: data.freeItems || "",
           available: data.available !== undefined ? data.available : true,
-          warrantyType: data.warrantyType || "",
-          warrantyPeriod: data.warrantyPeriod || "",
-          warrantyPolicy: data.warrantyPolicy || "",
+          warrantyType: data.warranty?.type || "",
+          warrantyPeriod: data.warranty?.period || "",
+          warrantyPolicy: data.warranty?.policy || "",
         });
 
         // Set existing images - improved handling
@@ -350,11 +348,15 @@ export default function Updateproduct() {
 
       body.append("variants", JSON.stringify(variantsData));
 
-      // Append new variant images with proper indexing
-      variants.forEach((variant, variantIndex) => {
-        if (variant.name.trim() !== "" && variant.images.length > 0) {
-          variant.images.forEach((img) => {
-            body.append(`variantImages_${variantIndex}`, img.file);
+      // Append new variant images with proper indexing (compressed to match variantsData)
+      const namedVariants = variants
+        .map((v, originalIndex) => ({ v, originalIndex }))
+        .filter(({ v }) => v.name.trim() !== "");
+
+      namedVariants.forEach(({ v }, compressedIndex) => {
+        if (v.images && v.images.length > 0) {
+          v.images.forEach((img) => {
+            body.append(`variantImages_${compressedIndex}`, img.file);
           });
         }
       });
@@ -364,7 +366,8 @@ export default function Updateproduct() {
       body.append("userMail", currentUser.email);
 
       const res = await fetch(`/backend/product/update/${id}`, {
-        method: "PUT",
+        method: "POST",
+        credentials: "include",
         body,
       });
 

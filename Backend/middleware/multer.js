@@ -16,20 +16,14 @@ const storage = multer.diskStorage({
     let subfolder = "others"; // default fallback
 
     // Define folders based on field name
-    switch (file.fieldname) {
-      case "images":
-        subfolder = "products";
-        break;
-      case "variantImages":
-        subfolder = "variants";
-        break;
-      case "profile":
-        subfolder = "profiles";
-        break;
-      case "logo":
-      case "bgImage":
-        subfolder = "store-profile";
-        break;
+    if (file.fieldname === "images") {
+      subfolder = "products";
+    } else if (file.fieldname === "variantImages" || file.fieldname.startsWith("variantImages_")) {
+      subfolder = "variants";
+    } else if (file.fieldname === "profile") {
+      subfolder = "profiles";
+    } else if (file.fieldname === "logo" || file.fieldname === "bgImage") {
+      subfolder = "store-profile";
     }
 
     const finalPath = path.join(rootUploadDir, subfolder);
