@@ -73,6 +73,14 @@ export default function Products() {
     }
   };
 
+  const toUrl = (pathStr) => {
+    if (!pathStr) return "";
+    let u = String(pathStr).replace(/\\\\/g, "/");
+    if (u.startsWith("http")) return u;
+    if (u.startsWith("/")) return `http://localhost:3000/${u.slice(1)}`;
+    return `http://localhost:3000/${u}`;
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
@@ -124,7 +132,7 @@ export default function Products() {
                         <td className="py-3 px-4">
                           {p.images?.[0] ? (
                             <img
-                              src={`http://localhost:3000/${p.images[0]}`}
+                              src={toUrl(p.images[0])}
                               alt={p.productName}
                               className="w-12 h-12 object-contain border rounded"
                             />

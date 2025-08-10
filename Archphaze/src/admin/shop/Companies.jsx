@@ -50,6 +50,14 @@ export default function Companies() {
     }
   };
 
+  const toUrl = (p) => {
+    if (!p) return "";
+    let u = String(p).replace(/\\\\/g, "/");
+    if (u.startsWith("http")) return u;
+    if (u.startsWith("/")) return `http://localhost:3000/${u.slice(1)}`;
+    return `http://localhost:3000/${u}`;
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
@@ -103,7 +111,7 @@ export default function Companies() {
                         </td>
                         <td className="py-3 px-4">
                           {c.logo ? (
-                            <img src={`http://localhost:3000/${c.logo}`} alt="logo" className="w-12 h-12 object-contain border rounded" />
+                            <img src={toUrl(c.logo)} alt="logo" className="w-12 h-12 object-contain border rounded" />
                           ) : (
                             <span className="text-gray-400">No logo</span>
                           )}
