@@ -367,7 +367,7 @@ export default function ShoppingCart() {
           </div>
           
           {selectedProducts.length > 0 ? (
-            <Link to="/checkout">
+            <Link to="/checkout" state={{ selectedProducts, rawTotalPrice, couponDiscount, totalPrice }}>
               <button
                 className="w-full bg-black text-white py-4 rounded-lg text-sm font-medium hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-black"
                 type="button"
