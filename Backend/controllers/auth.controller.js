@@ -115,6 +115,7 @@ export const signin = async (req, res, next) => {
       isSubUser: true,
       role: subUser.role,
       supplierId: subUser.supplierRef?.toString?.() || null,
+      supplierRef: subUser.supplierRef?.toString?.() || null,
       username: subUser.username,
       email: subUser.email,
     };

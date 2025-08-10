@@ -42,9 +42,7 @@ export default function Supplierlogin() {
         // Redirect based on account type
         if (data.isAdmin) {
           navigate('/dashboard');
-        } else if (data.isSupplier) {
-          navigate('/supplierdashboard');
-        } else if (data.isSubUser) {
+        } else if (data.isSupplier || data.isSubUser) {
           navigate('/supplierdashboard');
         } else {
           dispatch(signInFailure('Access denied: Not a supplier account'));
