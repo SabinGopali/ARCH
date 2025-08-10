@@ -78,37 +78,86 @@ export const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: "Product not found" });
 
-    // Handle updated product images
-    const newImages = (req.files?.["images"] || []).map((file) =>
+    // Parse incoming lists for main images
+    const existingImages = JSON.parse(req.body.existingImages || "null"); // array of paths to keep
+    const imagesToDelete = JSON.parse(req.body.imagesToDelete || "[]"); // array of paths to delete
+
+    // Gather newly uploaded main images
+    const uploadedMainImages = (req.files?.["images"] || []).map((file) =>
       path.join("/uploads/products", file.filename)
     );
-    if (newImages.length > 0) {
-      product.images.forEach((img) => {
+
+    if (Array.isArray(existingImages)) {
+      // Compute final list and delete removed files
+      const keepSet = new Set(existingImages);
+      const removedFromExisting = (product.images || []).filter((img) => !keepSet.has(img));
+
+      // Delete explicitly provided deletions and any removed ones not in keep
+      const deletionCandidates = new Set([...imagesToDelete, ...removedFromExisting]);
+      deletionCandidates.forEach((img) => {
         try {
-          fs.unlinkSync("." + img); // Delete old files safely
+          if (img) fs.unlinkSync("." + img);
         } catch {}
       });
-      product.images = newImages;
+
+      // Final images = kept ones + newly uploaded ones
+      product.images = [...existingImages, ...uploadedMainImages];
+    } else if (uploadedMainImages.length > 0) {
+      // Backward compatible behavior: replace all when new uploaded without existingImages provided
+      (product.images || []).forEach((img) => {
+        try {
+          if (img) fs.unlinkSync("." + img);
+        } catch {}
+      });
+      product.images = uploadedMainImages;
     }
 
     // Handle updated variants
-    const updatedVariants = JSON.parse(req.body.variants || "[]");
-    const variants = updatedVariants.map((variant, index) => {
-      const newVariantImages = (req.files?.[`variantImages_${index}`] || []).map(
-        (file) => path.join("/uploads/variants", file.filename)
+    const bodyVariants = JSON.parse(req.body.variants || "[]");
+
+    // Build new variants array using indexes aligned with provided variants
+    const updatedVariants = bodyVariants.map((variant, index) => {
+      const newVariantImages = (req.files?.[`variantImages_${index}`] || []).map((file) =>
+        path.join("/uploads/variants", file.filename)
       );
+
+      const keepVariantImages = Array.isArray(variant.existingImages)
+        ? variant.existingImages
+        // Backward compatibility: allow `images` to be used for keeping existing images
+        : Array.isArray(variant.images)
+        ? variant.images
+        : [];
+
+      const variantImagesToDelete = Array.isArray(variant.imagesToDelete)
+        ? variant.imagesToDelete
+        : [];
+
+      // Compute deletions for variant: anything explicitly requested, plus anything removed from keep
+      const originalVariantImages = (product.variants?.[index]?.images) || [];
+      const keepSet = new Set(keepVariantImages);
+      const removedFromExisting = originalVariantImages.filter((img) => !keepSet.has(img));
+      const deletionCandidates = new Set([...variantImagesToDelete, ...removedFromExisting]);
+      deletionCandidates.forEach((img) => {
+        try {
+          if (img) fs.unlinkSync("." + img);
+        } catch {}
+      });
+
       return {
         name: variant.name,
-        images: newVariantImages.length ? newVariantImages : variant.images || [],
+        images: [...keepVariantImages, ...newVariantImages],
       };
     });
+
+    if (updatedVariants.length > 0) {
+      product.variants = updatedVariants;
+    }
 
     // Update fields
     product.productName = req.body.productName;
     product.category = req.body.category;
     product.brand = req.body.brand;
     product.description = req.body.description;
-    product.variants = variants;
     product.price = req.body.price;
     product.specialPrice = req.body.specialPrice || 0;
     product.stock = req.body.stock || 0;
@@ -116,8 +165,7 @@ export const updateProduct = async (req, res) => {
     product.freeItems = req.body.freeItems;
 
     if (req.body.available !== undefined) {
-      product.available =
-        req.body.available === true || req.body.available === "true";
+      product.available = req.body.available === true || req.body.available === "true";
     }
 
     product.warranty = {
