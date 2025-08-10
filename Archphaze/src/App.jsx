@@ -136,6 +136,7 @@ import Accountsecurity from './components/Accountsecurity';
             <Route path="/techintro" element={<Techintro/>}/>
             <Route path="/partners" element={<Partners/>}/>
             <Route path="/category" element={<Category/>}/>
+            <Route path="/category/:slug" element={<Userproductshowcase/>}/>
             <Route path="/trustedpartners" element={<Trustedpartners/>}/>
             <Route path="/closingpage" element={<Closingpage/>}/>
             <Route path="/clienttestimonial" element={<Clienttestimonial/>}/>
