@@ -78,7 +78,7 @@ export default function ShoppingCart() {
     const maxQty = product.stock || 99;
     const finalQty = Math.min(newQty, maxQty);
     
-    dispatch(updateQty({ productId: product.productId, qty: finalQty }));
+    dispatch(updateQty({ productId: product.productId, qty: finalQty, selectedVariants: product.selectedVariants }));
 
     // Auto-select item when qty changes
     setSelectedIndexes((prev) => (prev.includes(index) ? prev : [...prev, index]));
@@ -89,7 +89,7 @@ export default function ShoppingCart() {
     if (!product) return;
 
     if (window.confirm(`Remove ${product.name} from cart?`)) {
-      dispatch(removeFromCart(product.productId));
+      dispatch(removeFromCart({ productId: product.productId, selectedVariants: product.selectedVariants }));
       setSelectedIndexes((prev) => prev.filter((i) => i !== index));
     }
   };
@@ -272,6 +272,30 @@ export default function ShoppingCart() {
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-lg truncate">{item.name}</h3>
+                    {Array.isArray(item.selectedVariants) && item.selectedVariants.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {item.selectedVariants.map((v, i) => (
+                            <span key={i} className="text-xs bg-gray-100 border border-gray-200 px-2 py-1 rounded">
+                              {v.name}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {item.selectedVariants.map((v, i) => (
+                            <img
+                              key={i}
+                              src={getImageUrl(v.image)}
+                              alt={`Variant ${v.name}`}
+                              className="w-8 h-8 rounded object-cover border"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {item.stock && (
                       <p className="text-sm text-gray-500 mt-1">
                         {item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}
@@ -367,7 +391,7 @@ export default function ShoppingCart() {
           </div>
           
           {selectedProducts.length > 0 ? (
-            <Link to="/checkout">
+            <Link to="/checkout" state={{ selectedProducts, rawTotalPrice, couponDiscount, totalPrice }}>
               <button
                 className="w-full bg-black text-white py-4 rounded-lg text-sm font-medium hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-black"
                 type="button"

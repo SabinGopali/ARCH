@@ -6,7 +6,9 @@ import { verifyToken } from '../utils/verifyuser.js';
 import { 
   getStoreProfile, 
   createOrUpdateStoreProfile, 
-  deleteStoreProfile 
+  deleteStoreProfile,
+  getAllStoreProfiles,
+  deleteStoreProfileByUserId
 } from '../controllers/store.controller.js';
 
 const router = express.Router();
@@ -53,5 +55,9 @@ router.post('/create',
   createOrUpdateStoreProfile
 );
 router.delete('/store-profile', verifyToken, deleteStoreProfile);
+
+// Admin routes
+router.get('/admin/all', verifyToken, getAllStoreProfiles);
+router.delete('/admin/delete/:userId', verifyToken, deleteStoreProfileByUserId);
 
 export default router;

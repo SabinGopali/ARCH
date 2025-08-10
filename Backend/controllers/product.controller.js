@@ -1,6 +1,25 @@
 import Product from "../models/product.model.js"; 
 import fs from "fs";
 import path from "path";
+import SubUser from "../models/subuser.model.js";
+
+function getActingOwnerUserIdFromReq(req) {
+  // If subuser, act on behalf of supplierRef
+  if (req.user?.isSubUser) {
+    return req.user.supplierRef || req.user.supplierId;
+  }
+  return req.user?.id;
+}
+
+async function ensureCanDelete(req) {
+  if (req.user?.isSubUser) {
+    const subUser = await SubUser.findById(req.user.id).select("role");
+    if (!subUser || subUser.role !== "Full Supplier Access") {
+      return { allowed: false, message: "Insufficient permissions to delete" };
+    }
+  }
+  return { allowed: true };
+}
 
 // 🟢 CREATE Product
 export const createProduct = async (req, res) => {
@@ -20,43 +39,35 @@ export const createProduct = async (req, res) => {
       };
     });
 
-const newProduct = new Product({
-  productName: req.body.productName,
-  category: req.body.category,
-  brand: req.body.brand,
-  images: productImages,
-  description: req.body.description,
-  variants,
-  price: req.body.price,
-  specialPrice: req.body.specialPrice || 0,
-  stock: req.body.stock || 0,
-  sku: req.body.sku,
-  freeItems: req.body.freeItems,
-  available: req.body.available !== "false",
-  warranty: {
-    type: req.body.warrantyType,
-    period: req.body.warrantyPeriod,
-    policy: req.body.warrantyPolicy,
-  },
-  userRef: req.body.userRef,   
-  userMail: req.body.userMail,
-});
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+
+    const newProduct = new Product({
+      productName: req.body.productName,
+      category: req.body.category,
+      brand: req.body.brand,
+      images: productImages,
+      description: req.body.description,
+      variants,
+      price: req.body.price,
+      specialPrice: req.body.specialPrice || 0,
+      stock: req.body.stock || 0,
+      sku: req.body.sku,
+      freeItems: req.body.freeItems,
+      available: req.body.available !== "false",
+      warranty: {
+        type: req.body.warrantyType,
+        period: req.body.warrantyPeriod,
+        policy: req.body.warrantyPolicy,
+      },
+      userRef: ownerUserId,
+      userMail: req.body.userMail,
+    });
 
     await newProduct.save();
     res.status(201).json({ message: "Product created successfully", product: newProduct });
   } catch (error) {
-  console.error("Create product error:", error); // already present
-  res.status(500).json({ error: "Failed to create product", details: error.message });
-}
-};
-
-// 🟡 GET all products
-export const getAllProducts = async (req, res) => {
-  try {
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch products" });
+    console.error("Create product error:", error); // already present
+    res.status(500).json({ error: "Failed to create product", details: error.message });
   }
 };
 
@@ -71,12 +82,25 @@ export const getProductById = async (req, res) => {
   }
 };
 
-
+// 🟡 GET all products
+export const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+};
 
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: "Product not found" });
+
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+    if (product.userRef?.toString() !== String(ownerUserId)) {
+      return res.status(403).json({ error: "Not authorized to update this product" });
+    }
 
     // Handle updated product images
     const newImages = (req.files?.["images"] || []).map((file) =>
@@ -85,7 +109,7 @@ export const updateProduct = async (req, res) => {
     if (newImages.length > 0) {
       product.images.forEach((img) => {
         try {
-          fs.unlinkSync("." + img); // Delete old files safely
+          fs.unlinkSync("." + img);
         } catch {}
       });
       product.images = newImages;
@@ -134,12 +158,21 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-
 // 🔴 DELETE Product
 export const deleteProduct = async (req, res) => {
   try {
+    const permission = await ensureCanDelete(req);
+    if (!permission.allowed) {
+      return res.status(403).json({ error: permission.message });
+    }
+
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: "Product not found" });
+
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+    if (product.userRef?.toString() !== String(ownerUserId)) {
+      return res.status(403).json({ error: "Not authorized to delete this product" });
+    }
 
     // Remove all image files
     product.images.forEach(img => {

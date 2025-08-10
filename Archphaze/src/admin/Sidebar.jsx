@@ -67,10 +67,8 @@ const Sidebar = () => {
 
               {shopDropdownOpen && (
                 <div className="ml-6 mt-1 space-y-1">
-                  <SidebarLink to="/speakerinfo" label="Speaker" />
-                  <SidebarLink to="/financials/monitors" label="Monitors" />
-                  <SidebarLink to="/financials/accessories" label="Accessories" />
-                  <SidebarLink to="/financials/software" label="Software" />
+                  <SidebarLink to="/admin/companies" label="Companies" />
+                  <SidebarLink to="/admin/products" label="Products" />
                 </div>
               )}
             </div>

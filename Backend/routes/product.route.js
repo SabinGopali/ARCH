@@ -8,6 +8,7 @@ import {
   deleteProduct,
 } from "../controllers/product.controller.js";
 import { verifyToken } from "../utils/verifyuser.js";
+import { requireSupplierOrFullAccess, requireAnySupplier } from "../utils/roles.js";
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post(
   "/create",
   verifyToken,
+  requireAnySupplier,
   upload.fields([
     { name: "images", maxCount: 5 },
     { name: "variantImages_0", maxCount: 3 },
@@ -28,6 +30,7 @@ router.post(
 router.post(
   "/update/:id",
   verifyToken,
+  requireAnySupplier,
   upload.fields([
     { name: "images", maxCount: 5 },
     { name: "variantImages_0", maxCount: 3 },
@@ -38,7 +41,7 @@ router.post(
 );
 
 // Delete product by ID (with auth)
-router.delete("/delete/:id", verifyToken, deleteProduct);
+router.delete("/delete/:id", verifyToken, requireSupplierOrFullAccess, deleteProduct);
 
 // Get single product by ID (no auth)
 router.get("/get/:id", getProductById);

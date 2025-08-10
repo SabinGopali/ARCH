@@ -124,3 +124,40 @@ export const deleteStoreProfile = async (req, res, next) => {
     res.status(500).json({ message: "Failed to delete store profile" });
   }
 };
+
+// Admin: Get all store profiles
+export const getAllStoreProfiles = async (req, res) => {
+  try {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const storeProfiles = await StoreProfile.find()
+      .populate({ path: 'userId', select: 'username email company_name company_location isSupplier' })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ storeProfiles });
+  } catch (err) {
+    console.error("Error fetching all store profiles:", err);
+    return res.status(500).json({ message: "Failed to fetch store profiles" });
+  }
+};
+
+// Admin: Delete store profile by userId
+export const deleteStoreProfileByUserId = async (req, res) => {
+  try {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { userId } = req.params;
+    const deleted = await StoreProfile.findOneAndDelete({ userId });
+    if (!deleted) {
+      return res.status(404).json({ message: "Store profile not found" });
+    }
+    return res.status(200).json({ message: "Store profile deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting store profile by userId:", err);
+    return res.status(500).json({ message: "Failed to delete store profile" });
+  }
+};

@@ -92,6 +92,8 @@ import CartInitializer from './components/CartInitializer';
 import Userproductshowcase from './usershop/Userproductshowcase';
 import Orderhistory from './components/Orderhistory';
 import Accountsecurity from './components/Accountsecurity';
+import Companies from './admin/shop/earphone/Companies';
+import Products from './admin/shop/earphone/Products';
 
 
 
@@ -152,7 +154,7 @@ import Accountsecurity from './components/Accountsecurity';
             <Route path="/product" element={<Product/>}/>
             <Route path="/allcategories" element={<Maincategories/>}/>
             <Route path="/cartinitializer" element={<CartInitializer/>}/>
-            <Route path="/userproductshowcase" element={<Userproductshowcase/>}/>
+            <Route path="/category/:slug" element={<Userproductshowcase/>}/>            
             <Route path="/orderhistory" element={<Orderhistory/>}/>
             <Route path="/settings" element={<Accountsecurity/>}/>
             
@@ -184,6 +186,8 @@ import Accountsecurity from './components/Accountsecurity';
             <Route path="/updatespeakerinfo/:id" element={<Updatespeakerinfo/>} />
             <Route path="/addspeakerinfo" element={<Addspeakerinfo />} />
             <Route path="/supplierinfo" element={<Supplierinfo />} />
+            <Route path="/admin/companies" element={<Companies />} />
+            <Route path="/admin/products" element={<Products />} />
 
 
             <Route path="/supplierdashboard" element={<Supplierdashboard />} />

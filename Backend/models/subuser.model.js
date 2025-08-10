@@ -16,7 +16,7 @@ const subUserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["Full Supplier Access", "Asset Management Control"],
+    enum: ["Full Supplier Access", "Asset Management Control", "View Only"],
   },
   isActive: {
     type: Boolean,

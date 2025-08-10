@@ -30,10 +30,10 @@ const JoinOurTeam = () => {
       }
     };
 
-    if (currentUser?._id) {
+    
       fetchCareers();
-    }
-  }, [currentUser?._id]);
+    
+  }, []);
 
   return (
     <>

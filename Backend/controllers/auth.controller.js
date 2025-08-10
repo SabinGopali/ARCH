@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
+import SubUser from "../models/subuser.model.js";
 
 
 
@@ -63,37 +64,84 @@ export const signin = async (req, res, next) => {
   }
 
   try {
+    // Try authenticating a main account first
     const validUser = await User.findOne({ email });
-    if (!validUser) {
+
+    if (validUser) {
+      const validPassword = bcryptjs.compareSync(password, validUser.password);
+      if (!validPassword) {
+        return next(errorHandler(400, 'Invalid password'));
+      }
+
+      const payload = {
+        id: validUser._id.toString(),
+        isAdmin: validUser.isAdmin,
+        isSupplier: validUser.isSupplier,
+        username: validUser.username,
+        isSubUser: false,
+      };
+
+      const token = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: '1d',
+      });
+
+      const { password: pass, ...userWithoutPassword } = validUser._doc;
+
+      return res
+        .status(200)
+        .cookie('access_token', token, {
+          httpOnly: true,
+          // secure: true, // enable in production
+          maxAge: 24 * 60 * 60 * 1000,
+        })
+        .json(userWithoutPassword);
+    }
+
+    // If not a main account, try sub-user
+    const subUser = await SubUser.findOne({ email, isActive: true });
+    if (!subUser) {
       return next(errorHandler(404, 'User not found'));
     }
 
-    const validPassword = bcryptjs.compareSync(password, validUser.password);
-    if (!validPassword) {
+    const isSubUserPasswordValid = bcryptjs.compareSync(password, subUser.password);
+    if (!isSubUserPasswordValid) {
       return next(errorHandler(400, 'Invalid password'));
     }
 
-    const payload = {
-      id: validUser._id.toString(),
-      isAdmin: validUser.isAdmin,
-      isSupplier: validUser.isSupplier,
-      username: validUser.username,
+    const subUserPayload = {
+      id: subUser._id.toString(),
+      isAdmin: false,
+      isSupplier: false,
+      isSubUser: true,
+      role: subUser.role,
+      supplierId: subUser.supplierRef?.toString?.() || null,
+      supplierRef: subUser.supplierRef?.toString?.() || null,
+      username: subUser.username,
+      email: subUser.email,
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: '1d', // optional, good practice
+    const subUserToken = jwt.sign(subUserPayload, process.env.JWT_SECRET, {
+      expiresIn: '1d',
     });
 
-    const { password: pass, ...userWithoutPassword } = validUser._doc;
+    const { password: subPass, ...subUserWithoutPassword } = subUser._doc;
 
-    res
+    return res
       .status(200)
-      .cookie('access_token', token, {
+      .cookie('access_token', subUserToken, {
         httpOnly: true,
         // secure: true, // enable in production
-    maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+        maxAge: 24 * 60 * 60 * 1000,
       })
-      .json(userWithoutPassword);
+      .json({
+        ...subUserWithoutPassword,
+        isSubUser: true,
+        isSupplier: false,
+        isAdmin: false,
+        role: subUser.role,
+        supplierId: subUser.supplierRef,
+        isActive: subUser.isActive,
+      });
   } catch (error) {
     next(error);
   }
@@ -109,14 +157,14 @@ export const google = async (req, res, next) => {
       const token = jwt.sign(
         { id: user._id, isAdmin: user.isAdmin, isSupplier: user.isSupplier },
         process.env.JWT_SECRET,
-        { expiresIn: '1d' } // 1 day token expiry
+        { expiresIn: '1d' }
       );
       const { password, ...rest } = user._doc;
       res
         .status(200)
         .cookie('access_token', token, {
           httpOnly: true,
-          maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+          maxAge: 24 * 60 * 60 * 1000,
         })
         .json(rest);
     } else {
@@ -140,7 +188,7 @@ export const google = async (req, res, next) => {
       const token = jwt.sign(
         { id: newUser._id, isAdmin: newUser.isAdmin, isSupplier: newUser.isSupplier },
         process.env.JWT_SECRET,
-        { expiresIn: '1d' } // 1 day token expiry
+        { expiresIn: '1d' }
       );
 
       const { password, ...rest } = newUser._doc;
@@ -149,7 +197,7 @@ export const google = async (req, res, next) => {
         .status(200)
         .cookie('access_token', token, {
           httpOnly: true,
-          maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+          maxAge: 24 * 60 * 60 * 1000,
         })
         .json(rest);
     }
@@ -157,4 +205,3 @@ export const google = async (req, res, next) => {
     next(error);
   }
 };
-

@@ -169,7 +169,7 @@ export default function Productshowcase() {
 
     if (min === max) {
       setPriceRanges([
-        { label: `AED ${min.toLocaleString()}`, id: "p1", min, max },
+        { label: `Rs.  ${min.toLocaleString()}`, id: "p1", min, max },
       ]);
       return;
     }
@@ -183,7 +183,7 @@ export default function Productshowcase() {
       const rMin = Math.round(min + i * step);
       const rMax = i === bucketCount - 1 ? Math.round(max) : Math.round(min + (i + 1) * step - 1);
       return {
-        label: `${rMin.toLocaleString()} - ${rMax.toLocaleString()} AED`,
+        label: `${rMin.toLocaleString()} - ${rMax.toLocaleString()} Rs. `,
         id: `p${i + 1}`,
         min: rMin,
         max: rMax,
@@ -511,11 +511,11 @@ export default function Productshowcase() {
 
                       <div className="flex items-center space-x-3">
                         <span className="text-red-600 font-bold text-lg md:text-xl">
-                          AED {hasDiscount ? product.specialPrice.toLocaleString() : product.price.toLocaleString()}
+                          Rs.  {hasDiscount ? product.specialPrice.toLocaleString() : product.price.toLocaleString()}
                         </span>
                         {hasDiscount && (
                           <span className="text-gray-400 line-through text-sm md:text-base">
-                            AED {product.price.toLocaleString()}
+                            Rs.  {product.price.toLocaleString()}
                           </span>
                         )}
                       </div>

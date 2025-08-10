@@ -38,17 +38,11 @@ export default function Supplierlogin() {
 
       if (res.ok) {
         dispatch(signInSuccess(data));
+
         // Redirect based on account type
         if (data.isAdmin) {
           navigate('/dashboard');
-        } else {
-          navigate('/');
-        }
-      }
-
-      if (res.ok) {
-        if (data.isSupplier) {
-          dispatch(signInSuccess(data));
+        } else if (data.isSupplier || data.isSubUser) {
           navigate('/supplierdashboard');
         } else {
           dispatch(signInFailure('Access denied: Not a supplier account'));
@@ -63,7 +57,7 @@ export default function Supplierlogin() {
     let timer;
     if (errorMessage === 'Access denied: Not a supplier account') {
       timer = setTimeout(() => {
-        dispatch(signInFailure(null)); // Clear the error after 1 second
+        dispatch(signInFailure(null));
       }, 1000);
     }
     return () => clearTimeout(timer);

@@ -43,15 +43,8 @@ export default function Login() {
         // Redirect based on user type
         if (data.isAdmin) {
           navigate('/dashboard');
-        } else if (data.isSupplier) {
+        } else if (data.isSupplier || data.isSubUser) {
           navigate('/supplierdashboard');
-        } else if (data.isSubUser) {
-          // Customize based on sub-user role if needed
-          if (data.role === 'manager') {
-            navigate('/supplierdashboard'); // or another route like '/sub-user-manager'
-          } else {
-            navigate('/supplierdashboard'); // default sub-user route
-          }
         } else {
           navigate('/');
         }
