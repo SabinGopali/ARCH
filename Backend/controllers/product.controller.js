@@ -141,14 +141,20 @@ export const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: "Product not found" });
 
+    // Authorization: admin or owner of the product
+    const isOwner = product.userRef?.toString() === req.user?.id?.toString();
+    if (!req.user?.isAdmin && !isOwner) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
     // Remove all image files
-    product.images.forEach(img => {
+    product.images.forEach((img) => {
       const fullPath = "." + img;
       if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
     });
 
-    product.variants.forEach(variant => {
-      variant.images.forEach(img => {
+    product.variants.forEach((variant) => {
+      variant.images.forEach((img) => {
         const fullPath = "." + img;
         if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
       });
