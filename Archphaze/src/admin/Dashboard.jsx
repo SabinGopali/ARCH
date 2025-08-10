@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FaArrowUp, FaUsers } from "react-icons/fa";
 import { FiUserPlus } from "react-icons/fi";
 import { MdOutlineWork } from "react-icons/md";
@@ -7,51 +7,146 @@ import { PieChart, Pie, Cell, Tooltip } from "recharts";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import Sidebar from "./Sidebar";
 
-const stats = [
-  {
-    label: "Total Users",
-    value: 12600,
-    change: "+2%",
-    icon: <FaUsers className="text-blue-600" />,
-  },
-  {
-    label: "Career Submissions",
-    value: 1186,
-    change: "+15%",
-    icon: <MdOutlineWork className="text-green-600" />,
-  },
-  {
-    label: "New Registrations",
-    value: 22,
-    change: "+2%",
-    icon: <FiUserPlus className="text-purple-600" />,
-  },
-  {
-    label: "User Satisfaction",
-    value: "89.9%",
-    change: "+5%",
-    icon: <AiOutlineSmile className="text-yellow-500" />,
-  },
-];
-
-const barData = [
-  { date: "1 June", Career: 50, Services: 60, Shop: 45 },
-  { date: "2 June", Career: 45, Services: 55, Shop: 48 },
-  { date: "3 June", Career: 52, Services: 59, Shop: 50 },
-  { date: "4 June", Career: 70, Services: 75, Shop: 60 },
-  { date: "5 June", Career: 35, Services: 45, Shop: 40 },
-  { date: "6 June", Career: 58, Services: 65, Shop: 49 },
-  { date: "7 June", Career: 50, Services: 55, Shop: 47 },
-];
-
-const attendanceData = [
-  { name: "Present", value: 12562, color: "#6366f1" },
-  { name: "On Leave", value: 10, color: "#facc15" },
-  { name: "On Holiday", value: 25, color: "#34d399" },
-  { name: "Absent", value: 4, color: "#f87171" },
-];
-
 export default function Dashboard() {
+  const [stats, setStats] = useState([]);
+  const [barData, setBarData] = useState([]);
+  const [breakdownData, setBreakdownData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [userRes, careerRes, serviceRes, productRes] = await Promise.all([
+          fetch("/backend/user/getusers", { credentials: "include" }),
+          fetch("/backend/career/getCareer"),
+          fetch("/backend/services/getservice"),
+          fetch("/backend/product/getall"),
+        ]);
+
+        const [userData, careerData, serviceData, products] = await Promise.all([
+          userRes.json(),
+          careerRes.json(),
+          serviceRes.json(),
+          productRes.json(),
+        ]);
+
+        const totalUsers = userData?.totalUsers ?? 0;
+        const lastMonthUsers = userData?.lastMonthUsers ?? 0;
+
+        const totalCareers = careerData?.totalCareers ?? 0;
+        const lastMonthCareers = careerData?.lastMonthCareers ?? 0;
+
+        const totalServices = serviceData?.totalservices ?? 0;
+        const lastMonthServices = serviceData?.lastMonthservices ?? 0;
+
+        const productArray = Array.isArray(products) ? products : [];
+        const totalProducts = productArray.length;
+
+        const now = new Date();
+        const oneMonthAgo = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          now.getDate()
+        );
+        const lastMonthProducts = productArray.filter(
+          (p) => new Date(p.createdAt) >= oneMonthAgo
+        ).length;
+
+        setStats([
+          {
+            label: "Total Users",
+            value: totalUsers,
+            change: `+${lastMonthUsers} this month`,
+            icon: <FaUsers className="text-blue-600" />,
+          },
+          {
+            label: "Career Records",
+            value: totalCareers,
+            change: `+${lastMonthCareers} this month`,
+            icon: <MdOutlineWork className="text-green-600" />,
+          },
+          {
+            label: "Total Services",
+            value: totalServices,
+            change: `+${lastMonthServices} this month`,
+            icon: <FiUserPlus className="text-purple-600" />,
+          },
+          {
+            label: "Total Products",
+            value: totalProducts,
+            change: `+${lastMonthProducts} this month`,
+            icon: <AiOutlineSmile className="text-yellow-500" />,
+          },
+        ]);
+
+        // Prepare 7-day bar data (Career/Services/Shop per day)
+        const days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          return d;
+        });
+
+        const formatKey = (d) => d.toISOString().slice(0, 10);
+        const formatLabel = (d) =>
+          d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+
+        const countByDay = (arr) => {
+          const map = {};
+          (arr || []).forEach((item) => {
+            const t = new Date(item.createdAt);
+            const key = formatKey(t);
+            map[key] = (map[key] || 0) + 1;
+          });
+          return map;
+        };
+
+        const careerCounts = countByDay(careerData?.careers);
+        const serviceCounts = countByDay(serviceData?.services);
+        const productCounts = countByDay(productArray);
+
+        const weekly = days.map((d) => {
+          const key = formatKey(d);
+          return {
+            date: formatLabel(d),
+            Career: careerCounts[key] || 0,
+            Services: serviceCounts[key] || 0,
+            Shop: productCounts[key] || 0,
+          };
+        });
+        setBarData(weekly);
+
+        // Pie breakdown across main entities
+        const pie = [
+          { name: "Users", value: totalUsers, color: "#6366f1" },
+          { name: "Careers", value: totalCareers, color: "#10b981" },
+          { name: "Services", value: totalServices, color: "#f59e0b" },
+          { name: "Products", value: totalProducts, color: "#f87171" },
+        ];
+        setBreakdownData(pie);
+      } catch (error) {
+        console.error("Failed to load dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAll();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
+        <div className="md:w-64 w-full">
+          <Sidebar />
+        </div>
+        <main className="flex-1 px-4 py-6 md:px-8 lg:px-12">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-sm text-gray-600 mb-6">Loading live metrics…</p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       <div className="md:w-64 w-full">
@@ -73,7 +168,7 @@ export default function Dashboard() {
                   <h4 className="text-base font-medium text-gray-700">{item.label}</h4>
                   <p className="text-xl font-semibold text-gray-900">{item.value}</p>
                   <p className="text-xs text-green-500 flex items-center gap-1">
-                    <FaArrowUp /> {item.change} from last quarter
+                    <FaArrowUp /> {item.change}
                   </p>
                 </div>
               </div>
@@ -83,7 +178,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white p-5 rounded-xl shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800">Service & Shop Performance (Weekly)</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-800">Service & Shop Performance (Last 7 Days)</h2>
             <div className="w-full h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData}>
@@ -99,11 +194,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white p-5 rounded-xl shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800">User Attendance (4 June 2024)</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-800">Data Breakdown</h2>
             <div className="flex flex-col items-center">
               <PieChart width={300} height={300}>
                 <Pie
-                  data={attendanceData}
+                  data={breakdownData}
                   cx="50%"
                   cy="50%"
                   innerRadius={70}
@@ -111,14 +206,14 @@ export default function Dashboard() {
                   dataKey="value"
                   nameKey="name"
                 >
-                  {attendanceData.map((entry, index) => (
+                  {breakdownData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
               <div className="mt-4 w-full max-w-xs space-y-2">
-                {attendanceData.map((entry, idx) => (
+                {breakdownData.map((entry, idx) => (
                   <div key={idx} className="flex justify-between text-sm text-gray-700">
                     <span className="font-medium">{entry.name}</span>
                     <span>{entry.value}</span>
