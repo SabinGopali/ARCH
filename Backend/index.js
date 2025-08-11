@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import cookieParser from 'cookie-parser';
-
+import cors from 'cors';
 
 
 
@@ -19,6 +19,7 @@ import productroute from './routes/product.route.js'
 import subuserroute from './routes/subuser.route.js'
 import storeroute from './routes/store.route.js'
 import paymentroute from './routes/payment.route.js'
+import orderroute from './routes/order.route.js'
 
 
 
@@ -34,7 +35,17 @@ const app = express();
 
 // Middleware
 app.use(cookieParser());
-app.use(express.json());
+
+// Conditionally parse JSON (skip Stripe webhook raw body)
+app.use((req, res, next) => {
+  if (req.originalUrl === '/backend/payment/webhook') {
+    return next();
+  }
+  return express.json()(req, res, next);
+});
+
+// Enable CORS for frontend
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 // ✅ Serve uploaded images statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -54,6 +65,7 @@ app.use('/backend/product', productroute);
 app.use('/backend/subuser', subuserroute);
 app.use('/backend/store', storeroute);
 app.use('/backend/payment', paymentroute);
+app.use('/backend/order', orderroute);
 
 
 
