@@ -2,6 +2,7 @@ import express from "express";
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import Product from "../models/product.model.js";
+import Order from "../models/order.model.js";
 
 dotenv.config(); // ✅ Make sure environment variables are loaded first
 
@@ -58,6 +59,9 @@ router.post("/create-checkout-session", async (req, res) => {
       line_items,
       success_url: `${frontendBase}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendBase}/cancel`,
+      customer_creation: 'if_required',
+      billing_address_collection: 'auto',
+      shipping_address_collection: { allowed_countries: ['NP', 'IN'] },
     });
 
     res.json({ url: session.url });
@@ -91,24 +95,64 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       // Retrieve line items to know what was purchased
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100, expand: ['data.price.product'] });
 
-      // Decrement stock for each item
+      // Group items by supplier using product.userRef
+      const itemsBySupplier = new Map();
+
       for (const item of lineItems.data) {
         const qty = item.quantity || 0;
-        // We stored productId in price_data.product_data.metadata
         const productId = item.price?.product?.metadata?.productId;
+        const name = item.description;
+        const unitAmount = item.amount_total && qty > 0 ? Math.round(item.amount_total / qty) : item.price?.unit_amount || 0;
 
-        if (productId && Number.isInteger(qty) && qty > 0) {
-          await Product.findByIdAndUpdate(
-            productId,
-            { $inc: { stock: -qty } },
-            { new: true }
-          );
-        }
+        if (!productId || !Number.isInteger(qty) || qty <= 0) continue;
+
+        const productDoc = await Product.findById(productId).lean();
+        if (!productDoc) continue;
+        const supplierId = productDoc.userRef;
+
+        // Decrement stock
+        await Product.findByIdAndUpdate(productId, { $inc: { stock: -qty } });
+
+        const orderItem = {
+          productId,
+          name: name || productDoc.productName,
+          unitAmount: unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100),
+          quantity: qty,
+          subtotal: (unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100)) * qty,
+        };
+
+        if (!itemsBySupplier.has(supplierId)) itemsBySupplier.set(supplierId, []);
+        itemsBySupplier.get(supplierId).push(orderItem);
+      }
+
+      // Create an Order per supplier
+      for (const [supplierId, items] of itemsBySupplier.entries()) {
+        const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
+        await Order.create({
+          supplierId,
+          items,
+          currency: 'npr',
+          totalAmount,
+          status: 'paid',
+          stripeSessionId: session.id,
+          customer: {
+            name: session.customer_details?.name,
+            email: session.customer_details?.email,
+            phone: session.customer_details?.phone,
+          },
+          shippingAddress: session.shipping_details?.address ? {
+            line1: session.shipping_details.address.line1,
+            line2: session.shipping_details.address.line2,
+            city: session.shipping_details.address.city,
+            state: session.shipping_details.address.state,
+            postal_code: session.shipping_details.address.postal_code,
+            country: session.shipping_details.address.country,
+          } : undefined,
+        });
       }
     }
   } catch (err) {
     console.error('Webhook handling error:', err);
-    // We still acknowledge receipt to avoid retries storm; log to fix
   }
 
   res.json({ received: true });

@@ -1,80 +1,41 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiMenu } from "react-icons/fi";
 import Suppliersidebar from "./Suppliersidebar";
-
-const orders = [
-  {
-    id: 1,
-    customer: "Theresa Webb",
-    location: "Recology, San Mateo",
-    orderNo: "227772827762342",
-    date: "25th Jan. 2024",
-    Quantity: "5 hours",
-    workers: ["🧑‍🔧", "👷"],
-    vehicles: ["🚚", "🚗"],
-    bill: "$1450",
-    status: "Completed orders",
-  },
-  {
-    id: 2,
-    customer: "John Doe",
-    location: "Eco Services, LA",
-    orderNo: "123456789012345",
-    date: "10th Feb. 2024",
-    Quantity: "3 hours",
-    workers: ["👷"],
-    vehicles: ["🚗"],
-    bill: "$950",
-    status: "Active orders",
-  },
-  {
-    id: 3,
-    customer: "Alice Smith",
-    location: "GreenWorks, NY",
-    orderNo: "998877665544332",
-    date: "5th Mar. 2024",
-    Quantity: "7 hours",
-    workers: ["🧑‍🔧"],
-    vehicles: ["🚚"],
-    bill: "$1800",
-    status: "Requested orders",
-  },
-  {
-    id: 4,
-    customer: "Michael Johnson",
-    location: "BuildCo, TX",
-    orderNo: "443322110099887",
-    date: "15th Mar. 2024",
-    Quantity: "6 hours",
-    workers: ["👷", "🧑‍🔧"],
-    vehicles: ["🚗", "🚚"],
-    bill: "$1600",
-    status: "Waiting for Assign",
-  },
-  {
-    id: 5,
-    customer: "Emma Williams",
-    location: "UrbanFix, FL",
-    orderNo: "556677889900112",
-    date: "20th Mar. 2024",
-    Quantity: "4 hours",
-    workers: ["🧑‍🔧"],
-    vehicles: ["🚚"],
-    bill: "$1200",
-    status: "Ready to deploy",
-  },
-];
 
 export default function Order() {
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("Completed orders");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredOrders = orders
-    .filter((order) =>
-      order.customer.toLowerCase().includes(search.toLowerCase())
-    )
-    .filter((order) => order.status === selectedStatus);
+  // TODO: replace with real supplier auth context
+  const supplierId = localStorage.getItem('supplierId') || '';
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!supplierId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`http://localhost:3000/backend/order/supplier/${supplierId}`);
+        const data = await res.json();
+        setOrders(Array.isArray(data.orders) ? data.orders : []);
+      } catch (e) {
+        console.error('Failed to load orders', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [supplierId]);
+
+  const filteredOrders = useMemo(() => {
+    return orders
+      .filter((o) => (o.customer?.name || '').toLowerCase().includes(search.toLowerCase()))
+      .filter((o) => (selectedStatus === 'Completed orders' ? o.status === 'paid' : true));
+  }, [orders, search, selectedStatus]);
 
   const allStatuses = [
     "Active orders",
@@ -133,7 +94,7 @@ export default function Order() {
               >
                 {tab}
                 <span className="ml-1 text-xs text-gray-500">
-                  ({orders.filter((order) => order.status === tab).length})
+                  ({filteredOrders.length})
                 </span>
               </button>
             ))}
@@ -158,50 +119,42 @@ export default function Order() {
             <table className="min-w-[700px] w-full text-sm text-left">
               <thead className="text-gray-600 border-b">
                 <tr>
-                  <th className="py-2 px-3">
-                    <input type="checkbox" />
-                  </th>
-                  <th className="py-2 px-3">CUSTOMER NAME</th>
                   <th className="py-2 px-3">ORDER NO.</th>
                   <th className="py-2 px-3">DATE</th>
-                  <th className="py-2 px-3">QUANTITY</th>
-                  <th className="py-2 px-3">ACTIONS</th>
-                  <th className="py-2 px-3">TOTAL BILL</th>
+                  <th className="py-2 px-3">CUSTOMER</th>
+                  <th className="py-2 px-3">ITEMS</th>
+                  <th className="py-2 px-3">TOTAL (NPR)</th>
+                  <th className="py-2 px-3">STATUS</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="border-b hover:bg-gray-50">
-                    <td className="py-2 px-3">
-                      <input type="checkbox" />
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="font-medium">{order.customer}</div>
-                      <div className="text-xs text-gray-500">{order.location}</div>
-                    </td>
-                    <td className="py-2 px-3">{order.orderNo}</td>
-                    <td className="py-2 px-3">{order.date}</td>
-                    <td className="py-2 px-3">{order.Quantity}</td>
-                    <td className="py-2 px-3">
-                      <div className="flex flex-wrap items-center gap-1">
-                        {order.workers.map((w, i) => (
-                          <span key={i}>{w}</span>
+                {loading ? (
+                  <tr><td className="py-6 px-3" colSpan={6}>Loading…</td></tr>
+                ) : filteredOrders.length > 0 ? (
+                  filteredOrders.map((o) => (
+                    <tr key={o._id} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-3">{o.stripeSessionId}</td>
+                      <td className="py-2 px-3">{new Date(o.createdAt).toLocaleString()}</td>
+                      <td className="py-2 px-3">
+                        <div className="font-medium">{o.customer?.name || '-'}</div>
+                        <div className="text-xs text-gray-500">{o.customer?.email || ''}</div>
+                      </td>
+                      <td className="py-2 px-3">
+                        {o.items.map((it) => (
+                          <div key={it.productId} className="text-xs">
+                            {it.name} × {it.quantity}
+                          </div>
                         ))}
-                        {order.vehicles.map((v, i) => (
-                          <span key={i}>{v}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-2 px-3 font-semibold">{order.bill}</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-2 px-3 font-semibold">{(o.totalAmount / 100).toFixed(2)}</td>
+                      <td className="py-2 px-3">{o.status}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td className="py-6 px-3" colSpan={6}>No orders found.</td></tr>
+                )}
               </tbody>
             </table>
-
-            {/* No Orders Found */}
-            {filteredOrders.length === 0 && (
-              <div className="text-center py-6 text-gray-500">No orders found.</div>
-            )}
           </div>
         </div>
       </main>

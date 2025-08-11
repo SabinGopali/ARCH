@@ -19,6 +19,7 @@ import productroute from './routes/product.route.js'
 import subuserroute from './routes/subuser.route.js'
 import storeroute from './routes/store.route.js'
 import paymentroute from './routes/payment.route.js'
+import orderroute from './routes/order.route.js'
 
 
 
@@ -64,6 +65,7 @@ app.use('/backend/product', productroute);
 app.use('/backend/subuser', subuserroute);
 app.use('/backend/store', storeroute);
 app.use('/backend/payment', paymentroute);
+app.use('/backend/order', orderroute);
 
 
 
