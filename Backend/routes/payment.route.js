@@ -17,7 +17,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 router.post("/create-checkout-session", async (req, res) => {
   try {
-    const { products } = req.body || {};
+    const { products, userId, email } = req.body || {};
 
     // Basic validation
     if (!Array.isArray(products) || products.length === 0) {
@@ -62,6 +62,8 @@ router.post("/create-checkout-session", async (req, res) => {
       customer_creation: 'if_required',
       billing_address_collection: 'auto',
       shipping_address_collection: { allowed_countries: ['NP', 'IN'] },
+      client_reference_id: userId || undefined,
+      customer_email: email || undefined,
     });
 
     res.json({ url: session.url });
@@ -70,6 +72,74 @@ router.post("/create-checkout-session", async (req, res) => {
     res.status(400).json({ error: err.message || 'Unable to create checkout session' });
   }
 });
+
+async function createOrdersFromSession(session) {
+  // Idempotency: do nothing if we already created orders for this session
+  const exists = await Order.exists({ stripeSessionId: session.id });
+  if (exists) return { created: false, reason: 'already_exists' };
+
+  // Retrieve line items to know what was purchased
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100, expand: ['data.price.product'] });
+
+  // Group items by supplier using product.userRef
+  const itemsBySupplier = new Map();
+
+  for (const item of lineItems.data) {
+    const qty = item.quantity || 0;
+    const productId = item.price?.product?.metadata?.productId;
+    const name = item.description;
+    const unitAmount = item.amount_total && qty > 0 ? Math.round(item.amount_total / qty) : item.price?.unit_amount || 0;
+
+    if (!productId || !Number.isInteger(qty) || qty <= 0) continue;
+
+    const productDoc = await Product.findById(productId).lean();
+    if (!productDoc) continue;
+    const supplierId = productDoc.userRef;
+
+    // Decrement stock
+    await Product.findByIdAndUpdate(productId, { $inc: { stock: -qty } });
+
+    const orderItem = {
+      productId,
+      name: name || productDoc.productName,
+      unitAmount: unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100),
+      quantity: qty,
+      subtotal: (unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100)) * qty,
+    };
+
+    if (!itemsBySupplier.has(supplierId)) itemsBySupplier.set(supplierId, []);
+    itemsBySupplier.get(supplierId).push(orderItem);
+  }
+
+  // Create an Order per supplier
+  for (const [supplierId, items] of itemsBySupplier.entries()) {
+    const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
+    await Order.create({
+      supplierId,
+      items,
+      currency: 'npr',
+      totalAmount,
+      status: 'paid',
+      stripeSessionId: session.id,
+      userId: session.client_reference_id || undefined,
+      customer: {
+        name: session.customer_details?.name,
+        email: session.customer_details?.email?.toLowerCase?.(),
+        phone: session.customer_details?.phone,
+      },
+      shippingAddress: session.shipping_details?.address ? {
+        line1: session.shipping_details.address.line1,
+        line2: session.shipping_details.address.line2,
+        city: session.shipping_details.address.city,
+        state: session.shipping_details.address.state,
+        postal_code: session.shipping_details.address.postal_code,
+        country: session.shipping_details.address.country,
+      } : undefined,
+    });
+  }
+
+  return { created: true };
+}
 
 // Stripe Webhook to handle post-payment fulfillment
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -91,71 +161,28 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-
-      // Retrieve line items to know what was purchased
-      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100, expand: ['data.price.product'] });
-
-      // Group items by supplier using product.userRef
-      const itemsBySupplier = new Map();
-
-      for (const item of lineItems.data) {
-        const qty = item.quantity || 0;
-        const productId = item.price?.product?.metadata?.productId;
-        const name = item.description;
-        const unitAmount = item.amount_total && qty > 0 ? Math.round(item.amount_total / qty) : item.price?.unit_amount || 0;
-
-        if (!productId || !Number.isInteger(qty) || qty <= 0) continue;
-
-        const productDoc = await Product.findById(productId).lean();
-        if (!productDoc) continue;
-        const supplierId = productDoc.userRef;
-
-        // Decrement stock
-        await Product.findByIdAndUpdate(productId, { $inc: { stock: -qty } });
-
-        const orderItem = {
-          productId,
-          name: name || productDoc.productName,
-          unitAmount: unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100),
-          quantity: qty,
-          subtotal: (unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100)) * qty,
-        };
-
-        if (!itemsBySupplier.has(supplierId)) itemsBySupplier.set(supplierId, []);
-        itemsBySupplier.get(supplierId).push(orderItem);
-      }
-
-      // Create an Order per supplier
-      for (const [supplierId, items] of itemsBySupplier.entries()) {
-        const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
-        await Order.create({
-          supplierId,
-          items,
-          currency: 'npr',
-          totalAmount,
-          status: 'paid',
-          stripeSessionId: session.id,
-          customer: {
-            name: session.customer_details?.name,
-            email: session.customer_details?.email,
-            phone: session.customer_details?.phone,
-          },
-          shippingAddress: session.shipping_details?.address ? {
-            line1: session.shipping_details.address.line1,
-            line2: session.shipping_details.address.line2,
-            city: session.shipping_details.address.city,
-            state: session.shipping_details.address.state,
-            postal_code: session.shipping_details.address.postal_code,
-            country: session.shipping_details.address.country,
-          } : undefined,
-        });
-      }
+      await createOrdersFromSession(session);
     }
   } catch (err) {
     console.error('Webhook handling error:', err);
   }
 
   res.json({ received: true });
+});
+
+// Fallback endpoint to confirm and create orders if webhook is not configured in local/dev
+router.post('/confirm', async (req, res) => {
+  try {
+    const { session_id } = req.body || {};
+    if (!session_id) return res.status(400).json({ error: 'session_id is required' });
+
+    const session = await stripe.checkout.sessions.retrieve(session_id, { expand: ['customer_details', 'shipping_details'] });
+    const result = await createOrdersFromSession(session);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('Confirm handling error:', err);
+    res.status(500).json({ error: 'Failed to confirm session' });
+  }
 });
 
 export default router;
