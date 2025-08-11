@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 function getImageUrl(imagePath) {
   if (!imagePath) return "/logo.webp";
@@ -19,6 +20,8 @@ export default function Checkout() {
     couponDiscount = 0,
     totalPrice: passedTotal = 0,
   } = state || {};
+
+  const currentUser = useSelector((s) => s.user?.currentUser);
 
   const computedTotal = useMemo(() => {
     if (selectedProducts.length > 0) {
@@ -71,12 +74,18 @@ export default function Checkout() {
       productId: String(item.productId || "").trim(),
     }));
 
+    const payload = {
+      products,
+      userId: currentUser?._id || currentUser?.id || undefined,
+      email: currentUser?.email || undefined,
+    };
+
     setSubmitting(true);
     try {
       const response = await fetch("http://localhost:3000/backend/payment/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ products }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();

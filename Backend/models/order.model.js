@@ -24,6 +24,7 @@ const orderSchema = new mongoose.Schema({
   totalAmount: { type: Number, required: true }, // in paisa
   status: { type: String, enum: ['pending', 'paid', 'fulfilled', 'canceled'], default: 'paid' },
   stripeSessionId: { type: String, required: true, index: true },
+  userId: { type: String, index: true },
   customer: {
     name: String,
     email: String,

@@ -69,6 +69,7 @@ const Sidebar = () => {
                 <div className="ml-6 mt-1 space-y-1">
                   <SidebarLink to="/admin/companies" label="Companies" />
                   <SidebarLink to="/admin/products" label="Products" />
+                  <SidebarLink to="/adminorder" label="Orders" />
                 </div>
               )}
             </div>

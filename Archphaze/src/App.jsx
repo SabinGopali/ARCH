@@ -96,6 +96,7 @@ import Companies from './admin/shop/earphone/Companies';
 import Products from './admin/shop/earphone/Products';
 import Success from './components/Success';
 import Cancel from './components/Cancel';
+import Adminorder from './admin/shop/earphone/Adminorder';
  
  
  
@@ -191,6 +192,7 @@ import Cancel from './components/Cancel';
              <Route path="/supplierinfo" element={<Supplierinfo />} />
              <Route path="/admin/companies" element={<Companies />} />
              <Route path="/admin/products" element={<Products />} />
+             <Route path="/adminorder" element={<Adminorder />} />
 
 
             <Route path="/supplierdashboard" element={<Supplierdashboard />} />

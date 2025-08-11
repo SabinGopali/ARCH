@@ -17,13 +17,18 @@ router.get('/supplier/:supplierId', async (req, res) => {
   }
 });
 
-// Fetch orders for the logged-in user by their email
+// Fetch orders for the logged-in user by their email or userId
 router.get('/user/me', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).lean();
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const orders = await Order.find({ 'customer.email': user.email }).sort({ createdAt: -1 });
+    const orders = await Order.find({
+      $or: [
+        { userId: req.user.id },
+        { 'customer.email': user.email },
+      ],
+    }).sort({ createdAt: -1 });
     res.json({ orders });
   } catch (err) {
     console.error('Error fetching user orders:', err);
