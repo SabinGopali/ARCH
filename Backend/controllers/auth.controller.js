@@ -91,6 +91,7 @@ export const signin = async (req, res, next) => {
         .status(200)
         .cookie('access_token', token, {
           httpOnly: true,
+          // sameSite and secure omitted for local dev
           // secure: true, // enable in production
           maxAge: 24 * 60 * 60 * 1000,
         })
@@ -130,6 +131,7 @@ export const signin = async (req, res, next) => {
       .status(200)
       .cookie('access_token', subUserToken, {
         httpOnly: true,
+        // sameSite and secure omitted for local dev
         // secure: true, // enable in production
         maxAge: 24 * 60 * 60 * 1000,
       })
@@ -164,6 +166,7 @@ export const google = async (req, res, next) => {
         .status(200)
         .cookie('access_token', token, {
           httpOnly: true,
+          // sameSite and secure omitted for local dev
           maxAge: 24 * 60 * 60 * 1000,
         })
         .json(rest);
@@ -197,6 +200,7 @@ export const google = async (req, res, next) => {
         .status(200)
         .cookie('access_token', token, {
           httpOnly: true,
+          // sameSite and secure omitted for local dev
           maxAge: 24 * 60 * 60 * 1000,
         })
         .json(rest);

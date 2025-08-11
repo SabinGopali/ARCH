@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiMenu } from "react-icons/fi";
 import Suppliersidebar from "./Suppliersidebar";
+import { useSelector } from "react-redux";
 
 export default function Order() {
   const [search, setSearch] = useState("");
@@ -9,8 +10,24 @@ export default function Order() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // TODO: replace with real supplier auth context
-  const supplierId = localStorage.getItem('supplierId') || '';
+  const currentUser = useSelector((state) => state.user?.currentUser);
+
+  const supplierId = useMemo(() => {
+    if (currentUser?.isSubUser) {
+      return (
+        currentUser?.supplierId ||
+        currentUser?.supplierRef ||
+        localStorage.getItem("supplierId") ||
+        ""
+      );
+    }
+    return (
+      currentUser?._id ||
+      currentUser?.id ||
+      localStorage.getItem("supplierId") ||
+      ""
+    );
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchOrders = async () => {

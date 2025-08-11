@@ -45,7 +45,7 @@ app.use((req, res, next) => {
 });
 
 // Enable CORS for frontend
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 
 // ✅ Serve uploaded images statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
