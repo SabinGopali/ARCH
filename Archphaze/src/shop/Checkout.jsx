@@ -65,6 +65,7 @@ export default function Checkout() {
     }
 
     const products = selectedProducts.map((item) => ({
+      productId: String(item.productId || "").trim(),
       name: String(item.name || "").trim(),
       price: Number(item.price || 0),
       qty: Number(item.qty || 0),

@@ -34,7 +34,14 @@ const app = express();
 
 // Middleware
 app.use(cookieParser());
-app.use(express.json());
+
+// Conditionally parse JSON (skip Stripe webhook raw body)
+app.use((req, res, next) => {
+  if (req.originalUrl === '/backend/payment/webhook') {
+    return next();
+  }
+  return express.json()(req, res, next);
+});
 
 // Enable CORS for frontend
 app.use(cors({ origin: 'http://localhost:5173' }));
