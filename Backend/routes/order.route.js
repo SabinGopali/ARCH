@@ -50,13 +50,25 @@ router.get('/user/by-email', async (req, res) => {
   }
 });
 
+async function attachSupplierNames(orders) {
+  const supplierIds = Array.from(new Set((orders || []).map(o => String(o.supplierId || '')).filter(Boolean)));
+  if (supplierIds.length === 0) return orders;
+  const suppliers = await User.find({ _id: { $in: supplierIds } }).select('company_name username').lean();
+  const supplierMap = new Map(suppliers.map(s => [String(s._id), s.company_name || s.username || '']));
+  return orders.map(o => ({
+    ...o,
+    supplierName: supplierMap.get(String(o.supplierId)) || '',
+  }));
+}
+
 // Admin: fetch all orders
 router.get('/all', verifyToken, async (req, res) => {
   try {
     if (!req.user.isAdmin) {
       return res.status(403).json({ error: 'Access denied' });
     }
-    const orders = await Order.find({}).sort({ createdAt: -1 });
+    const raw = await Order.find({}).sort({ createdAt: -1 }).lean();
+    const orders = await attachSupplierNames(raw);
     res.json({ orders });
   } catch (err) {
     console.error('Error fetching all orders:', err);
@@ -64,10 +76,29 @@ router.get('/all', verifyToken, async (req, res) => {
   }
 });
 
+// Admin: delete an order by id
+router.delete('/:id', verifyToken, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const { id } = req.params;
+    const existing = await Order.findById(id);
+    if (!existing) return res.status(404).json({ error: 'Order not found' });
+
+    await Order.findByIdAndDelete(id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting order:', err);
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+});
+
 // Public: fetch all orders (dev convenience)
 router.get('/all-public', async (req, res) => {
   try {
-    const orders = await Order.find({}).sort({ createdAt: -1 });
+    const raw = await Order.find({}).sort({ createdAt: -1 }).lean();
+    const orders = await attachSupplierNames(raw);
     res.json({ orders });
   } catch (err) {
     console.error('Error fetching all orders (public):', err);
