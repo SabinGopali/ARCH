@@ -176,7 +176,7 @@ router.post('/confirm', async (req, res) => {
     const { session_id } = req.body || {};
     if (!session_id) return res.status(400).json({ error: 'session_id is required' });
 
-    const session = await stripe.checkout.sessions.retrieve(session_id, { expand: ['customer_details', 'shipping_details'] });
+    const session = await stripe.checkout.sessions.retrieve(session_id);
     const result = await createOrdersFromSession(session);
     res.json({ ok: true, ...result });
   } catch (err) {
