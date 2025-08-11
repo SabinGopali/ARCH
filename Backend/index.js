@@ -18,6 +18,7 @@ import formroute from './routes/form.route.js'
 import productroute from './routes/product.route.js'
 import subuserroute from './routes/subuser.route.js'
 import storeroute from './routes/store.route.js'
+import paymentroute from './routes/payment.route.js'
 
 
 
@@ -52,6 +53,7 @@ app.use('/backend/form', formroute);
 app.use('/backend/product', productroute);
 app.use('/backend/subuser', subuserroute);
 app.use('/backend/store', storeroute);
+app.use('/backend/payment', paymentroute);
 
 
 

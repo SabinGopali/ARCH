@@ -24,6 +24,7 @@
     "react-slick": "^0.30.3",
     "react-typed": "^2.0.12",
     "slick-carousel": "^1.8.1",
+    "stripe": "^18.4.0",
     "tailwind-merge": "^3.3.0",
     "three": "^0.177.0",
     "three-stdlib": "^2.36.0"
