@@ -12,22 +12,32 @@ export default function Dashboard() {
   const [barData, setBarData] = useState([]);
   const [breakdownData, setBreakdownData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recentOrders, setRecentOrders] = useState([]);
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [userRes, careerRes, serviceRes, productRes] = await Promise.all([
+        const [userRes, careerRes, serviceRes, productRes, ordersRes] = await Promise.all([
           fetch("/backend/user/getusers", { credentials: "include" }),
           fetch("/backend/career/getCareer"),
           fetch("/backend/services/getservice"),
           fetch("/backend/product/getall"),
+          fetch("http://localhost:3000/backend/order/all", { credentials: "include" }),
         ]);
 
-        const [userData, careerData, serviceData, products] = await Promise.all([
+        const [userData, careerData, serviceData, products, ordersData] = await Promise.all([
           userRes.json(),
           careerRes.json(),
           serviceRes.json(),
           productRes.json(),
+          (async () => {
+            try {
+              return await ordersRes.json();
+            } catch (e) {
+              const alt = await fetch("http://localhost:3000/backend/order/all-public");
+              return await alt.json();
+            }
+          })(),
         ]);
 
         const totalUsers = userData?.totalUsers ?? 0;
@@ -41,6 +51,9 @@ export default function Dashboard() {
 
         const productArray = Array.isArray(products) ? products : [];
         const totalProducts = productArray.length;
+
+        const ordersArray = Array.isArray(ordersData?.orders) ? ordersData.orders : [];
+        setRecentOrders(ordersArray.slice(0, 10));
 
         const now = new Date();
         const oneMonthAgo = new Date(
@@ -221,6 +234,44 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Recent Orders */}
+        <div className="bg-white p-5 rounded-xl shadow-sm mt-6">
+          <h2 className="text-lg font-semibold mb-4 text-gray-800">Recent Orders</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-[700px] w-full text-sm text-left">
+              <thead className="text-gray-600 border-b">
+                <tr>
+                  <th className="py-2 px-3">ORDER NO.</th>
+                  <th className="py-2 px-3">DATE</th>
+                  <th className="py-2 px-3">CUSTOMER</th>
+                  <th className="py-2 px-3">SUPPLIER</th>
+                  <th className="py-2 px-3">TOTAL (NPR)</th>
+                  <th className="py-2 px-3">STATUS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.length === 0 ? (
+                  <tr><td className="py-6 px-3" colSpan={6}>No orders yet.</td></tr>
+                ) : (
+                  recentOrders.map((o) => (
+                    <tr key={o._id} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-3">{o.stripeSessionId}</td>
+                      <td className="py-2 px-3">{new Date(o.createdAt).toLocaleString()}</td>
+                      <td className="py-2 px-3">
+                        <div className="font-medium">{o.customer?.name || '-'}</div>
+                        <div className="text-xs text-gray-500">{o.customer?.email || ''}</div>
+                      </td>
+                      <td className="py-2 px-3">{o.supplierId}</td>
+                      <td className="py-2 px-3 font-semibold">{(o.totalAmount / 100).toFixed(2)}</td>
+                      <td className="py-2 px-3">{o.status}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </main>

@@ -68,6 +68,7 @@ export default function Checkout() {
       name: String(item.name || "").trim(),
       price: Number(item.price || 0),
       qty: Number(item.qty || 0),
+      productId: String(item.productId || "").trim(),
     }));
 
     setSubmitting(true);
