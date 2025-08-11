@@ -14,9 +14,24 @@ export default function OrderHistory() {
         return;
       }
       try {
-        const res = await fetch("/backend/order/user/me", { credentials: "include" });
-        const data = await res.json();
-        setOrders(Array.isArray(data.orders) ? data.orders : []);
+        let data;
+        try {
+          const res = await fetch("http://localhost:3000/backend/order/user/me", { credentials: "include" });
+          data = await res.json();
+        } catch (e) {
+          data = null;
+        }
+
+        let list = Array.isArray(data?.orders) ? data.orders : [];
+
+        // Fallback: try by-email if empty
+        if ((!list || list.length === 0) && currentUser?.email) {
+          const byEmailRes = await fetch(`http://localhost:3000/backend/order/user/by-email?email=${encodeURIComponent(currentUser.email)}`);
+          const byEmailData = await byEmailRes.json();
+          list = Array.isArray(byEmailData?.orders) ? byEmailData.orders : list;
+        }
+
+        setOrders(list || []);
       } catch (e) {
         console.error("Failed to load order history", e);
       } finally {

@@ -22,7 +22,7 @@ export default function Dashboard() {
           fetch("/backend/career/getCareer"),
           fetch("/backend/services/getservice"),
           fetch("/backend/product/getall"),
-          fetch("/backend/order/all", { credentials: "include" }),
+          fetch("http://localhost:3000/backend/order/all", { credentials: "include" }),
         ]);
 
         const [userData, careerData, serviceData, products, ordersData] = await Promise.all([
@@ -30,7 +30,14 @@ export default function Dashboard() {
           careerRes.json(),
           serviceRes.json(),
           productRes.json(),
-          ordersRes.json(),
+          (async () => {
+            try {
+              return await ordersRes.json();
+            } catch (e) {
+              const alt = await fetch("http://localhost:3000/backend/order/all-public");
+              return await alt.json();
+            }
+          })(),
         ]);
 
         const totalUsers = userData?.totalUsers ?? 0;

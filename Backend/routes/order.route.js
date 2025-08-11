@@ -31,6 +31,20 @@ router.get('/user/me', verifyToken, async (req, res) => {
   }
 });
 
+// Public: fetch orders by email (dev convenience)
+router.get('/user/by-email', async (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const orders = await Order.find({ 'customer.email': email }).sort({ createdAt: -1 });
+    res.json({ orders });
+  } catch (err) {
+    console.error('Error fetching user orders by email:', err);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
 // Admin: fetch all orders
 router.get('/all', verifyToken, async (req, res) => {
   try {
@@ -41,6 +55,17 @@ router.get('/all', verifyToken, async (req, res) => {
     res.json({ orders });
   } catch (err) {
     console.error('Error fetching all orders:', err);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// Public: fetch all orders (dev convenience)
+router.get('/all-public', async (req, res) => {
+  try {
+    const orders = await Order.find({}).sort({ createdAt: -1 });
+    res.json({ orders });
+  } catch (err) {
+    console.error('Error fetching all orders (public):', err);
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
