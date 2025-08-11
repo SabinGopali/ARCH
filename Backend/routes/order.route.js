@@ -64,6 +64,24 @@ router.get('/all', verifyToken, async (req, res) => {
   }
 });
 
+// Admin: delete an order by id
+router.delete('/:id', verifyToken, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const { id } = req.params;
+    const existing = await Order.findById(id);
+    if (!existing) return res.status(404).json({ error: 'Order not found' });
+
+    await Order.findByIdAndDelete(id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting order:', err);
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+});
+
 // Public: fetch all orders (dev convenience)
 router.get('/all-public', async (req, res) => {
   try {
