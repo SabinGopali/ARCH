@@ -35,15 +35,64 @@ export default function Checkout() {
     postalCode: "",
     country: "",
     mapUrl: "",
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
   });
 
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const validateForm = () => {
+    if (!form.name.trim()) return "Full name is required";
+    if (!form.address.trim()) return "Address is required";
+    if (!form.city.trim()) return "City is required";
+    if (!form.postalCode.trim()) return "Street is required";
+    if (form.mapUrl && !/^https?:\/\//i.test(form.mapUrl)) return "Map URL must be a valid URL";
+    if (selectedProducts.length === 0) return "No items selected";
+    if (paymentMethod !== "card") return "Only card payments are supported at the moment";
+    return "";
+  };
+
+  const handlePlaceOrder = async () => {
+    setError("");
+    const validationMsg = validateForm();
+    if (validationMsg) {
+      setError(validationMsg);
+      return;
+    }
+
+    const products = selectedProducts.map((item) => ({
+      name: String(item.name || "").trim(),
+      price: Number(item.price || 0),
+      qty: Number(item.qty || 0),
+    }));
+
+    setSubmitting(true);
+    try {
+      const response = await fetch("http://localhost:3000/backend/payment/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ products }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to create checkout session");
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("Invalid response from payment server");
+      }
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -56,7 +105,7 @@ export default function Checkout() {
           {/* Shipping Address */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-2xl font-semibold mb-6">Shipping Address</h3>
-            <form className="space-y-5">
+            <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
               <input
                 type="text"
                 name="name"
@@ -91,18 +140,16 @@ export default function Checkout() {
                   onChange={handleChange}
                 />
               </div>
-              
 
               {/* Map URL Field */}
               <input
                 type="url"
                 name="mapUrl"
-                placeholder="Google Map Embed URL"
+                placeholder="Google Map Embed URL (optional)"
                 className="w-full border border-gray-300 rounded-md px-4 py-3"
                 value={form.mapUrl}
                 onChange={handleChange}
               />
-              
             </form>
           </div>
 
@@ -118,56 +165,33 @@ export default function Checkout() {
                   onChange={() => setPaymentMethod("card")}
                 />
                 <span className="text-sm font-medium">
-                  Credit / Debit Card
+                  Credit / Debit Card (via Stripe Checkout)
                 </span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer opacity-50">
                 <input
                   type="radio"
                   name="payment"
                   checked={paymentMethod === "wallet"}
                   onChange={() => setPaymentMethod("wallet")}
+                  disabled
                 />
-                <span className="text-sm font-medium">Digital Wallet</span>
+                <span className="text-sm font-medium">Digital Wallet (coming soon)</span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer opacity-50">
                 <input
                   type="radio"
                   name="payment"
                   checked={paymentMethod === "cod"}
                   onChange={() => setPaymentMethod("cod")}
+                  disabled
                 />
-                <span className="text-sm font-medium">Cash on Delivery</span>
+                <span className="text-sm font-medium">Cash on Delivery (coming soon)</span>
               </label>
 
               {paymentMethod === "card" && (
-                <div className="space-y-5 mt-4">
-                  <input
-                    type="text"
-                    name="cardNumber"
-                    placeholder="Card Number"
-                    className="w-full border border-gray-300 rounded-md px-4 py-3"
-                    value={form.cardNumber}
-                    onChange={handleChange}
-                  />
-                  <div className="flex gap-4">
-                    <input
-                      type="text"
-                      name="expiry"
-                      placeholder="MM/YY"
-                      className="flex-1 border border-gray-300 rounded-md px-4 py-3"
-                      value={form.expiry}
-                      onChange={handleChange}
-                    />
-                    <input
-                      type="text"
-                      name="cvv"
-                      placeholder="CVV"
-                      className="w-24 border border-gray-300 rounded-md px-4 py-3"
-                      value={form.cvv}
-                      onChange={handleChange}
-                    />
-                  </div>
+                <div className="mt-3 text-xs text-gray-600">
+                  You will be securely redirected to Stripe Checkout to complete your payment.
                 </div>
               )}
             </div>
@@ -226,8 +250,16 @@ export default function Checkout() {
             </div>
           </div>
 
-          <button className="w-full bg-black text-white py-4 rounded-lg text-base font-semibold hover:bg-gray-800 transition">
-            Place Order →
+          {error && (
+            <div className="text-red-600 text-sm">{error}</div>
+          )}
+
+          <button
+            onClick={handlePlaceOrder}
+            disabled={submitting}
+            className={`w-full text-white py-4 rounded-lg text-base font-semibold transition ${submitting ? 'bg-gray-500' : 'bg-black hover:bg-gray-800'}`}
+          >
+            {submitting ? 'Processing…' : 'Place Order →'}
           </button>
         </div>
       </div>

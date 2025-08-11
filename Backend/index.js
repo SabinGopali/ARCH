@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import cookieParser from 'cookie-parser';
-
+import cors from 'cors';
 
 
 
@@ -35,6 +35,9 @@ const app = express();
 // Middleware
 app.use(cookieParser());
 app.use(express.json());
+
+// Enable CORS for frontend
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 // ✅ Serve uploaded images statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
