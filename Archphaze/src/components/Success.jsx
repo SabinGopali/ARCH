@@ -11,7 +11,10 @@ export default function Success() {
       {sessionId && (
         <p className="text-xs text-gray-500 mt-2">Session: {sessionId}</p>
       )}
-      <Link to="/" className="inline-block mt-6 text-white bg-black px-4 py-2 rounded">Go Home</Link>
+      <div className="mt-6 flex gap-3 justify-center">
+        <Link to="/orderhistory" className="inline-block text-white bg-black px-4 py-2 rounded">View Order History</Link>
+        <Link to="/" className="inline-block text-black border border-black px-4 py-2 rounded">Go Home</Link>
+      </div>
     </div>
   );
 }
