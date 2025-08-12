@@ -6,6 +6,7 @@ export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleting, setDeleting] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -41,13 +42,42 @@ export default function OrderHistory() {
     fetchOrders();
   }, [currentUser]);
 
-  const referenceOf = (o) => o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
+  const referenceOf = (o) => o.orderNumber || o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
 
   const filteredOrders = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return orders;
     return orders.filter((o) => String(referenceOf(o) || "").toLowerCase().includes(term));
   }, [orders, searchTerm]);
+
+  function imageUrl(path) {
+    if (!path) return "https://via.placeholder.com/64x64";
+    let url = path.replace(/\\/g, "/");
+    if (!/^https?:\/\//i.test(url)) {
+      if (url.startsWith("/")) url = url.slice(1);
+      url = `http://localhost:3000/${url}`;
+    }
+    return url;
+  }
+
+  async function handleDelete(orderId) {
+    if (!orderId) return;
+    if (!confirm("Delete this order from your history? This cannot be undone.")) return;
+    try {
+      setDeleting(orderId);
+      const res = await fetch(`http://localhost:3000/backend/order/user/${orderId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to delete');
+      setOrders((prev) => prev.filter((o) => o._id !== orderId));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   if (!currentUser) {
     return (
@@ -66,7 +96,7 @@ export default function OrderHistory() {
         Order <span className="text-red-500">History</span>
       </h1>
 
-      <div className="mb-6">
+      <div className="mb-6 flex items-center gap-3">
         <input
           type="search"
           placeholder="Search order number..."
@@ -90,15 +120,25 @@ export default function OrderHistory() {
                   <p className="text-xs text-gray-500">{(o.paymentMethod || 'card').toUpperCase()} {o.paymentProvider ? `• ${o.paymentProvider}` : ''}</p>
                   <p className="text-sm text-gray-400">{new Date(o.createdAt).toLocaleString()}</p>
                 </div>
-                <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                  o.status === 'paid' ? 'bg-green-100 text-green-700' : o.status === 'canceled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {o.status}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                    o.status === 'paid' ? 'bg-green-100 text-green-700' : o.status === 'canceled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {o.status}
+                  </span>
+                  <button
+                    onClick={() => handleDelete(o._id)}
+                    disabled={deleting === o._id}
+                    className="px-3 py-1 text-xs rounded bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {deleting === o._id ? 'Deleting…' : 'Delete'}
+                  </button>
+                </div>
               </div>
               <div className="divide-y">
                 {o.items.map((it) => (
                   <div key={it.productId} className="flex gap-4 p-4 hover:bg-gray-50 transition">
+                    <img src={imageUrl(it.image)} alt={it.name} className="w-16 h-16 rounded object-cover bg-gray-100" />
                     <div className="flex flex-col flex-grow">
                       <h2 className="font-semibold text-gray-800">{it.name}</h2>
                       <div className="mt-2 flex justify-between text-sm font-medium">

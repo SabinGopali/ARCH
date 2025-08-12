@@ -36,6 +36,33 @@ router.get('/user/me', verifyToken, async (req, res) => {
   }
 });
 
+// Delete an order belonging to the logged-in user
+router.delete('/user/:orderId', verifyToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    // Load user to get email for comparison if needed
+    let userEmail = undefined;
+    try {
+      const userDoc = await User.findById(req.user.id).select('email').lean();
+      userEmail = userDoc?.email?.toLowerCase?.();
+    } catch {}
+
+    const isOwner = String(order.userId || '') === String(req.user.id) || String(order.customer?.email || '').toLowerCase() === String(userEmail || '');
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Not authorized to delete this order' });
+    }
+
+    await Order.findByIdAndDelete(orderId);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error deleting user order:', err);
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+});
+
 // Public: fetch orders by email (dev convenience)
 router.get('/user/by-email', async (req, res) => {
   try {

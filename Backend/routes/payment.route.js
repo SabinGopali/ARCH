@@ -18,7 +18,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Utility: create grouped orders by supplier
 async function createOrdersFromLineItems({
-  lineItems, // array of { productId, name, unitAmount, quantity }
+  lineItems, // array of { productId, name, unitAmount, quantity, image? }
   sessionLike, // object containing customer/shipping/userId
   paymentMeta, // { method, provider, ref, esewaPid }
   statusOverride, // 'pending' | 'paid'
@@ -46,6 +46,7 @@ async function createOrdersFromLineItems({
       unitAmount,
       quantity: qty,
       subtotal: unitAmount * qty,
+      image: Array.isArray(productDoc.images) && productDoc.images.length > 0 ? productDoc.images[0] : undefined,
     };
 
     if (!itemsBySupplier.has(supplierId)) itemsBySupplier.set(supplierId, []);
@@ -361,12 +362,40 @@ router.post('/cod', async (req, res) => {
       items.push({ productId, name, unitAmount, quantity: qty });
     }
 
+    // Create orders
     await createOrdersFromLineItems({
       lineItems: items,
       sessionLike: { name: undefined, email, phone, userId, shippingAddress },
       paymentMeta: { method: 'cod', provider: 'cod', ref: undefined },
       statusOverride: 'pending',
     });
+
+    // Generate and assign unique order numbers for the created COD orders (last few minutes window)
+    const since = new Date(Date.now() - 5 * 60 * 1000);
+    const createdCodOrders = await Order.find({
+      paymentMethod: 'cod',
+      createdAt: { $gte: since },
+      userId: userId || undefined,
+    }).sort({ createdAt: -1 });
+
+    for (const ord of createdCodOrders) {
+      if (ord.orderNumber) continue;
+      // Generate a random but unique order number like COD-YYMMDD-XXXXXX
+      const ymd = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+      let candidate;
+      let attempts = 0;
+      do {
+        const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+        candidate = `COD-${ymd}-${rand}`;
+        attempts += 1;
+        if (attempts > 5) break;
+      } while (await Order.exists({ orderNumber: candidate }));
+
+      if (!ord.orderNumber) {
+        ord.orderNumber = candidate;
+        await ord.save();
+      }
+    }
 
     res.json({ ok: true });
   } catch (err) {
