@@ -8,15 +8,21 @@
         },
         company_name: {
             type: String,
-            required: true,
+            required: function () {
+                return this.isSupplier === true;
+            },
         },
         company_location: {
             type: String,
-            required: true,
+            required: function () {
+                return this.isSupplier === true;
+            },
         },
         phone: {
             type: String,
-            required: true,
+            required: function () {
+                return this.isSupplier === true;
+            },
         },
         businessTypes: {
         type: [String], // array of string values
