@@ -57,7 +57,7 @@ export default function Order() {
     { label: "COD", value: "cod" },
   ];
 
-  const referenceOf = (o) => o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
+  const referenceOf = (o) => o.orderNumber || o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
 
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -77,6 +77,16 @@ export default function Order() {
         return String(o.paymentMethod || 'card') === selectedPayment;
       });
   }, [orders, search, selectedStatus, selectedPayment]);
+
+  function imageUrl(path) {
+    if (!path) return "https://via.placeholder.com/40x40";
+    let url = path.replace(/\\/g, "/");
+    if (!/^https?:\/\//i.test(url)) {
+      if (url.startsWith("/")) url = url.slice(1);
+      url = `http://localhost:3000/${url}`;
+    }
+    return url;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row relative">
@@ -163,7 +173,7 @@ export default function Order() {
 
           {/* Orders Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-[800px] w-full text-sm text-left">
+            <table className="min-w-[900px] w-full text-sm text-left">
               <thead className="text-gray-600 border-b">
                 <tr>
                   <th className="py-2 px-3">ORDER NO.</th>
@@ -192,8 +202,9 @@ export default function Order() {
                       </td>
                       <td className="py-2 px-3">
                         {o.items.map((it) => (
-                          <div key={it.productId} className="text-xs">
-                            {it.name} × {it.quantity}
+                          <div key={it.productId} className="text-xs flex items-center gap-2 py-0.5">
+                            <img src={imageUrl(it.image)} alt={it.name} className="w-10 h-10 rounded object-cover bg-gray-100" />
+                            <span>{it.name} × {it.quantity}</span>
                           </div>
                         ))}
                       </td>
