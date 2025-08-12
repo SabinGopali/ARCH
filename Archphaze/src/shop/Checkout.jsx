@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 function getImageUrl(imagePath) {
@@ -14,6 +14,7 @@ function getImageUrl(imagePath) {
 
 export default function Checkout() {
   const { state } = useLocation();
+  const navigate = useNavigate();
   const {
     selectedProducts = [],
     rawTotalPrice = 0,
@@ -55,9 +56,15 @@ export default function Checkout() {
     if (!form.postalCode.trim()) return "Street is required";
     if (form.mapUrl && !/^https?:\/\//i.test(form.mapUrl)) return "Map URL must be a valid URL";
     if (selectedProducts.length === 0) return "No items selected";
-    if (paymentMethod !== "card") return "Only card payments are supported at the moment";
     return "";
   };
+
+  const buildProductsPayload = () => selectedProducts.map((item) => ({
+    name: String(item.name || "").trim(),
+    price: Number(item.price || 0),
+    qty: Number(item.qty || 0),
+    productId: String(item.productId || "").trim(),
+  }));
 
   const handlePlaceOrder = async () => {
     setError("");
@@ -67,37 +74,80 @@ export default function Checkout() {
       return;
     }
 
-    const products = selectedProducts.map((item) => ({
-      name: String(item.name || "").trim(),
-      price: Number(item.price || 0),
-      qty: Number(item.qty || 0),
-      productId: String(item.productId || "").trim(),
-    }));
-
-    const payload = {
-      products,
-      userId: currentUser?._id || currentUser?.id || undefined,
-      email: currentUser?.email || undefined,
-    };
+    const products = buildProductsPayload();
+    const userId = currentUser?._id || currentUser?.id || undefined;
+    const email = currentUser?.email || undefined;
 
     setSubmitting(true);
     try {
-      const response = await fetch("http://localhost:3000/backend/payment/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || "Failed to create checkout session");
-      }
-
-      if (data?.url) {
+      if (paymentMethod === "card") {
+        const payload = { products, userId, email };
+        const response = await fetch("http://localhost:3000/backend/payment/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || "Failed to create checkout session");
+        if (!data?.url) throw new Error("Invalid response from payment server");
         window.location.href = data.url;
-      } else {
-        throw new Error("Invalid response from payment server");
+        return;
       }
+
+      if (paymentMethod === "wallet") {
+        // eSewa test mode
+        const initiateRes = await fetch("http://localhost:3000/backend/payment/esewa/initiate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            products,
+            userId,
+            email,
+            phone: undefined
+          }),
+        });
+        const initData = await initiateRes.json();
+        if (!initiateRes.ok) throw new Error(initData?.error || "Failed to initiate eSewa");
+        const { esewa } = initData || {};
+        if (!esewa?.endpoint || !esewa?.params) throw new Error("Invalid eSewa initiate response");
+
+        // Create and submit a form to eSewa
+        const formEl = document.createElement("form");
+        formEl.method = "POST";
+        formEl.action = esewa.endpoint;
+        Object.entries(esewa.params).forEach(([key, value]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = String(value ?? "");
+          formEl.appendChild(input);
+        });
+        document.body.appendChild(formEl);
+        formEl.submit();
+        return;
+      }
+
+      if (paymentMethod === "cod") {
+        const shippingAddress = {
+          line1: form.address,
+          line2: form.mapUrl || undefined,
+          city: form.city,
+          state: undefined,
+          postal_code: form.postalCode,
+          country: "NP",
+        };
+        const codRes = await fetch("http://localhost:3000/backend/payment/cod", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ products, userId, email, phone: undefined, shippingAddress }),
+        });
+        const codData = await codRes.json();
+        if (!codRes.ok) throw new Error(codData?.error || "Failed to place COD order");
+        navigate("/success?method=cod");
+        return;
+      }
+
+      throw new Error("Unsupported payment method");
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -178,30 +228,38 @@ export default function Checkout() {
                   Credit / Debit Card (via Stripe Checkout)
                 </span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer opacity-50">
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="payment"
                   checked={paymentMethod === "wallet"}
                   onChange={() => setPaymentMethod("wallet")}
-                  disabled
                 />
-                <span className="text-sm font-medium">Digital Wallet (coming soon)</span>
+                <span className="text-sm font-medium">Mobile Wallet (eSewa - Test Mode)</span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer opacity-50">
+              <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="payment"
                   checked={paymentMethod === "cod"}
                   onChange={() => setPaymentMethod("cod")}
-                  disabled
                 />
-                <span className="text-sm font-medium">Cash on Delivery (coming soon)</span>
+                <span className="text-sm font-medium">Cash on Delivery</span>
               </label>
 
               {paymentMethod === "card" && (
                 <div className="mt-3 text-xs text-gray-600">
                   You will be securely redirected to Stripe Checkout to complete your payment.
+                </div>
+              )}
+              {paymentMethod === "wallet" && (
+                <div className="mt-3 text-xs text-gray-600">
+                  Test with eSewa UAT. You will be redirected to eSewa to complete the payment.
+                </div>
+              )}
+              {paymentMethod === "cod" && (
+                <div className="mt-3 text-xs text-gray-600">
+                  Your order will be placed and marked as pending. Pay in cash upon delivery.
                 </div>
               )}
             </div>

@@ -23,7 +23,18 @@ const orderSchema = new mongoose.Schema({
   currency: { type: String, default: 'npr' },
   totalAmount: { type: Number, required: true }, // in paisa
   status: { type: String, enum: ['pending', 'paid', 'fulfilled', 'canceled'], default: 'paid' },
-  stripeSessionId: { type: String, required: true, index: true },
+
+  // Payment fields
+  paymentMethod: { type: String, enum: ['card', 'wallet_esewa', 'cod'], default: 'card', index: true },
+  paymentProvider: { type: String }, // e.g., 'stripe', 'esewa', 'cod'
+  paymentRef: { type: String, index: true }, // generic payment reference like Stripe session id or eSewa refId
+
+  // Kept for backward compatibility with existing UI and queries
+  stripeSessionId: { type: String, index: true },
+
+  // eSewa specific helpful fields
+  esewaPid: { type: String, index: true },
+
   userId: { type: String, index: true },
   customer: {
     name: String,
