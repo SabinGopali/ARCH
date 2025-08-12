@@ -97,134 +97,135 @@ import Products from './admin/shop/earphone/Products';
 import Success from './components/Success';
 import Cancel from './components/Cancel';
 import Adminorder from './admin/shop/earphone/Adminorder';
- 
- 
- 
-   const Index = lazy(() => import('./components/Index'));
-   const Aboutus = lazy(() => import('./components/Aboutus'));
- 
+import SuccessEsewa from './components/SuccessEsewa';
+import FailureEsewa from './components/FailureEsewa';
    
    
- 
- 
-   export default function App() {
-     return (
-       <div>
-         <Router>
-           <ScrollToTop/>
-            <Navbar />
-           <Suspense fallback={<Preloader/>}>
-           <Routes>
-             <Route path="/" element={<Index/>}/>
-             <Route path="/Aboutus" element={<Aboutus/>}/>
-             <Route path="/Contactus" element={<Contactus/>}/>
-             <Route path="/Testimonial" element={<Testimonial/>}/>
-             <Route path="/Services" element={<Services/>}/>
-             <Route path="/Whyus" element={<Whyus/>}/>
-             <Route path="/career" element={<Career/>}/>
-             <Route path="/modal" element={<Modal/>}/>
-             <Route path="/productmodal" element={<Productmodal/>}/>
-             <Route path="/support" element={<Support/>}/>
-             <Route path="/privacynotice" element={<Privacynotice/>}/>
-             <Route path="/termsofuse" element={<Termsofuse/>}/>
-             <Route path="/developmentcenter" element={<Developmentcenter/>}/>
-             <Route path="/privacyrights" element={<Privacyrights/>}/>
-             <Route path="/collection" element={<Collection/>}/>
-             <Route path="/productdetail/:id" element={<Productdetail/>}/>
-             <Route path="/cart" element={<Cart/>}/>
-             <Route path="/signup" element={<Signup/>}/>
-             <Route path="/login" element={<Login/>}/>
-             <Route path="/forgetpassword" element={<Forgetpassword/>}/>
-             <Route path="/careers" element={<Careers/>}/>
-             <Route path="/scrollingcards" element={<Scrollingcards/>}/>
-             <Route path="/techintro" element={<Techintro/>}/>
-             <Route path="/partners" element={<Partners/>}/>
-             <Route path="/category" element={<Category/>}/>
-             <Route path="/trustedpartners" element={<Trustedpartners/>}/>
-             <Route path="/closingpage" element={<Closingpage/>}/>
-             <Route path="/clienttestimonial" element={<Clienttestimonial/>}/>
-             <Route path="/profile" element={<Profile/>}/>
-             <Route path="/suppliersignup" element={<Suppliersignup/>}/> 
-             <Route path="/supplierlogin" element={<Supplierlogin/>}/>
-             <Route path="/checkout" element={<Checkout/>}/>
-             <Route path="/success" element={<Success/>}/>
-             <Route path="/cancel" element={<Cancel/>}/>
-             <Route path="/supplierproduct" element={<Supplierproduct/>}/>
-             <Route path="/supplierprofile" element={<SupplierProfile/>}/>
-             <Route path="/productshowcase" element={<ProductShowcase/>}/>
-             <Route path="/supplierprofileshop" element={<Supplierprofileshop/>}/>
-             <Route path="/shopindex" element={<Shopindex/>}/>
-             <Route path="/categories" element={<Categories/>}/>
-             <Route path="/product" element={<Product/>}/>
-             <Route path="/allcategories" element={<Maincategories/>}/>
-             <Route path="/cartinitializer" element={<CartInitializer/>}/>
-             <Route path="/category/:slug" element={<Userproductshowcase/>}/>            
-             <Route path="/orderhistory" element={<Orderhistory/>}/>
-             <Route path="/settings" element={<Accountsecurity/>}/>
-             
- 
- 
-             <Route path="/sidebar" element={<Sidebar/>}/>
-             <Route path="/userinfo" element={<Userinfo/>}/>
-             <Route path="/dashboard" element={<Dashboard/>}/>
-             <Route path="/careerinfo" element={<Careerinfo/>}/>
-             <Route path="/addcareerinfo" element={<Addcareerinfo/>}/>
-             <Route path="/updatecareerinfo" element={<Updatecareerinfo/>}/>
-             <Route path="/viewcareerinfo" element={<Viewcareerinfo/>}/>
-             <Route path="/servicesinfo" element={<Servicesinfo/>}/>
-             <Route path="/updateservicesinfo/:id" element={<Updateservicesinfo/>}/>
-             <Route path="/addservicesinfo" element={<Addservicesinfo/>}/>
-             <Route path="/partnersinfo" element={<Partnersinfo/>}/>
-             <Route path="/addpartnersinfo" element={<Addpartnersinfo/>}/>
-             <Route path="/updatepartnersinfo/:id" element={<Updatepartnersinfo/>}/>
-             <Route path="/updatecareerinfo/:id" element={<Updatecareerinfo />} />
-             <Route path="/clientinfo" element={<Clientinfo />} />
-             <Route path="/addclientinfo" element={<Addclientinfo />} />
-             <Route path="/updateclientinfo/:id" element={<Updateclientinfo />} />
-             <Route path="/queriesinfo" element={<Queriesinfo />} />
-             <Route path="/viewqueriesinfo/:id" element={<Viewqueriesinfo />} />
-             <Route path="/teamsinfo" element={<Teamsinfo />} />
-             <Route path="/addteamsinfo" element={<Addteamsinfo />} />
-             <Route path="/updateteamsinfo/:id" element={<Updateteamsinfo />} />
-             <Route path="/speakerinfo" element={<Speakerinfo />} />
-             <Route path="/updatespeakerinfo/:id" element={<Updatespeakerinfo/>} />
-             <Route path="/addspeakerinfo" element={<Addspeakerinfo />} />
-             <Route path="/supplierinfo" element={<Supplierinfo />} />
-             <Route path="/admin/companies" element={<Companies />} />
-             <Route path="/admin/products" element={<Products />} />
-             <Route path="/adminorder" element={<Adminorder />} />
+   
+     const Index = lazy(() => import('./components/Index'));
+     const Aboutus = lazy(() => import('./components/Aboutus'));
+   
+       
+       
+   
+   
+     export default function App() {
+       return (
+         <div>
+           <Router>
+             <ScrollToTop/>
+              <Navbar />
+             <Suspense fallback={<Preloader/>}>
+             <Routes>
+               <Route path="/" element={<Index/>}/>
+               <Route path="/Aboutus" element={<Aboutus/>}/>
+               <Route path="/Contactus" element={<Contactus/>}/>
+               <Route path="/Testimonial" element={<Testimonial/>}/>
+               <Route path="/Services" element={<Services/>}/>
+               <Route path="/Whyus" element={<Whyus/>}/>
+               <Route path="/career" element={<Career/>}/>
+               <Route path="/modal" element={<Modal/>}/>
+               <Route path="/productmodal" element={<Productmodal/>}/>
+               <Route path="/support" element={<Support/>}/>
+               <Route path="/privacynotice" element={<Privacynotice/>}/>
+               <Route path="/termsofuse" element={<Termsofuse/>}/>
+               <Route path="/developmentcenter" element={<Developmentcenter/>}/>
+               <Route path="/privacyrights" element={<Privacyrights/>}/>
+               <Route path="/collection" element={<Collection/>}/>
+               <Route path="/productdetail/:id" element={<Productdetail/>}/>
+               <Route path="/cart" element={<Cart/>}/>
+               <Route path="/signup" element={<Signup/>}/>
+               <Route path="/login" element={<Login/>}/>
+               <Route path="/forgetpassword" element={<Forgetpassword/>}/>
+               <Route path="/careers" element={<Careers/>}/>
+               <Route path="/scrollingcards" element={<Scrollingcards/>}/>
+               <Route path="/techintro" element={<Techintro/>}/>
+               <Route path="/partners" element={<Partners/>}/>
+               <Route path="/category" element={<Category/>}/>
+               <Route path="/trustedpartners" element={<Trustedpartners/>}/>
+               <Route path="/closingpage" element={<Closingpage/>}/>
+               <Route path="/clienttestimonial" element={<Clienttestimonial/>}/>
+               <Route path="/profile" element={<Profile/>}/>
+               <Route path="/suppliersignup" element={<Suppliersignup/>}/> 
+               <Route path="/supplierlogin" element={<Supplierlogin/>}/>
+               <Route path="/checkout" element={<Checkout/>}/>
+               <Route path="/success" element={<Success/>}/>
+               <Route path="/cancel" element={<Cancel/>}/>
+               <Route path="/esewa-success" element={<SuccessEsewa/>}/>
+               <Route path="/esewa-failure" element={<FailureEsewa/>}/>
+               <Route path="/supplierproduct" element={<Supplierproduct/>}/>
+               <Route path="/supplierprofile" element={<SupplierProfile/>}/>
+               <Route path="/productshowcase" element={<ProductShowcase/>}/>
+               <Route path="/supplierprofileshop" element={<Supplierprofileshop/>}/>
+               <Route path="/shopindex" element={<Shopindex/>}/>
+               <Route path="/categories" element={<Categories/>}/>
+               <Route path="/product" element={<Product/>}/>
+               <Route path="/allcategories" element={<Maincategories/>}/>
+               <Route path="/cartinitializer" element={<CartInitializer/>}/>
+               <Route path="/category/:slug" element={<Userproductshowcase/>}/>            
+               <Route path="/orderhistory" element={<Orderhistory/>}/>
+               <Route path="/settings" element={<Accountsecurity/>}/>
+               
+   
+   
+               <Route path="/sidebar" element={<Sidebar/>}/>
+               <Route path="/userinfo" element={<Userinfo/>}/>
+               <Route path="/dashboard" element={<Dashboard/>}/>
+               <Route path="/careerinfo" element={<Careerinfo/>}/>
+               <Route path="/addcareerinfo" element={<Addcareerinfo/>}/>
+               <Route path="/updatecareerinfo" element={<Updatecareerinfo/>}/>
+               <Route path="/viewcareerinfo" element={<Viewcareerinfo/>}/>
+               <Route path="/servicesinfo" element={<Servicesinfo/>}/>
+               <Route path="/updateservicesinfo/:id" element={<Updateservicesinfo/>}/>
+               <Route path="/addservicesinfo" element={<Addservicesinfo/>}/>
+               <Route path="/partnersinfo" element={<Partnersinfo/>}/>
+               <Route path="/addpartnersinfo" element={<Addpartnersinfo/>}/>
+               <Route path="/updatepartnersinfo" element={<Updatepartnersinfo/>}/>
+               <Route path="/updatecareerinfo/:id" element={<Updatecareerinfo />} />
+               <Route path="/clientinfo" element={<Clientinfo />} />
+               <Route path="/addclientinfo" element={<Addclientinfo />} />
+               <Route path="/updateclientinfo/:id" element={<Updateclientinfo />} />
+               <Route path="/queriesinfo" element={<Queriesinfo />} />
+               <Route path="/viewqueriesinfo/:id" element={<Viewqueriesinfo />} />
+               <Route path="/teamsinfo" element={<Teamsinfo />} />
+               <Route path="/addteamsinfo" element={<Addteamsinfo />} />
+               <Route path="/updateteamsinfo/:id" element={<Updateteamsinfo />} />
+               <Route path="/speakerinfo" element={<Speakerinfo />} />
+               <Route path="/updatespeakerinfo/:id" element={<Updatespeakerinfo/>} />
+               <Route path="/addspeakerinfo" element={<Addspeakerinfo />} />
+               <Route path="/supplierinfo" element={<Supplierinfo />} />
+               <Route path="/admin/companies" element={<Companies />} />
+               <Route path="/admin/products" element={<Products />} />
+               <Route path="/adminorder" element={<Adminorder />} />
 
 
-            <Route path="/supplierdashboard" element={<Supplierdashboard />} />
-            <Route path="/addproduct" element={<Addproduct/>} />
-            <Route path="/suppliersidebar" element={<Suppliersidebar/>} />
-            <Route path="/manageproduct" element={<Manageproduct/>} />
-            <Route path="/mediacenter" element={<Mediacenter/>} />
-            <Route path="/profilesettings" element={<Profilesettings/>} />
-            <Route path="/supplierprofile" element={<Supplierprofile/>} />
-            <Route path="/businessinfo" element={<Businessinfo/>} />
-            <Route path="/accountinfo" element={<Accountinfo/>} />
-            <Route path="/order" element={<Order/>} />
-            <Route path="/storesettings" element={<Store/>} />
-            <Route path="/storeprofile" element={<Storeprofile/>} />
-            <Route path="/security" element={<Security/>} />
-            <Route path="/usermanagement" element={<Usermanagement/>} />
-            <Route path="/adduserform" element={<AddUserForm/>} />
-            <Route path="/updateproduct/:id" element={<Updateproduct/>} />
-            <Route path="/updateuserform/:id" element={<Updateuserform/>} />
-            <Route path="/updatestoresetting/:id" element={<Updatestoresetting/>} />
-            
-            {/* private route */}
-            <Route element={<Privateroute />} >
-            </Route>
-            {/* private route */}
-
-          </Routes>
-          
-          <SecondaryFooter/>
-          {/* <Footer/> */}
-          </Suspense>
-        </Router>
-      </div>
-    )
-  }
+              <Route path="/supplierdashboard" element={<Supplierdashboard />} />
+              <Route path="/addproduct" element={<Addproduct/>} />
+              <Route path="/suppliersidebar" element={<Suppliersidebar/>} />
+              <Route path="/manageproduct" element={<Manageproduct/>} />
+              <Route path="/mediacenter" element={<Mediacenter/>} />
+              <Route path="/profilesettings" element={<Profilesettings/>} />
+              <Route path="/supplierprofile" element={<Supplierprofile/>} />
+              <Route path="/businessinfo" element={<Businessinfo/>} />
+              <Route path="/accountinfo" element={<Accountinfo/>} />
+              <Route path="/order" element={<Order/>} />
+              <Route path="/storesettings" element={<Store/>} />
+              <Route path="/storeprofile" element={<Storeprofile/>} />
+              <Route path="/security" element={<Security/>} />
+              <Route path="/usermanagement" element={<Usermanagement/>} />
+              <Route path="/adduserform" element={<AddUserForm/>} />
+              <Route path="/updateproduct/:id" element={<Updateproduct/>} />
+              <Route path="/updateuserform/:id" element={<Updateuserform/>} />
+              <Route path="/updatestoresetting/:id" element={<Updatestoresetting/>} />
+              
+              {/* private route */}
+              <Route element={<Privateroute />} >
+              </Route>
+              {/* private route */}
+            </Routes>
+            </Suspense>
+            <SecondaryFooter/>
+           </Router>
+         </div>
+       );
+     }
