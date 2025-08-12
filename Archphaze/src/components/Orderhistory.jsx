@@ -41,10 +41,12 @@ export default function OrderHistory() {
     fetchOrders();
   }, [currentUser]);
 
+  const referenceOf = (o) => o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
+
   const filteredOrders = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return orders;
-    return orders.filter((o) => String(o.stripeSessionId || "").toLowerCase().includes(term));
+    return orders.filter((o) => String(referenceOf(o) || "").toLowerCase().includes(term));
   }, [orders, searchTerm]);
 
   if (!currentUser) {
@@ -84,11 +86,12 @@ export default function OrderHistory() {
             <div key={o._id} className="border rounded-xl shadow-sm bg-white">
               <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 rounded-t-xl">
                 <div>
-                  <p className="text-sm text-gray-500">Order #{o.stripeSessionId}</p>
+                  <p className="text-sm text-gray-500">Order #{referenceOf(o)}</p>
+                  <p className="text-xs text-gray-500">{(o.paymentMethod || 'card').toUpperCase()} {o.paymentProvider ? `• ${o.paymentProvider}` : ''}</p>
                   <p className="text-sm text-gray-400">{new Date(o.createdAt).toLocaleString()}</p>
                 </div>
                 <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                  o.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  o.status === 'paid' ? 'bg-green-100 text-green-700' : o.status === 'canceled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
                 }`}>
                   {o.status}
                 </span>

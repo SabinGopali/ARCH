@@ -62,6 +62,8 @@ export default function Order() {
     "Completed orders",
   ];
 
+  const referenceOf = (o) => o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row relative">
       {/* Mobile Toggle */}
@@ -150,7 +152,10 @@ export default function Order() {
                 ) : filteredOrders.length > 0 ? (
                   filteredOrders.map((o) => (
                     <tr key={o._id} className="border-b hover:bg-gray-50">
-                      <td className="py-2 px-3">{o.stripeSessionId}</td>
+                      <td className="py-2 px-3">
+                        <div className="font-medium">{referenceOf(o)}</div>
+                        <div className="text-xs text-gray-500">{(o.paymentMethod || 'card').toUpperCase()} {o.paymentProvider ? `• ${o.paymentProvider}` : ''}</div>
+                      </td>
                       <td className="py-2 px-3">{new Date(o.createdAt).toLocaleString()}</td>
                       <td className="py-2 px-3">
                         <div className="font-medium">{o.customer?.name || '-'}</div>

@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import dotenv from "dotenv";
 import Product from "../models/product.model.js";
 import Order from "../models/order.model.js";
+import fetch from 'node-fetch';
 
 dotenv.config(); // ✅ Make sure environment variables are loaded first
 
@@ -14,6 +15,76 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Utility: create grouped orders by supplier
+async function createOrdersFromLineItems({
+  lineItems, // array of { productId, name, unitAmount, quantity }
+  sessionLike, // object containing customer/shipping/userId
+  paymentMeta, // { method, provider, ref, esewaPid }
+  statusOverride, // 'pending' | 'paid'
+}) {
+  // Group items by supplier using product.userRef
+  const itemsBySupplier = new Map();
+
+  for (const item of lineItems) {
+    const qty = Number(item.quantity || 0);
+    const productId = item.productId;
+    const name = item.name;
+    const unitAmount = Number(item.unitAmount || 0);
+    if (!productId || !Number.isInteger(qty) || qty <= 0 || !Number.isFinite(unitAmount) || unitAmount <= 0) continue;
+
+    const productDoc = await Product.findById(productId).lean();
+    if (!productDoc) continue;
+    const supplierId = productDoc.userRef;
+
+    // Decrement stock
+    await Product.findByIdAndUpdate(productId, { $inc: { stock: -qty } });
+
+    const orderItem = {
+      productId,
+      name: name || productDoc.productName,
+      unitAmount,
+      quantity: qty,
+      subtotal: unitAmount * qty,
+    };
+
+    if (!itemsBySupplier.has(supplierId)) itemsBySupplier.set(supplierId, []);
+    itemsBySupplier.get(supplierId).push(orderItem);
+  }
+
+  // Create an Order per supplier
+  for (const [supplierId, items] of itemsBySupplier.entries()) {
+    const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
+    await Order.create({
+      supplierId,
+      items,
+      currency: 'npr',
+      totalAmount,
+      status: statusOverride || 'pending',
+      stripeSessionId: paymentMeta?.provider === 'stripe' ? paymentMeta?.ref : undefined,
+      paymentMethod: paymentMeta?.method,
+      paymentProvider: paymentMeta?.provider,
+      paymentRef: paymentMeta?.ref,
+      esewaPid: paymentMeta?.esewaPid,
+      userId: sessionLike?.client_reference_id || sessionLike?.userId || undefined,
+      customer: {
+        name: sessionLike?.customer_details?.name || sessionLike?.name,
+        email: sessionLike?.customer_details?.email?.toLowerCase?.() || sessionLike?.email?.toLowerCase?.(),
+        phone: sessionLike?.customer_details?.phone || sessionLike?.phone,
+      },
+      shippingAddress: sessionLike?.shipping_details?.address ? {
+        line1: sessionLike.shipping_details.address.line1,
+        line2: sessionLike.shipping_details.address.line2,
+        city: sessionLike.shipping_details.address.city,
+        state: sessionLike.shipping_details.address.state,
+        postal_code: sessionLike.shipping_details.address.postal_code,
+        country: sessionLike.shipping_details.address.country,
+      } : sessionLike?.shippingAddress,
+    });
+  }
+
+  return { created: true };
+}
 
 router.post("/create-checkout-session", async (req, res) => {
   try {
@@ -81,64 +152,27 @@ async function createOrdersFromSession(session) {
   // Retrieve line items to know what was purchased
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100, expand: ['data.price.product'] });
 
-  // Group items by supplier using product.userRef
-  const itemsBySupplier = new Map();
-
+  // Map to common structure
+  const normalized = [];
   for (const item of lineItems.data) {
     const qty = item.quantity || 0;
     const productId = item.price?.product?.metadata?.productId;
     const name = item.description;
     const unitAmount = item.amount_total && qty > 0 ? Math.round(item.amount_total / qty) : item.price?.unit_amount || 0;
-
     if (!productId || !Number.isInteger(qty) || qty <= 0) continue;
-
-    const productDoc = await Product.findById(productId).lean();
-    if (!productDoc) continue;
-    const supplierId = productDoc.userRef;
-
-    // Decrement stock
-    await Product.findByIdAndUpdate(productId, { $inc: { stock: -qty } });
-
-    const orderItem = {
-      productId,
-      name: name || productDoc.productName,
-      unitAmount: unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100),
-      quantity: qty,
-      subtotal: (unitAmount || Math.round((productDoc.specialPrice || productDoc.price) * 100)) * qty,
-    };
-
-    if (!itemsBySupplier.has(supplierId)) itemsBySupplier.set(supplierId, []);
-    itemsBySupplier.get(supplierId).push(orderItem);
+    normalized.push({ productId, name, unitAmount, quantity: qty });
   }
 
-  // Create an Order per supplier
-  for (const [supplierId, items] of itemsBySupplier.entries()) {
-    const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
-    await Order.create({
-      supplierId,
-      items,
-      currency: 'npr',
-      totalAmount,
-      status: 'paid',
-      stripeSessionId: session.id,
-      userId: session.client_reference_id || undefined,
-      customer: {
-        name: session.customer_details?.name,
-        email: session.customer_details?.email?.toLowerCase?.(),
-        phone: session.customer_details?.phone,
-      },
-      shippingAddress: session.shipping_details?.address ? {
-        line1: session.shipping_details.address.line1,
-        line2: session.shipping_details.address.line2,
-        city: session.shipping_details.address.city,
-        state: session.shipping_details.address.state,
-        postal_code: session.shipping_details.address.postal_code,
-        country: session.shipping_details.address.country,
-      } : undefined,
-    });
-  }
-
-  return { created: true };
+  return await createOrdersFromLineItems({
+    lineItems: normalized,
+    sessionLike: session,
+    paymentMeta: {
+      method: 'card',
+      provider: 'stripe',
+      ref: session.id,
+    },
+    statusOverride: 'paid',
+  });
 }
 
 // Stripe Webhook to handle post-payment fulfillment
@@ -182,6 +216,135 @@ router.post('/confirm', async (req, res) => {
   } catch (err) {
     console.error('Confirm handling error:', err);
     res.status(500).json({ error: 'Failed to confirm session' });
+  }
+});
+
+// ===================== eSewa Test Integration =====================
+// Docs: https://developer.esewa.com.np/#/epay
+// Test creds (from docs):
+//  - epay endpoint: https://uat.esewa.com.np/epay/main
+//  - amt, psc (0), pdc (0), txAmt, tAmt, pid, scd (EPAYTEST), su, fu
+
+// Initiate eSewa payment: frontend will redirect/form-post to eSewa
+router.post('/esewa/initiate', async (req, res) => {
+  try {
+    const { products, returnUrl, failureUrl, userId, email, phone } = req.body || {};
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: 'Products array is required' });
+    }
+
+    const items = [];
+    let total = 0;
+    for (const [index, p] of products.entries()) {
+      const name = typeof p?.name === 'string' && p.name.trim().length > 0 ? p.name.trim() : null;
+      const price = Number(p?.price);
+      const qty = Number(p?.qty);
+      const productId = typeof p?.productId === 'string' ? p.productId : null;
+      if (!name) throw new Error(`Product at index ${index} is missing a valid name`);
+      if (!Number.isFinite(price) || price <= 0) throw new Error(`Product '${name}' has invalid price`);
+      if (!Number.isInteger(qty) || qty <= 0) throw new Error(`Product '${name}' has invalid quantity`);
+      const unitAmount = Math.round(price * 100);
+      items.push({ productId, name, unitAmount, quantity: qty });
+      total += unitAmount * qty;
+    }
+
+    // eSewa amounts are in rupees
+    const amt = (total / 100).toFixed(2); // item total
+    const txAmt = (0).toFixed(2); // tax (optional)
+    const pdc = (0).toFixed(2); // discount
+    const psc = (0).toFixed(2); // service charge
+    const tAmt = (total / 100).toFixed(2); // total amount
+
+    const pid = `EP-${Date.now()}-${Math.floor(Math.random()*100000)}`; // merchant transaction id
+    const scd = process.env.ESEWA_SCD || 'EPAYTEST'; // merchant code (test)
+
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+    const su = returnUrl || `${frontendBase}/esewa-success?pid=${encodeURIComponent(pid)}`;
+    const fu = failureUrl || `${frontendBase}/esewa-failure?pid=${encodeURIComponent(pid)}`;
+
+    // Persist a pending order set for later fulfillment after verify
+    await createOrdersFromLineItems({
+      lineItems: items,
+      sessionLike: { name: undefined, email, phone, userId, shippingAddress: undefined },
+      paymentMeta: { method: 'wallet_esewa', provider: 'esewa', ref: undefined, esewaPid: pid },
+      statusOverride: 'pending',
+    });
+
+    res.json({
+      esewa: {
+        endpoint: 'https://uat.esewa.com.np/epay/main',
+        params: { amt, psc, pdc, txAmt, tAmt, pid, scd, su, fu },
+      }
+    });
+  } catch (err) {
+    console.error('Esewa initiate error:', err);
+    res.status(400).json({ error: err.message || 'Unable to initiate eSewa payment' });
+  }
+});
+
+// eSewa verification (server-to-server) after success redirect
+router.post('/esewa/verify', async (req, res) => {
+  try {
+    const { amt, refId, pid } = req.body || {};
+    if (!amt || !refId || !pid) return res.status(400).json({ error: 'amt, refId and pid are required' });
+
+    // Call eSewa verify endpoint
+    const verifyRes = await fetch('https://uat.esewa.com.np/epay/transrec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ amt, scd: process.env.ESEWA_SCD || 'EPAYTEST', pid, rid: refId }).toString(),
+    });
+
+    const text = await verifyRes.text();
+    const isSuccess = /<response>\s*<response_code>\s*Success\s*<\/response_code>\s*<\/response>/i.test(text);
+    if (!isSuccess) {
+      return res.status(400).json({ error: 'Verification failed', raw: text });
+    }
+
+    // Mark orders with pid as paid
+    await Order.updateMany({ esewaPid: pid }, {
+      $set: { status: 'paid', paymentRef: refId }
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Esewa verify error:', err);
+    res.status(400).json({ error: err.message || 'Unable to verify eSewa payment' });
+  }
+});
+
+// ===================== COD Endpoint =====================
+router.post('/cod', async (req, res) => {
+  try {
+    const { products, userId, email, phone, shippingAddress } = req.body || {};
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: 'Products array is required' });
+    }
+
+    const items = [];
+    for (const [index, p] of products.entries()) {
+      const name = typeof p?.name === 'string' && p.name.trim().length > 0 ? p.name.trim() : null;
+      const price = Number(p?.price);
+      const qty = Number(p?.qty);
+      const productId = typeof p?.productId === 'string' ? p.productId : null;
+      if (!name) throw new Error(`Product at index ${index} is missing a valid name`);
+      if (!Number.isFinite(price) || price <= 0) throw new Error(`Product '${name}' has invalid price`);
+      if (!Number.isInteger(qty) || qty <= 0) throw new Error(`Product '${name}' has invalid quantity`);
+      const unitAmount = Math.round(price * 100);
+      items.push({ productId, name, unitAmount, quantity: qty });
+    }
+
+    await createOrdersFromLineItems({
+      lineItems: items,
+      sessionLike: { name: undefined, email, phone, userId, shippingAddress },
+      paymentMeta: { method: 'cod', provider: 'cod', ref: undefined },
+      statusOverride: 'pending',
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('COD create error:', err);
+    res.status(400).json({ error: err.message || 'Unable to place COD order' });
   }
 });
 

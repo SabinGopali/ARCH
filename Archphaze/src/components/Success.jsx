@@ -4,12 +4,17 @@ import { useSearchParams, Link } from 'react-router-dom';
 export default function Success() {
   const [params] = useSearchParams();
   const sessionId = params.get('session_id');
+  const method = params.get('method'); // e.g., 'cod'
   const [status, setStatus] = useState('idle'); // idle | confirming | confirmed | error
   const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-    async function confirm() {
+    async function run() {
+      if (method === 'cod') {
+        setStatus('confirmed');
+        return;
+      }
       if (!sessionId) return;
       try {
         setStatus('confirming');
@@ -28,14 +33,14 @@ export default function Success() {
         }
       }
     }
-    confirm();
+    run();
     return () => { cancelled = true; };
-  }, [sessionId]);
+  }, [sessionId, method]);
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-6 text-center">
       <h1 className="text-3xl font-bold mb-4">Payment Successful</h1>
-      <p className="text-gray-700">Thank you! Your payment was completed.</p>
+      <p className="text-gray-700">Thank you! Your {method === 'cod' ? 'order has been placed.' : 'payment was completed.'}</p>
       {sessionId && (
         <p className="text-xs text-gray-500 mt-2">Session: {sessionId}</p>
       )}
