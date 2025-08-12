@@ -18,15 +18,12 @@ export const signup = async (req, res, next) => {
     isSupplier = false,
   } = req.body;
 
-  if (
-    !username ||
-    !email ||
-    !password ||
-    !company_name ||
-    !company_location ||
-    !phone
-  ) {
-    return next(errorHandler(400, 'All required fields must be filled.'));
+  if (!username || !email || !password) {
+    return next(errorHandler(400, 'Username, email, and password are required.'));
+  }
+
+  if (isSupplier && (!company_name || !company_location || !phone)) {
+    return next(errorHandler(400, 'Company name, location, and phone are required for suppliers.'));
   }
 
   try {
