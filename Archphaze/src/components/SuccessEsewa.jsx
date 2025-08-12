@@ -3,9 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 
 export default function SuccessEsewa() {
   const [params] = useSearchParams();
-  const pid = params.get('pid');
-  const refId = params.get('refId'); // eSewa sends refId on success
-  const amt = params.get('amt');
+  const txn = params.get('transaction_uuid') || params.get('pid');
 
   const [status, setStatus] = useState('idle'); // idle | verifying | verified | error
   const [error, setError] = useState('');
@@ -13,13 +11,13 @@ export default function SuccessEsewa() {
   useEffect(() => {
     let cancelled = false;
     async function verify() {
-      if (!pid || !refId || !amt) return;
+      if (!txn) return;
       try {
         setStatus('verifying');
         const res = await fetch('http://localhost:3000/backend/payment/esewa/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pid, refId, amt }),
+          body: JSON.stringify({ transaction_uuid: txn }),
         });
         const data = await res.json();
         if (!res.ok || data?.error) throw new Error(data?.error || 'Verification failed');
@@ -33,19 +31,18 @@ export default function SuccessEsewa() {
     }
     verify();
     return () => { cancelled = true; };
-  }, [pid, refId, amt]);
+  }, [txn]);
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-6 text-center">
       <h1 className="text-3xl font-bold mb-4">eSewa Payment</h1>
-      {!pid || !refId || !amt ? (
+      {!txn ? (
         <p className="text-gray-700">Missing required parameters.</p>
       ) : status === 'verifying' ? (
         <p className="text-gray-700">Verifying your payment…</p>
       ) : status === 'verified' ? (
         <>
           <p className="text-gray-700">Payment verified and order completed.</p>
-          <p className="text-xs text-gray-500 mt-2">Ref: {refId}</p>
           <div className="mt-6 flex gap-3 justify-center">
             <Link to="/orderhistory" className="inline-block text-white bg-black px-4 py-2 rounded">View Order History</Link>
             <Link to="/" className="inline-block text-black border border-black px-4 py-2 rounded">Go Home</Link>
