@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { removePurchasedItems } from "../redux/cartSlice";
 
 function getImageUrl(imagePath) {
   if (!imagePath) return "/logo.webp";
@@ -23,6 +24,9 @@ export default function Checkout() {
   } = state || {};
 
   const currentUser = useSelector((s) => s.user?.currentUser);
+  const cartCurrentUserId = useSelector((s) => s.cart?.currentUserId);
+  const userIdForCart = currentUser?._id || currentUser?.id || cartCurrentUserId || undefined;
+  const dispatch = useDispatch();
 
   const computedTotal = useMemo(() => {
     if (selectedProducts.length > 0) {
@@ -143,6 +147,10 @@ export default function Checkout() {
         });
         const codData = await codRes.json();
         if (!codRes.ok) throw new Error(codData?.error || "Failed to place COD order");
+        const productIds = Array.isArray(codData?.productIds) ? codData.productIds : [];
+        if (productIds.length > 0) {
+          dispatch(removePurchasedItems({ userId: userIdForCart, productIds }));
+        }
         navigate("/success?method=cod");
         return;
       }

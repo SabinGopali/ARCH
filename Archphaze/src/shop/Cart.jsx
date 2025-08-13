@@ -208,31 +208,7 @@ export default function ShoppingCart() {
           )}
         </div>
         
-        {products.length === 0 ? (
-          <div className="bg-gray-50 p-6 rounded-lg border">
-            <h3 className="font-semibold text-gray-800 mb-2">Your cart is empty</h3>
-            <p className="text-gray-600 mb-4">Would you like to add some sample items for testing?</p>
-            <button 
-              onClick={addSampleProducts}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Add Sample Products
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-gray-700">
-              {selectedIndexes.length} of {products.length} item
-              {products.length !== 1 ? "s" : ""} selected
-            </div>
-            <button
-              onClick={selectAllItems}
-              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              {selectedIndexes.length === products.length ? 'Deselect All' : 'Select All'}
-            </button>
-          </div>
-        )}
+        
       </div>
 
       <div className="flex flex-col lg:flex-row gap-10">
