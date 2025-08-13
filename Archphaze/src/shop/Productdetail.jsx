@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AiOutlineShoppingCart, AiOutlineHeart } from "react-icons/ai";
+import { AiOutlineShoppingCart } from "react-icons/ai";
 import { BsShieldCheck, BsTruck, BsArrowReturnLeft } from "react-icons/bs";
 import { useSelector, useDispatch } from "react-redux";
 import { addToCart, setCurrentUserId } from "../redux/cartSlice";
@@ -19,16 +19,13 @@ export default function ProductPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Set current user id in cart slice on user change
   useEffect(() => {
     if (currentUser && (currentUser.id || currentUser._id)) {
       const userId = currentUser.id || currentUser._id;
-      console.log('ProductPage: Setting currentUserId:', userId);
       dispatch(setCurrentUserId(userId));
     }
   }, [currentUser, dispatch]);
 
-  // Convert image path to full URL for frontend display
   function getProductImageUrl(imagePath) {
     if (!imagePath) return "https://via.placeholder.com/600x600";
     let imageUrl = imagePath.replace(/\\/g, "/");
@@ -39,47 +36,31 @@ export default function ProductPage() {
     return imageUrl;
   }
 
-  // Fetch product details by ID
   useEffect(() => {
     async function fetchProductById() {
       if (!productId) return;
-
       setLoading(true);
       setError(null);
-
       try {
         const res = await fetch(`/backend/product/get/${productId}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch product: ${res.status} ${res.statusText}`);
-        }
-
+        if (!res.ok) throw new Error(`Failed to fetch product: ${res.status}`);
         const data = await res.json();
         setSelectedProduct(data);
         setSelectedImage(data.images?.[0] || "");
-
-        // Setup initial variant images
-        const initialVariantImages = {};
-        data.variants?.forEach((variant, idx) => {
-          const rawImage = variant.images?.[0] || "";
-          initialVariantImages[idx] = getProductImageUrl(rawImage);
-        });
-        setSelectedVariantImages(initialVariantImages);
+        setSelectedVariantImages({});
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
-
     fetchProductById();
   }, [productId]);
 
-  // Variant image thumbnail click handler
   const handleVariantImageClick = (variantIdx, image) => {
     setSelectedVariantImages((prev) => ({
       ...prev,
@@ -99,21 +80,15 @@ export default function ProductPage() {
       )
     : 0;
 
-  // Add product to cart action, but only if logged in
   const handleAddToCart = () => {
     if (!currentUser) {
       alert("Please log in to add items to the cart.");
       navigate("/login");
       return;
     }
-
     if (!selectedProduct || selectedProduct.stock === 0) return;
-
-    // Ensure user ID is set in cart
     const userId = currentUser.id || currentUser._id;
-    if (userId) {
-      dispatch(setCurrentUserId(userId));
-    }
+    if (userId) dispatch(setCurrentUserId(userId));
 
     const cartItem = {
       productId: selectedProduct._id || selectedProduct.id,
@@ -122,22 +97,16 @@ export default function ProductPage() {
       qty: quantity,
       image: selectedImage,
       variantImages: selectedVariantImages,
-      // Include a structured list of selected variants for clarity in the cart
-      selectedVariants: (selectedProduct.variants || []).map((variant, idx) => ({
-        name: variant.name,
-        image: selectedVariantImages[idx] || getProductImageUrl(variant.images?.[0] || ""),
-      })),
+      selectedVariants: (selectedProduct.variants || [])
+        .map((variant, idx) => ({ name: variant.name, image: selectedVariantImages[idx] }))
+        .filter((v) => Boolean(v.image)),
       stock: selectedProduct.stock,
     };
 
-    console.log('Adding item to cart:', cartItem);
     dispatch(addToCart(cartItem));
-    
-    // Show success message
     alert(`${selectedProduct.productName} added to cart!`);
   };
 
-  // Buy now action with login check
   const handleBuyNow = () => {
     if (!currentUser) {
       alert("Please log in to purchase.");
@@ -148,27 +117,23 @@ export default function ProductPage() {
     navigate("/cart");
   };
 
-  // Loading UI
   if (loading)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="animate-pulse grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <div className="bg-gray-200 h-96 rounded-lg"></div>
-          <div className="space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 py-12 animate-pulse grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="bg-gray-200 h-96 rounded-lg"></div>
+        <div className="space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
 
-  // Error UI
   if (error)
     return (
       <div className="max-w-7xl mx-auto px-4 py-12 text-center text-red-500">
         <div>Error loading product: {error}</div>
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
         >
@@ -177,12 +142,11 @@ export default function ProductPage() {
       </div>
     );
 
-  // If product not found
   if (!selectedProduct)
     return (
       <div className="max-w-7xl mx-auto px-4 py-12 text-center text-gray-500">
         <div>Product not found</div>
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
         >
@@ -191,26 +155,19 @@ export default function ProductPage() {
       </div>
     );
 
-  // Disable buttons if no stock or no user logged in
-  const isActionDisabled = selectedProduct.stock === 0 || !currentUser;
+  const isActionDisabled = selectedProduct.stock === 0;
 
-  // Calculate ratings data
-  const averageRating = selectedProduct.rating?.average || 4.8;
-  const totalReviews = selectedProduct.rating?.count || 234;
-  const fullStars = Math.floor(averageRating);
-  const hasHalfStar = averageRating % 1 >= 0.5;
-
-  // Main product UI
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
+    <div className="min-h-screen bg-white py-10">
+      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Left: Images */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="space-y-4"
         >
-          <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm">
+          <div className="relative bg-white rounded-2xl overflow-hidden shadow-lg">
             <img
               src={getProductImageUrl(selectedImage)}
               alt={selectedProduct.productName}
@@ -225,7 +182,6 @@ export default function ProductPage() {
                 -{discountPercentage}%
               </div>
             )}
-            
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2">
@@ -239,7 +195,7 @@ export default function ProductPage() {
                   e.target.onerror = null;
                   e.target.src = "https://via.placeholder.com/80x80";
                 }}
-                className={`flex-shrink-0 w-20 h-20 rounded-lg object-cover cursor-pointer transition-all duration-300 ${
+                className={`flex-shrink-0 w-20 h-20 rounded-lg object-cover cursor-pointer transition-transform duration-300 ${
                   selectedImage === img
                     ? "border-2 border-blue-500 scale-105"
                     : "border border-gray-200 hover:border-gray-300"
@@ -249,6 +205,7 @@ export default function ProductPage() {
           </div>
         </motion.div>
 
+        {/* Right: Product Info */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -270,6 +227,7 @@ export default function ProductPage() {
 
             {selectedProduct.variants?.length > 0 && (
               <div className="space-y-4 pt-3">
+                <p className="text-xs text-gray-500">Variant selection is optional.</p>
                 {selectedProduct.variants.map((variant, idx) => {
                   const selectedVariantImageUrl = selectedVariantImages[idx];
                   return (
@@ -289,7 +247,7 @@ export default function ProductPage() {
                                 e.target.onerror = null;
                                 e.target.src = "";
                               }}
-                              className={`w-12 h-12 rounded-lg object-cover cursor-pointer transition-all duration-300 ${
+                              className={`w-12 h-12 rounded-lg object-cover cursor-pointer transition-transform duration-300 ${
                                 isSelected
                                   ? "ring-2 ring-blue-500 scale-105"
                                   : "ring-1 ring-gray-200 hover:ring-gray-300"
@@ -305,6 +263,7 @@ export default function ProductPage() {
             )}
           </div>
 
+          {/* Price & Stock */}
           <div className="space-y-2">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-gray-900">
@@ -334,18 +293,16 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* Product Description */}
+          {/* Description */}
           {selectedProduct.description && (
             <div className="space-y-3">
               <h3 className="font-semibold text-gray-900">Description</h3>
-              <p className="text-gray-700 leading-relaxed">
-                {selectedProduct.description}
-              </p>
+              <p className="text-gray-700 leading-relaxed">{selectedProduct.description}</p>
             </div>
           )}
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900">Quantity</h3>
+          {/* Quantity & Actions */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-3 sm:space-y-0">
             <div className="flex items-center border border-gray-300 rounded-lg w-fit">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -357,9 +314,7 @@ export default function ProductPage() {
               </button>
               <span className="px-4 py-2 border-x border-gray-300">{quantity}</span>
               <button
-                onClick={() =>
-                  setQuantity(Math.min(selectedProduct.stock, quantity + 1))
-                }
+                onClick={() => setQuantity(Math.min(selectedProduct.stock, quantity + 1))}
                 className="px-3 py-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
                 type="button"
                 disabled={quantity >= selectedProduct.stock}
@@ -367,40 +322,31 @@ export default function ProductPage() {
                 +
               </button>
             </div>
+
+            <div className="flex-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                disabled={isActionDisabled}
+                onClick={handleAddToCart}
+                className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg text-white transition-colors ${
+                  isActionDisabled ? "bg-gray-400 cursor-not-allowed" : "bg-gray-900 hover:bg-gray-800"
+                }`}
+              >
+                <AiOutlineShoppingCart size={20} />
+                {selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
+              </button>
+              <button
+                disabled={isActionDisabled}
+                onClick={handleBuyNow}
+                className={`w-full px-6 py-4 rounded-lg text-white transition-colors ${
+                  isActionDisabled ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {selectedProduct.stock === 0 ? "Out of Stock" : "Buy Now"}
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            <button
-              disabled={isActionDisabled}
-              onClick={handleAddToCart}
-              type="button"
-              className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg text-white transition-colors
-                ${
-                  isActionDisabled
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gray-900 hover:bg-gray-800"
-                }
-              `}
-            >
-              <AiOutlineShoppingCart size={20} />
-              {!currentUser ? "Login to Add to Cart" : selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
-            </button>
-            <button
-              disabled={isActionDisabled}
-              onClick={handleBuyNow}
-              type="button"
-              className={`w-full px-6 py-4 rounded-lg text-white transition-colors
-                ${
-                  isActionDisabled
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }
-              `}
-            >
-              {!currentUser ? "Login to Buy Now" : selectedProduct.stock === 0 ? "Out of Stock" : "Buy Now"}
-            </button>
-          </div>
-
+          {/* Features */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <BsTruck className="text-green-600" />
@@ -413,7 +359,8 @@ export default function ProductPage() {
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <BsShieldCheck className="text-purple-600" />
               <span>
-                {selectedProduct.warranty?.type !== "No" && selectedProduct.warranty?.period
+                {selectedProduct.warranty?.type !== "No" &&
+                selectedProduct.warranty?.period
                   ? `${selectedProduct.warranty.period} Warranty`
                   : "Quality Assured"}
               </span>
@@ -421,8 +368,6 @@ export default function ProductPage() {
           </div>
         </motion.div>
       </div>
-
-      {/* Variants selector moved above product info */}
     </div>
   );
 }

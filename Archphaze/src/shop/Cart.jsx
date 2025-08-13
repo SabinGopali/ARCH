@@ -179,7 +179,7 @@ export default function ShoppingCart() {
   return (
     <div className="min-h-screen bg-white px-4 md:px-12 py-8 text-black max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-semibold">Shopping Cart</h2>
+        <h1 className="text-3xl font-extrabold uppercase">Shopping <span className="text-red-500">Cart</span></h1>
         <div className="flex gap-2">
           
         </div>

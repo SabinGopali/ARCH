@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Categories from "./Categories";
 import Product from "./Product";
 import img from '../assets/e-commerce.jpg';
+import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const retailers = [
   {
@@ -57,6 +59,16 @@ const Shopindex = () => {
   const whyRef = useRef(null);
   const productRef = useRef(null);
 
+  // Search preview state
+  const [products, setProducts] = useState([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [isFetchingProducts, setIsFetchingProducts] = useState(false);
+
+  // Supplier/store profile state for Trusted section
+  const { currentUser } = useSelector((state) => state.user);
+  const [supplier, setSupplier] = useState(null);
+  const [storeProfile, setStoreProfile] = useState(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -64,6 +76,83 @@ const Shopindex = () => {
   const scrollToProducts = () => {
     productRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Lazy-load products for search preview (on first focus or when user types)
+  useEffect(() => {
+    const shouldFetch = !productsLoaded && !isFetchingProducts && (isFocused || searchTerm.length > 0);
+    if (!shouldFetch) return;
+
+    const fetchAllProducts = async () => {
+      try {
+        setIsFetchingProducts(true);
+        const res = await fetch("/backend/product/getall", { credentials: "include" });
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : Array.isArray(data?.products) ? data.products : [];
+        setProducts(list);
+        setProductsLoaded(true);
+      } catch (e) {
+        setProducts([]);
+        setProductsLoaded(true);
+      } finally {
+        setIsFetchingProducts(false);
+      }
+    };
+
+    fetchAllProducts();
+  }, [isFocused, searchTerm, productsLoaded, isFetchingProducts]);
+
+  // Fetch supplier and store profile to inject into Trusted section
+  useEffect(() => {
+    let aborted = false;
+
+    const fetchSupplier = async () => {
+      try {
+        const res = await fetch("/backend/user/supplier-users", { credentials: "include" });
+        const data = await res.json();
+        if (!aborted && res.ok) setSupplier(data?.supplier || null);
+      } catch (_) {}
+    };
+
+    const fetchStoreProfile = async (ownerId) => {
+      if (!ownerId) return;
+      try {
+        const res = await fetch(`/backend/store/get/${ownerId}`, { credentials: "include" });
+        const data = await res.json();
+        if (!aborted && res.ok) setStoreProfile(data?.storeProfile || null);
+      } catch (_) {}
+    };
+
+    const supplierOwnerId = currentUser?.isSubUser ? (currentUser?.supplierId || currentUser?.supplierRef) : (currentUser?._id || currentUser?.id);
+    if (supplierOwnerId) {
+      fetchSupplier();
+      fetchStoreProfile(supplierOwnerId);
+    }
+
+    return () => { aborted = true; };
+  }, [currentUser]);
+
+  // Helpers
+  function getProductImageUrl(product) {
+    let imageUrl = product?.images?.[0] || product?.image || "";
+    if (!imageUrl) return "https://via.placeholder.com/300";
+    imageUrl = imageUrl.replace(/\\/g, "/");
+    if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+      if (imageUrl.startsWith("/")) imageUrl = imageUrl.slice(1);
+      imageUrl = `http://localhost:3000/${imageUrl}`;
+    }
+    return imageUrl;
+  }
+
+  const normalizedQuery = searchTerm.trim().toLowerCase();
+  const previewResults = normalizedQuery
+    ? products
+        .filter((p) => {
+          const name = String(p.productName || p.name || "").toLowerCase();
+          const category = String(p.category || "").toLowerCase();
+          return name.includes(normalizedQuery) || category.includes(normalizedQuery);
+        })
+        .slice(0, 8)
+    : [];
 
   return (
     <>
@@ -166,6 +255,61 @@ const Shopindex = () => {
                   )}
                 </AnimatePresence>
               </motion.div>
+
+              {/* Search Preview Dropdown */}
+              <AnimatePresence>
+                {searchTerm && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-20"
+                  >
+                    <div className="max-h-80 overflow-auto">
+                      {isFetchingProducts ? (
+                        <div className="p-4 text-sm text-gray-500">Searching…</div>
+                      ) : previewResults.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-500">No results</div>
+                      ) : (
+                        <ul className="divide-y divide-gray-100">
+                          {previewResults.map((p) => (
+                            <li key={p._id} className="hover:bg-gray-50">
+                              <Link
+                                to={`/productdetail/${p._id}`}
+                                className="flex items-center gap-3 p-3"
+                                onMouseDown={(e) => e.preventDefault()}
+                              >
+                                <img
+                                  src={getProductImageUrl(p)}
+                                  alt={p.productName || p.name}
+                                  className="w-12 h-12 rounded-md object-cover flex-shrink-0"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://via.placeholder.com/80";
+                                  }}
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {p.productName || p.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">
+                                    {p.category || "General"}
+                                  </p>
+                                </div>
+                                {typeof p.price === 'number' && (
+                                  <span className="ml-auto text-sm font-semibold text-red-600">
+                                    Rs. {(p.specialPrice > 0 && p.specialPrice < p.price ? p.specialPrice : p.price).toFixed(2)}
+                                  </span>
+                                )}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Retailers */}
@@ -175,6 +319,29 @@ const Shopindex = () => {
               </h3>
               <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                 <AnimatePresence>
+                  {/* Dynamic: From store profile */}
+                  {storeProfile?.logo && (
+                    <motion.div
+                      key="store-profile-trusted"
+                      initial={{ y: 10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center gap-2"
+                    >
+                      <img
+                        src={`http://localhost:3000/${String(storeProfile.logo).replace(/\\\\/g, '/').replace(/\\/g, '/')}`}
+                        alt={supplier?.company_name || 'Company'}
+                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain rounded-full bg-white border"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/64';
+                        }}
+                      />
+                      <span className="text-xs sm:text-sm text-gray-600">
+                        {supplier?.company_name || 'Your Company'}
+                      </span>
+                    </motion.div>
+                  )}
+
                   {retailers.map((retailer, idx) => (
                     <motion.div
                       key={retailer.name}
