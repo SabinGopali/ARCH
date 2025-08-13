@@ -62,13 +62,8 @@ export default function ProductPage() {
         setSelectedProduct(data);
         setSelectedImage(data.images?.[0] || "");
 
-        // Setup initial variant images
-        const initialVariantImages = {};
-        data.variants?.forEach((variant, idx) => {
-          const rawImage = variant.images?.[0] || "";
-          initialVariantImages[idx] = getProductImageUrl(rawImage);
-        });
-        setSelectedVariantImages(initialVariantImages);
+        // Do not preselect variant images; require manual selection by user
+        setSelectedVariantImages({});
       } catch (err) {
         setError(err.message);
       } finally {
@@ -120,13 +115,14 @@ export default function ProductPage() {
       name: selectedProduct.productName,
       price: hasDiscount ? selectedProduct.specialPrice : selectedProduct.price,
       qty: quantity,
+      // Always include the currently selected main image
       image: selectedImage,
+      // Keep per-variant selected images (optional)
       variantImages: selectedVariantImages,
-      // Include a structured list of selected variants for clarity in the cart
-      selectedVariants: (selectedProduct.variants || []).map((variant, idx) => ({
-        name: variant.name,
-        image: selectedVariantImages[idx] || getProductImageUrl(variant.images?.[0] || ""),
-      })),
+      // Only include variants that the user actually selected (optional)
+      selectedVariants: (selectedProduct.variants || [])
+        .map((variant, idx) => ({ name: variant.name, image: selectedVariantImages[idx] }))
+        .filter(v => Boolean(v.image)),
       stock: selectedProduct.stock,
     };
 
@@ -191,8 +187,8 @@ export default function ProductPage() {
       </div>
     );
 
-  // Disable buttons if no stock or no user logged in
-  const isActionDisabled = selectedProduct.stock === 0 || !currentUser;
+  // Disable buttons only if out of stock; allow click to prompt login
+  const isActionDisabled = selectedProduct.stock === 0;
 
   // Calculate ratings data
   const averageRating = selectedProduct.rating?.average || 4.8;
@@ -270,6 +266,7 @@ export default function ProductPage() {
 
             {selectedProduct.variants?.length > 0 && (
               <div className="space-y-4 pt-3">
+                <p className="text-xs text-gray-500">Variant selection is optional.</p>
                 {selectedProduct.variants.map((variant, idx) => {
                   const selectedVariantImageUrl = selectedVariantImages[idx];
                   return (
@@ -375,29 +372,21 @@ export default function ProductPage() {
               onClick={handleAddToCart}
               type="button"
               className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg text-white transition-colors
-                ${
-                  isActionDisabled
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gray-900 hover:bg-gray-800"
-                }
+                ${isActionDisabled ? "bg-gray-400 cursor-not-allowed" : "bg-gray-900 hover:bg-gray-800"}
               `}
             >
-              <AiOutlineShoppingCart size={20} />
-              {!currentUser ? "Login to Add to Cart" : selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                             <AiOutlineShoppingCart size={20} />
+               {selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
             </button>
             <button
               disabled={isActionDisabled}
               onClick={handleBuyNow}
               type="button"
               className={`w-full px-6 py-4 rounded-lg text-white transition-colors
-                ${
-                  isActionDisabled
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }
+                ${isActionDisabled ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}
               `}
             >
-              {!currentUser ? "Login to Buy Now" : selectedProduct.stock === 0 ? "Out of Stock" : "Buy Now"}
+              {selectedProduct.stock === 0 ? "Out of Stock" : "Buy Now"}
             </button>
           </div>
 
