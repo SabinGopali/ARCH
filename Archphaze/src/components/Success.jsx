@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { clearCart } from '../redux/cartSlice';
 
 export default function Success() {
   const [params] = useSearchParams();
@@ -7,6 +9,12 @@ export default function Success() {
   const method = params.get('method'); // e.g., 'cod'
   const [status, setStatus] = useState('idle'); // idle | confirming | confirmed | error
   const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const didClearRef = useRef(false);
+
+  const currentUser = useSelector((s) => s.user?.currentUser);
+  const cartCurrentUserId = useSelector((s) => s.cart?.currentUserId);
+  const userIdForClear = currentUser?._id || currentUser?.id || cartCurrentUserId || undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +44,13 @@ export default function Success() {
     run();
     return () => { cancelled = true; };
   }, [sessionId, method]);
+
+  useEffect(() => {
+    if (status === 'confirmed' && !didClearRef.current) {
+      didClearRef.current = true;
+      dispatch(clearCart(userIdForClear));
+    }
+  }, [status, dispatch, userIdForClear]);
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-6 text-center">
