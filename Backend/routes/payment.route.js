@@ -84,7 +84,8 @@ async function createOrdersFromLineItems({
     });
   }
 
-  return { created: true };
+  const productIds = Array.from(new Set((lineItems || []).map(li => li.productId).filter(Boolean)));
+  return { created: true, productIds };
 }
 
 router.post("/create-checkout-session", async (req, res) => {
@@ -148,7 +149,12 @@ router.post("/create-checkout-session", async (req, res) => {
 async function createOrdersFromSession(session) {
   // Idempotency: do nothing if we already created orders for this session
   const exists = await Order.exists({ stripeSessionId: session.id });
-  if (exists) return { created: false, reason: 'already_exists' };
+  if (exists) {
+    // If exists, attempt to fetch item productIds from existing orders for completeness
+    const existingOrders = await Order.find({ stripeSessionId: session.id }).lean();
+    const productIds = Array.from(new Set(existingOrders.flatMap(o => (o.items || []).map(i => i.productId)).filter(Boolean)));
+    return { created: false, reason: 'already_exists', productIds };
+  }
 
   // Retrieve line items to know what was purchased
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100, expand: ['data.price.product'] });
@@ -267,7 +273,7 @@ router.post('/esewa/initiate', async (req, res) => {
     const failure_url = `${frontendBase}/esewa-failure`;
 
     // Persist a pending order set
-    await createOrdersFromLineItems({
+    const creation = await createOrdersFromLineItems({
       lineItems: items,
       sessionLike: { name: undefined, email, phone, userId, shippingAddress: undefined },
       paymentMeta: { method: 'wallet_esewa', provider: 'esewa', ref: undefined, esewaPid: transaction_uuid },
@@ -288,7 +294,8 @@ router.post('/esewa/initiate', async (req, res) => {
           success_url,
           failure_url,
         },
-      }
+      },
+      productIds: creation.productIds,
     });
   } catch (err) {
     console.error('Esewa initiate error:', err);
@@ -334,7 +341,9 @@ router.post('/esewa/verify', async (req, res) => {
       $set: { status: 'paid' }
     });
 
-    res.json({ ok: true });
+    const productIds = Array.from(new Set(orders.flatMap(o => (o.items || []).map(i => i.productId)).filter(Boolean)));
+
+    res.json({ ok: true, productIds });
   } catch (err) {
     console.error('Esewa verify error:', err);
     res.status(400).json({ error: err.message || 'Unable to verify eSewa payment' });
@@ -363,7 +372,7 @@ router.post('/cod', async (req, res) => {
     }
 
     // Create orders
-    await createOrdersFromLineItems({
+    const creation = await createOrdersFromLineItems({
       lineItems: items,
       sessionLike: { name: undefined, email, phone, userId, shippingAddress },
       paymentMeta: { method: 'cod', provider: 'cod', ref: undefined },
@@ -397,7 +406,7 @@ router.post('/cod', async (req, res) => {
       }
     }
 
-    res.json({ ok: true });
+    res.json({ ok: true, productIds: creation.productIds });
   } catch (err) {
     console.error('COD create error:', err);
     res.status(400).json({ error: err.message || 'Unable to place COD order' });

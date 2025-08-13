@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '../redux/cartSlice';
+import { removePurchasedItems } from '../redux/cartSlice';
 
 export default function SuccessEsewa() {
   const [params] = useSearchParams();
@@ -10,11 +10,12 @@ export default function SuccessEsewa() {
   const [status, setStatus] = useState('idle'); // idle | verifying | verified | error
   const [error, setError] = useState('');
   const dispatch = useDispatch();
-  const didClearRef = useRef(false);
+  const didApplyRef = useRef(false);
 
   const currentUser = useSelector((s) => s.user?.currentUser);
   const cartCurrentUserId = useSelector((s) => s.cart?.currentUserId);
-  const userIdForClear = currentUser?._id || currentUser?.id || cartCurrentUserId || undefined;
+  const userIdForCart = currentUser?._id || currentUser?.id || cartCurrentUserId || undefined;
+  const [purchasedIds, setPurchasedIds] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,7 +30,10 @@ export default function SuccessEsewa() {
         });
         const data = await res.json();
         if (!res.ok || data?.error) throw new Error(data?.error || 'Verification failed');
-        if (!cancelled) setStatus('verified');
+        if (!cancelled) {
+          setPurchasedIds(Array.isArray(data?.productIds) ? data.productIds : []);
+          setStatus('verified');
+        }
       } catch (e) {
         if (!cancelled) {
           setStatus('error');
@@ -42,11 +46,11 @@ export default function SuccessEsewa() {
   }, [txn]);
 
   useEffect(() => {
-    if (status === 'verified' && !didClearRef.current) {
-      didClearRef.current = true;
-      dispatch(clearCart(userIdForClear));
+    if (status === 'verified' && !didApplyRef.current && purchasedIds.length > 0) {
+      didApplyRef.current = true;
+      dispatch(removePurchasedItems({ userId: userIdForCart, productIds: purchasedIds }));
     }
-  }, [status, dispatch, userIdForClear]);
+  }, [status, dispatch, purchasedIds, userIdForCart]);
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-6 text-center">

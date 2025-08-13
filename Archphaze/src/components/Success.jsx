@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '../redux/cartSlice';
+import { removePurchasedItems } from '../redux/cartSlice';
 
 export default function Success() {
   const [params] = useSearchParams();
@@ -10,11 +10,12 @@ export default function Success() {
   const [status, setStatus] = useState('idle'); // idle | confirming | confirmed | error
   const [error, setError] = useState('');
   const dispatch = useDispatch();
-  const didClearRef = useRef(false);
+  const didApplyRef = useRef(false);
 
   const currentUser = useSelector((s) => s.user?.currentUser);
   const cartCurrentUserId = useSelector((s) => s.cart?.currentUserId);
-  const userIdForClear = currentUser?._id || currentUser?.id || cartCurrentUserId || undefined;
+  const userIdForCart = currentUser?._id || currentUser?.id || cartCurrentUserId || undefined;
+  const [purchasedIds, setPurchasedIds] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,7 +34,10 @@ export default function Success() {
         });
         const data = await res.json();
         if (!res.ok || data?.error) throw new Error(data?.error || 'Failed to confirm payment');
-        if (!cancelled) setStatus('confirmed');
+        if (!cancelled) {
+          setPurchasedIds(Array.isArray(data?.productIds) ? data.productIds : []);
+          setStatus('confirmed');
+        }
       } catch (e) {
         if (!cancelled) {
           setStatus('error');
@@ -46,11 +50,11 @@ export default function Success() {
   }, [sessionId, method]);
 
   useEffect(() => {
-    if (status === 'confirmed' && !didClearRef.current) {
-      didClearRef.current = true;
-      dispatch(clearCart(userIdForClear));
+    if (status === 'confirmed' && !didApplyRef.current && purchasedIds.length > 0) {
+      didApplyRef.current = true;
+      dispatch(removePurchasedItems({ userId: userIdForCart, productIds: purchasedIds }));
     }
-  }, [status, dispatch, userIdForClear]);
+  }, [status, dispatch, purchasedIds, userIdForCart]);
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-6 text-center">
