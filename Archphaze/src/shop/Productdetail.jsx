@@ -62,13 +62,8 @@ export default function ProductPage() {
         setSelectedProduct(data);
         setSelectedImage(data.images?.[0] || "");
 
-        // Setup initial variant images
-        const initialVariantImages = {};
-        data.variants?.forEach((variant, idx) => {
-          const rawImage = variant.images?.[0] || "";
-          initialVariantImages[idx] = getProductImageUrl(rawImage);
-        });
-        setSelectedVariantImages(initialVariantImages);
+        // Do not preselect variant images; require manual selection by user
+        setSelectedVariantImages({});
       } catch (err) {
         setError(err.message);
       } finally {
@@ -109,6 +104,16 @@ export default function ProductPage() {
 
     if (!selectedProduct || selectedProduct.stock === 0) return;
 
+    // Ensure all variants are manually selected (if variants exist)
+    const variantCount = selectedProduct.variants?.length || 0;
+    if (variantCount > 0) {
+      const allSelected = selectedProduct.variants.every((_, idx) => Boolean(selectedVariantImages[idx]));
+      if (!allSelected) {
+        alert("Please select an option for all variants before adding to cart.");
+        return;
+      }
+    }
+
     // Ensure user ID is set in cart
     const userId = currentUser.id || currentUser._id;
     if (userId) {
@@ -125,7 +130,7 @@ export default function ProductPage() {
       // Include a structured list of selected variants for clarity in the cart
       selectedVariants: (selectedProduct.variants || []).map((variant, idx) => ({
         name: variant.name,
-        image: selectedVariantImages[idx] || getProductImageUrl(variant.images?.[0] || ""),
+        image: selectedVariantImages[idx],
       })),
       stock: selectedProduct.stock,
     };
