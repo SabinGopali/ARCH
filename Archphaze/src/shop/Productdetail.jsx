@@ -107,7 +107,10 @@ export default function ProductPage() {
     // Ensure all variants are manually selected (if variants exist)
     const variantCount = selectedProduct.variants?.length || 0;
     if (variantCount > 0) {
-      const allSelected = selectedProduct.variants.every((_, idx) => Boolean(selectedVariantImages[idx]));
+      const allSelected = selectedProduct.variants.every((variant, idx) => {
+        const hasChoices = Array.isArray(variant.images) && variant.images.length > 0;
+        return hasChoices ? Boolean(selectedVariantImages[idx]) : true;
+      });
       if (!allSelected) {
         alert("Please select an option for all variants before adding to cart.");
         return;
@@ -196,8 +199,16 @@ export default function ProductPage() {
       </div>
     );
 
-  // Disable buttons if no stock or no user logged in
-  const isActionDisabled = selectedProduct.stock === 0 || !currentUser;
+  // Disable buttons only if out of stock; allow click to prompt login
+  const isActionDisabled = selectedProduct.stock === 0;
+
+  // Determine if all required variants (those with images) are selected
+  const areAllVariantsSelected = (selectedProduct.variants?.length || 0) === 0
+    ? true
+    : selectedProduct.variants.every((variant, idx) => {
+        const hasChoices = Array.isArray(variant.images) && variant.images.length > 0;
+        return hasChoices ? Boolean(selectedVariantImages[idx]) : true;
+      });
 
   // Calculate ratings data
   const averageRating = selectedProduct.rating?.average || 4.8;
@@ -376,27 +387,30 @@ export default function ProductPage() {
 
           <div className="space-y-3">
             <button
-              disabled={isActionDisabled}
+              disabled={isActionDisabled || !areAllVariantsSelected}
               onClick={handleAddToCart}
               type="button"
               className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg text-white transition-colors
                 ${
-                  isActionDisabled
+                  isActionDisabled || !areAllVariantsSelected
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-gray-900 hover:bg-gray-800"
                 }
               `}
             >
-              <AiOutlineShoppingCart size={20} />
-              {!currentUser ? "Login to Add to Cart" : selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                             <AiOutlineShoppingCart size={20} />
+               {selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
             </button>
+            {!areAllVariantsSelected && (
+              <p className="text-sm text-red-600">Please select an option for all variants.</p>
+            )}
             <button
-              disabled={isActionDisabled}
+              disabled={isActionDisabled || !areAllVariantsSelected}
               onClick={handleBuyNow}
               type="button"
               className={`w-full px-6 py-4 rounded-lg text-white transition-colors
                 ${
-                  isActionDisabled
+                  isActionDisabled || !areAllVariantsSelected
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700"
                 }
