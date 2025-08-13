@@ -193,6 +193,22 @@ const cartSlice = createSlice({
         console.warn('Cannot clear cart: no user specified');
       }
     },
+
+    removePurchasedItems: (state, action) => {
+      const productIds = Array.isArray(action.payload?.productIds)
+        ? action.payload.productIds
+        : Array.isArray(action.payload)
+          ? action.payload
+          : [];
+
+      const userId = action.payload?.userId || state.currentUserId;
+      if (!userId || !state.cartsByUser?.[userId]) return;
+
+      const idSet = new Set(productIds.filter(Boolean).map(String));
+      state.cartsByUser[userId] = state.cartsByUser[userId].filter(
+        (item) => !idSet.has(String(item.productId))
+      );
+    },
     
     // New action to remove items that are out of stock
     removeOutOfStockItems: (state) => {
@@ -243,6 +259,7 @@ export const {
   updateQty, 
   removeFromCart, 
   clearCart,
+  removePurchasedItems,
   removeOutOfStockItems,
   updateItemDetails
 } = cartSlice.actions;
