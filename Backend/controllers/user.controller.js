@@ -198,7 +198,10 @@ export const deleteUser = async (req, res, next) => {
       return next(errorHandler(401, "Unauthorized: Missing user info"));
     }
 
-    if (loggedInUserId.toString() !== userIdToDelete && !req.user.isAdmin) {
+    const isAdmin = req.user.isAdmin;
+
+    // If not admin, can only delete themselves
+    if (!isAdmin && loggedInUserId.toString() !== userIdToDelete) {
       return next(errorHandler(403, "Access denied: Not authorized to delete this user"));
     }
 
@@ -207,14 +210,17 @@ export const deleteUser = async (req, res, next) => {
       return next(errorHandler(404, "User not found"));
     }
 
-    const { password } = req.body;
-    if (!password) {
-      return next(errorHandler(400, "Password is required to confirm deletion"));
-    }
+    // Require password only if the user is NOT an admin
+    if (!isAdmin) {
+      const { password } = req.body;
+      if (!password) {
+        return next(errorHandler(400, "Password is required to confirm deletion"));
+      }
 
-const isPasswordValid = await bcryptjs.compare(password, user.password);
-    if (!isPasswordValid) {
-      return next(errorHandler(401, "Invalid password. Account not deleted."));
+      const isPasswordValid = await bcryptjs.compare(password, user.password);
+      if (!isPasswordValid) {
+        return next(errorHandler(401, "Invalid password. Account not deleted."));
+      }
     }
 
     await User.findByIdAndDelete(userIdToDelete);
@@ -224,6 +230,7 @@ const isPasswordValid = await bcryptjs.compare(password, user.password);
     next(error);
   }
 };
+
 
 
 export const requestUserDeletion = async (req, res, next) => {

@@ -50,12 +50,15 @@ export const deleteform = async (req, res, next) => {
       return next(errorHandler(404, 'Application not found'));
     }
 
-    if (!req.user?.isAdmin && req.user?.id !== Dform.userRef.toString()) {
-      return next(errorHandler(401, 'You can only delete your own application!'));
+    // If admin, skip the ownership check
+    if (!req.user?.isAdmin) {
+      if (!req.user || req.user.id !== Dform.userRef.toString()) {
+        return next(errorHandler(401, 'You can only delete your own application!'));
+      }
     }
 
     await form.findByIdAndDelete(req.params.id);
-    res.status(200).json('Application has been deleted!');
+    res.status(200).json({ success: true, message: 'Application has been deleted!' });
   } catch (error) {
     next(error);
   }

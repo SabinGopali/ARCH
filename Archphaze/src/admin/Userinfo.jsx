@@ -19,10 +19,10 @@ export default function Userinfo() {
           setUsers(data.users);
           if (data.users.length < 9) setShowMore(false);
         } else {
-          console.log(data.message);
+          console.error(data.message);
         }
       } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
       }
     };
 
@@ -32,22 +32,38 @@ export default function Userinfo() {
   }, [currentUser]);
 
   const handleDeleteUser = async (userId) => {
-    const confirm = window.confirm("Are you sure you want to delete this user?");
-    if (!confirm) return;
+    const confirmed = window.confirm("Are you sure you want to delete this user?");
+    if (!confirmed) return;
+
+    let requestBody = {};
+
+    // If NOT admin, prompt for password
+    if (!currentUser?.isAdmin) {
+      const password = window.prompt("Please enter your password to confirm deletion:");
+      if (!password) {
+        alert("Password is required to delete your account.");
+        return;
+      }
+      requestBody.password = password;
+    }
 
     try {
       const res = await fetch(`/backend/user/delete/${userId}`, {
         method: "DELETE",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: currentUser?.isAdmin ? null : JSON.stringify(requestBody),
       });
+
       const data = await res.json();
       if (res.ok) {
         setUsers((prev) => prev.filter((user) => user._id !== userId));
+        alert("User deleted successfully.");
       } else {
-        console.log(data.message);
+        alert(data.message || "Failed to delete user");
       }
     } catch (error) {
-      console.log(error.message);
+      console.error("Error deleting user:", error.message);
     }
   };
 
@@ -90,12 +106,8 @@ export default function Userinfo() {
                         {user.email}
                       </a>
                     </td>
-                    <td className="py-3 px-4 text-gray-600">
-                      {getUserRole(user)}
-                    </td>
-                    <td className="py-3 px-4 text-gray-600">
-                      {formatDate(user.createdAt)}
-                    </td>
+                    <td className="py-3 px-4 text-gray-600">{getUserRole(user)}</td>
+                    <td className="py-3 px-4 text-gray-600">{formatDate(user.createdAt)}</td>
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleDeleteUser(user._id)}

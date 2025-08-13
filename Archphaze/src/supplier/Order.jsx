@@ -33,19 +33,38 @@ export default function Order() {
   useEffect(() => {
     const fetchOrders = async () => {
       if (!supplierId) {
+        console.warn("No supplierId found, skipping fetch.");
         setLoading(false);
         return;
       }
+      setLoading(true);
       try {
-        const res = await fetch(`http://localhost:3000/backend/order/supplier/${supplierId}`);
+        const res = await fetch(
+          `http://localhost:3000/backend/order/supplier/${supplierId}`
+        );
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch: ${res.status}`);
+        }
+
         const data = await res.json();
-        setOrders(Array.isArray(data.orders) ? data.orders : []);
+
+        if (Array.isArray(data.orders)) {
+          setOrders(data.orders);
+        } else if (Array.isArray(data)) {
+          setOrders(data);
+        } else {
+          setOrders([]);
+          console.warn("Unexpected response format from API");
+        }
       } catch (e) {
-        console.error('Failed to load orders', e);
+        console.error("Failed to load orders", e);
+        setOrders([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchOrders();
   }, [supplierId]);
 
@@ -57,26 +76,43 @@ export default function Order() {
     { label: "COD", value: "cod" },
   ];
 
-  const referenceOf = (o) => o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
+  const referenceOf = (o) =>
+    o.orderNumber || o.paymentRef || o.stripeSessionId || o.esewaPid || o._id;
 
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
     return orders
       .filter((o) => {
         if (!term) return true;
-        const nameMatches = (o.customer?.name || '').toLowerCase().includes(term);
-        const refMatches = String(referenceOf(o) || '').toLowerCase().includes(term);
+        const nameMatches = (o.customer?.name || "").toLowerCase().includes(term);
+        const refMatches = String(referenceOf(o) || "").toLowerCase().includes(term);
         return nameMatches || refMatches;
       })
       .filter((o) => {
-        if (selectedStatus === 'All') return true;
-        return String(o.status || '').toLowerCase() === selectedStatus.toLowerCase();
+        if (selectedStatus === "All") return true;
+        return String(o.status || "").toLowerCase() === selectedStatus.toLowerCase();
       })
       .filter((o) => {
-        if (selectedPayment === 'All') return true;
-        return String(o.paymentMethod || 'card') === selectedPayment;
+        if (selectedPayment === "All") return true;
+        return String(o.paymentMethod || "card") === selectedPayment;
       });
   }, [orders, search, selectedStatus, selectedPayment]);
+
+  // ---------------- Image Helper ----------------
+  function imageUrl(path) {
+    if (!path) return "https://via.placeholder.com/40x40";
+
+    // Already a full URL
+    if (/^https?:\/\//i.test(path)) return path;
+
+    // Normalize Windows paths
+    let normalized = path.replace(/\\/g, "/");
+    if (normalized.startsWith("/")) normalized = normalized.slice(1);
+
+    // Backend base URL (change if needed)
+    const backendBaseUrl = "http://localhost:3000"; // match your backend port
+    return `${backendBaseUrl}/${normalized}`;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row relative">
@@ -127,9 +163,11 @@ export default function Order() {
                       : "border-gray-300 text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  {status === 'All' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-                </button>)
-              )}
+                  {status === "All"
+                    ? "All"
+                    : status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+              ))}
             </div>
 
             {/* Payment filter */}
@@ -141,7 +179,9 @@ export default function Order() {
                 onChange={(e) => setSelectedPayment(e.target.value)}
               >
                 {paymentFilters.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -163,7 +203,7 @@ export default function Order() {
 
           {/* Orders Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-[800px] w-full text-sm text-left">
+            <table className="min-w-[900px] w-full text-sm text-left">
               <thead className="text-gray-600 border-b">
                 <tr>
                   <th className="py-2 px-3">ORDER NO.</th>
@@ -177,7 +217,11 @@ export default function Order() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td className="py-6 px-3" colSpan={7}>Loading…</td></tr>
+                  <tr>
+                    <td className="py-6 px-3" colSpan={7}>
+                      Loading…
+                    </td>
+                  </tr>
                 ) : filteredOrders.length > 0 ? (
                   filteredOrders.map((o) => (
                     <tr key={o._id} className="border-b hover:bg-gray-50">
@@ -185,37 +229,69 @@ export default function Order() {
                         <div className="font-medium">{referenceOf(o)}</div>
                         <div className="text-xs text-gray-500">{o._id}</div>
                       </td>
-                      <td className="py-2 px-3">{new Date(o.createdAt).toLocaleString()}</td>
                       <td className="py-2 px-3">
-                        <div className="font-medium">{o.customer?.name || '-'}</div>
-                        <div className="text-xs text-gray-500">{o.customer?.email || ''}</div>
+                        {new Date(o.createdAt).toLocaleString()}
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="font-medium">{o.customer?.name || "-"}</div>
+                        <div className="text-xs text-gray-500">
+                          {o.customer?.email || ""}
+                        </div>
                       </td>
                       <td className="py-2 px-3">
                         {o.items.map((it) => (
-                          <div key={it.productId} className="text-xs">
-                            {it.name} × {it.quantity}
+                          <div
+                            key={it.productId}
+                            className="text-xs flex items-center gap-2 py-0.5"
+                          >
+                            <img
+                              src={imageUrl(it.image)}
+                              onError={(e) =>
+                                (e.target.src = "https://via.placeholder.com/40x40")
+                              }
+                              alt={it.name}
+                              className="w-10 h-10 rounded object-cover bg-gray-100"
+                            />
+                            <span>
+                              {it.name} × {it.quantity}
+                            </span>
                           </div>
                         ))}
                       </td>
                       <td className="py-2 px-3">
-                        <div className="text-xs font-medium uppercase">{(o.paymentMethod || 'card')}</div>
-                        <div className="text-xs text-gray-500">{o.paymentProvider || ''}</div>
+                        <div className="text-xs font-medium uppercase">
+                          {o.paymentMethod || "card"}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {o.paymentProvider || ""}
+                        </div>
                       </td>
-                      <td className="py-2 px-3 font-semibold">{(o.totalAmount / 100).toFixed(2)}</td>
+                      <td className="py-2 px-3 font-semibold">
+                        {(o.totalAmount / 100).toFixed(2)}
+                      </td>
                       <td className="py-2 px-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          o.status === 'paid' ? 'bg-green-100 text-green-700' :
-                          o.status === 'canceled' ? 'bg-red-100 text-red-700' :
-                          o.status === 'fulfilled' ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            o.status === "paid"
+                              ? "bg-green-100 text-green-700"
+                              : o.status === "canceled"
+                              ? "bg-red-100 text-red-700"
+                              : o.status === "fulfilled"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
                           {o.status}
                         </span>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td className="py-6 px-3" colSpan={7}>No orders found.</td></tr>
+                  <tr>
+                    <td className="py-6 px-3" colSpan={7}>
+                      No orders found.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../Sidebar";
-import { MdDelete, MdEdit, MdVisibility } from "react-icons/md";
+import { MdDelete, MdVisibility } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
@@ -14,7 +14,9 @@ export default function Queriesinfo() {
   useEffect(() => {
     const fetchQueries = async () => {
       try {
-        const res = await fetch("/backend/form/getform");
+        const res = await fetch("/backend/form/getform", {
+          credentials: "include", // ensure auth is sent
+        });
         const data = await res.json();
 
         if (res.ok && data.success && Array.isArray(data.forms)) {
@@ -39,20 +41,31 @@ export default function Queriesinfo() {
   }, [currentUser?._id]);
 
   const handleDeleteQuery = async (id) => {
+    const confirmed = window.confirm("Are you sure you want to delete this query?");
+    if (!confirmed) return;
+
     try {
-      const res = await fetch(`/backend/form/delete/${id}`, {
+      const res = await fetch(`/backend/form/deleteform/${id}`, {
         method: "DELETE",
+        credentials: "include", // send cookies for authentication
       });
+
       const data = await res.json();
 
       if (res.ok) {
         setQueries((prev) => prev.filter((query) => query._id !== id));
+        alert("Query deleted successfully.");
       } else {
-        console.log(data.message || "Failed to delete query.");
+        alert(data.message || "Failed to delete query.");
       }
     } catch (error) {
-      console.log(error.message);
+      console.error("Error deleting query:", error.message);
     }
+  };
+
+  // helper: check if current user can delete the query
+  const canDelete = (query) => {
+    return currentUser?.isAdmin || query.userRef === currentUser?._id;
   };
 
   return (
@@ -108,21 +121,26 @@ export default function Queriesinfo() {
                           : "N/A"}
                       </td>
                       <td className="py-3 px-4 flex gap-2">
+                        {/* View button */}
                         <Link to={`/viewqueriesinfo/${query._id}`}>
                           <button
-                            title="Edit"
+                            title="View"
                             className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
                           >
                             <MdVisibility size={18} />
                           </button>
                         </Link>
-                        <button
-                          onClick={() => handleDeleteQuery(query._id)}
-                          className="text-red-600 hover:text-red-800 flex items-center gap-1"
-                          title="Delete"
-                        >
-                          <MdDelete size={18} />
-                        </button>
+
+                        {/* Delete button: only show if user can delete */}
+                        {canDelete(query) && (
+                          <button
+                            onClick={() => handleDeleteQuery(query._id)}
+                            className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                            title="Delete"
+                          >
+                            <MdDelete size={18} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

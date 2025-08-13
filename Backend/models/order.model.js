@@ -6,6 +6,7 @@ const orderItemSchema = new mongoose.Schema({
   unitAmount: { type: Number, required: true }, // in the smallest currency unit (paisa)
   quantity: { type: Number, required: true },
   subtotal: { type: Number, required: true }, // unitAmount * quantity
+  image: { type: String },
 }, { _id: false });
 
 const addressSchema = new mongoose.Schema({
@@ -28,6 +29,9 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: { type: String, enum: ['card', 'wallet_esewa', 'cod'], default: 'card', index: true },
   paymentProvider: { type: String }, // e.g., 'stripe', 'esewa', 'cod'
   paymentRef: { type: String, index: true }, // generic payment reference like Stripe session id or eSewa refId
+
+  // Optional human-friendly order number
+  orderNumber: { type: String, index: true, unique: true, sparse: true },
 
   // Kept for backward compatibility with existing UI and queries
   stripeSessionId: { type: String, index: true },

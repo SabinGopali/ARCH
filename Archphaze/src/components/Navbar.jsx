@@ -379,11 +379,11 @@ export default function Navbar() {
                   Log In
                 </button>
               </Link>
-              <Link to="/supplierlogin">
+              {/* <Link to="/supplierlogin">
                 <button className="px-4 py-2 border border-black rounded-md hover:bg-black hover:text-white transition text-sm">
                   Become a Supplier
                 </button>
-              </Link>
+              </Link> */}
             </>
           )}
           <button
@@ -415,7 +415,7 @@ export default function Navbar() {
             </NavLink>
           </li>
           <li>
-            <NavLink to="/productmodal" onClick={toggleMobileMenu}>
+            <NavLink to="/shopindex" onClick={toggleMobileMenu}>
               Arch Shop
             </NavLink>
           </li>
