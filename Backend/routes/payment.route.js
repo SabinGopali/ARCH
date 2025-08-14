@@ -232,8 +232,8 @@ router.post('/confirm', async (req, res) => {
 // - Status API:  https://rc.esewa.com.np/api/epay/transaction/status/
 
 const ESEWA_HOST = process.env.ESEWA_HOST || 'rc.esewa.com.np';
-const ESEWA_MAIN_URL = `https://${ESEWA_HOST}/api/epay/main`;
-const ESEWA_STATUS_URL = `https://${ESEWA_HOST}/api/epay/transaction/status/`;
+const ESEWA_MAIN_URL = `https://${ESEWA_HOST}/epay/main`;
+const ESEWA_STATUS_URL = `https://${ESEWA_HOST}/epay/transaction/status/`;
 const ESEWA_PRODUCT_CODE = process.env.ESEWA_PRODUCT_CODE || 'EPAYTEST';
 
 // Initiate eSewa payment: frontend will redirect/form-post to eSewa

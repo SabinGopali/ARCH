@@ -99,37 +99,39 @@ export default function Checkout() {
       }
 
       if (paymentMethod === "wallet") {
-        // eSewa test mode
-        const initiateRes = await fetch("http://localhost:3000/backend/payment/esewa/initiate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            products,
-            userId,
-            email,
-            phone: undefined
-          }),
-        });
-        const initData = await initiateRes.json();
-        if (!initiateRes.ok) throw new Error(initData?.error || "Failed to initiate eSewa");
-        const { esewa } = initData || {};
-        if (!esewa?.endpoint || !esewa?.params) throw new Error("Invalid eSewa initiate response");
+  // eSewa test mode
+  const initiateRes = await fetch("http://localhost:3000/backend/payment/esewa/initiate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ products, userId, email, phone: undefined }),
+  });
 
-        // Create and submit a form to eSewa
-        const formEl = document.createElement("form");
-        formEl.method = "POST";
-        formEl.action = esewa.endpoint;
-        Object.entries(esewa.params).forEach(([key, value]) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = String(value ?? "");
-          formEl.appendChild(input);
-        });
-        document.body.appendChild(formEl);
-        formEl.submit();
-        return;
-      }
+  const initData = await initiateRes.json();
+  if (!initiateRes.ok) throw new Error(initData?.error || "Failed to initiate eSewa");
+
+  const { esewa } = initData || {};
+  if (!esewa?.endpoint || !esewa?.params) throw new Error("Invalid eSewa initiate response");
+
+  // Use endpoint from response, fallback to UAT if missing
+  const endpoint = esewa.endpoint || "https://uat.esewa.com.np/epay/main";
+
+  // Create and submit a form to eSewa
+  const formEl = document.createElement("form");
+  formEl.method = "POST";
+  formEl.action = endpoint;
+
+  Object.entries(esewa.params).forEach(([key, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = String(value ?? "");
+    formEl.appendChild(input);
+  });
+
+  document.body.appendChild(formEl);
+  formEl.submit();
+  return;
+}
 
       if (paymentMethod === "cod") {
         const shippingAddress = {
