@@ -13,24 +13,7 @@ import img from '../assets/e-commerce.jpg';
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-const retailers = [
-  {
-    name: "Amazon",
-    logo: "https://logos-world.net/wp-content/uploads/2020/04/Amazon-Logo.png",
-  },
-  {
-    name: "Flipkart",
-    logo: "https://1000logos.net/wp-content/uploads/2021/10/Flipkart-logo.png",
-  },
-  {
-    name: "eBay",
-    logo: "https://cdn.worldvectorlogo.com/logos/ebay-13.svg",
-  },
-  {
-    name: "Etsy",
-    logo: "https://cdn.worldvectorlogo.com/logos/etsy-1.svg",
-  },
-];
+
 
 const whyShop = [
   {
@@ -64,6 +47,10 @@ const Shopindex = () => {
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [isFetchingProducts, setIsFetchingProducts] = useState(false);
 
+  // Trusted stores (top 4)
+  const [trustedStores, setTrustedStores] = useState([]);
+  const [isFetchingStores, setIsFetchingStores] = useState(false);
+
   // Supplier/store profile state for Trusted section
   const { currentUser } = useSelector((state) => state.user);
   const [supplier, setSupplier] = useState(null);
@@ -76,6 +63,25 @@ const Shopindex = () => {
   const scrollToProducts = () => {
     productRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Fetch trusted stores (limit 4)
+  useEffect(() => {
+    let aborted = false;
+    async function fetchTrusted() {
+      try {
+        setIsFetchingStores(true);
+        const res = await fetch(`/backend/store/public-list?limit=4`);
+        const data = await res.json();
+        if (!aborted && res.ok) setTrustedStores(Array.isArray(data?.stores) ? data.stores : []);
+      } catch (_) {
+        if (!aborted) setTrustedStores([]);
+      } finally {
+        if (!aborted) setIsFetchingStores(false);
+      }
+    }
+    fetchTrusted();
+    return () => { aborted = true; };
+  }, []);
 
   // Lazy-load products for search preview (on first focus or when user types)
   useEffect(() => {
@@ -101,7 +107,7 @@ const Shopindex = () => {
     fetchAllProducts();
   }, [isFocused, searchTerm, productsLoaded, isFetchingProducts]);
 
-  // Fetch supplier and store profile to inject into Trusted section
+  // Fetch supplier and store profile to inject into Trusted section (kept in case needed elsewhere)
   useEffect(() => {
     let aborted = false;
 
@@ -141,6 +147,16 @@ const Shopindex = () => {
       imageUrl = `http://localhost:3000/${imageUrl}`;
     }
     return imageUrl;
+  }
+
+  function getStoreLogoUrl(logoPath) {
+    if (!logoPath) return "https://via.placeholder.com/64";
+    let path = String(logoPath).replace(/\\\\/g, '/').replace(/\\/g, '/');
+    if (!path.startsWith('http://') && !path.startsWith('https://')) {
+      if (path.startsWith('/')) path = path.slice(1);
+      path = `http://localhost:3000/${path}`;
+    }
+    return path;
   }
 
   const normalizedQuery = searchTerm.trim().toLowerCase();
@@ -312,55 +328,40 @@ const Shopindex = () => {
               </AnimatePresence>
             </div>
 
-            {/* Retailers */}
+            {/* Trusted by retailers */}
             <div className="mt-6">
               <h3 className="text-xs sm:text-sm font-semibold text-gray-800 uppercase tracking-wide mb-2">
                 Trusted by Top Retailers
               </h3>
               <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                 <AnimatePresence>
-                  {/* Dynamic: From store profile */}
-                  {storeProfile?.logo && (
+                  {trustedStores.map((s, idx) => (
                     <motion.div
-                      key="store-profile-trusted"
+                      key={String(s.userId)}
                       initial={{ y: 10, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ opacity: 0 }}
+                      transition={{ delay: idx * 0.05 }}
                       className="flex items-center gap-2"
                     >
-                      <img
-                        src={`http://localhost:3000/${String(storeProfile.logo).replace(/\\\\/g, '/').replace(/\\/g, '/')}`}
-                        alt={supplier?.company_name || 'Company'}
-                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain rounded-full bg-white border"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/64';
-                        }}
-                      />
-                      <span className="text-xs sm:text-sm text-gray-600">
-                        {supplier?.company_name || 'Your Company'}
-                      </span>
-                    </motion.div>
-                  )}
-
-                  {retailers.map((retailer, idx) => (
-                    <motion.div
-                      key={retailer.name}
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="flex items-center gap-2"
-                    >
-                      <img
-                        src={retailer.logo}
-                        alt={retailer.name}
-                        className="w-6 h-6 sm:w-8 sm:h-8 object-contain rounded-full bg-white border"
-                      />
-                      <span className="text-xs sm:text-sm text-gray-600">
-                        {retailer.name}
-                      </span>
+                      <Link to={`/store/${s.userId}`} className="flex items-center gap-2">
+                        <img
+                          src={getStoreLogoUrl(s.logo)}
+                          alt={s.name || 'Store'}
+                          className="w-6 h-6 sm:w-8 sm:h-8 object-contain rounded-full bg-white border"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/64';
+                          }}
+                        />
+                        <span className="text-xs sm:text-sm text-gray-600">
+                          {s.name || 'Store'}
+                        </span>
+                      </Link>
                     </motion.div>
                   ))}
+                  {trustedStores.length === 0 && !isFetchingStores && (
+                    <span className="text-xs text-gray-500">No stores yet</span>
+                  )}
                 </AnimatePresence>
               </div>
             </div>

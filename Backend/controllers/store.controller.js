@@ -161,3 +161,48 @@ export const deleteStoreProfileByUserId = async (req, res) => {
     return res.status(500).json({ message: "Failed to delete store profile" });
   }
 };
+
+export const getPublicStoreProfileByUserId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ message: "Missing userId" });
+
+    const storeProfile = await StoreProfile.findOne({ userId: id });
+    if (!storeProfile) return res.status(404).json({ message: "Store profile not found" });
+
+    // Populate minimal supplier info
+    const populated = await storeProfile.populate({ path: 'userId', select: 'company_name email' });
+    const supplier = populated.userId
+      ? { id: populated.userId._id, company_name: populated.userId.company_name, email: populated.userId.email }
+      : null;
+
+    return res.status(200).json({ storeProfile, supplier });
+  } catch (err) {
+    console.error("Error fetching public store profile:", err);
+    return res.status(500).json({ message: "Failed to fetch store profile" });
+  }
+};
+
+export const getPublicStoreProfiles = async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(50, parseInt(req.query.limit, 10) || 4));
+
+    const storeProfiles = await StoreProfile.find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate({ path: 'userId', select: 'company_name email' });
+
+    const items = storeProfiles.map((p) => ({
+      userId: p.userId?._id,
+      name: p.userId?.company_name || 'Store',
+      email: p.userId?.email || '',
+      logo: p.logo || '',
+      city: p.city || '',
+    }));
+
+    return res.status(200).json({ stores: items });
+  } catch (err) {
+    console.error("Error fetching public store profiles:", err);
+    return res.status(500).json({ message: "Failed to fetch store profiles" });
+  }
+};
