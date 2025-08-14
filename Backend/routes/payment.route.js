@@ -232,9 +232,15 @@ router.post('/confirm', async (req, res) => {
 // - Status API:  https://rc.esewa.com.np/api/epay/transaction/status/
 
 const ESEWA_HOST = process.env.ESEWA_HOST || 'rc.esewa.com.np';
-const ESEWA_MAIN_URL = `https://${ESEWA_HOST}/epay/main`;
-const ESEWA_STATUS_URL = `https://${ESEWA_HOST}/epay/transaction/status/`;
+const ESEWA_MAIN_URL = `https://${ESEWA_HOST}/api/epay/main`;
+const ESEWA_STATUS_URL = `https://${ESEWA_HOST}/api/epay/transaction/status/`;
 const ESEWA_PRODUCT_CODE = process.env.ESEWA_PRODUCT_CODE || 'EPAYTEST';
+
+function formatRupeesFromPaisa(paisa) {
+  const amountNumber = Number(paisa || 0) / 100;
+  const fixed = amountNumber.toFixed(2);
+  return fixed.replace(/\.?0+$/, '');
+}
 
 // Initiate eSewa payment: frontend will redirect/form-post to eSewa
 router.post('/esewa/initiate', async (req, res) => {
@@ -260,17 +266,17 @@ router.post('/esewa/initiate', async (req, res) => {
     }
 
     // eSewa amounts are in rupees for RC API
-    const amount = (totalPaisa / 100).toFixed(2);
-    const tax_amount = (0).toFixed(2);
-    const product_service_charge = (0).toFixed(2);
-    const product_delivery_charge = (0).toFixed(2);
+    const amount = formatRupeesFromPaisa(totalPaisa);
+    const tax_amount = '0';
+    const product_service_charge = '0';
+    const product_delivery_charge = '0';
     const total_amount = amount; // amount + tax + charges
 
     const transaction_uuid = `TXN-${Date.now()}-${Math.floor(Math.random()*100000)}`;
 
     const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
-    const success_url = `${frontendBase}/esewa-success`;
-    const failure_url = `${frontendBase}/esewa-failure`;
+    const success_url = `${frontendBase}/esewa-success?transaction_uuid=${encodeURIComponent(transaction_uuid)}`;
+    const failure_url = `${frontendBase}/esewa-failure?transaction_uuid=${encodeURIComponent(transaction_uuid)}`;
 
     // Persist a pending order set
     const creation = await createOrdersFromLineItems({
@@ -313,7 +319,7 @@ router.post('/esewa/verify', async (req, res) => {
     // Compute total_amount from pending orders we created for this txn
     const orders = await Order.find({ esewaPid: txn }).lean();
     if (!orders || orders.length === 0) return res.status(404).json({ error: 'No orders found for transaction' });
-    const total_amount = (orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0) / 100).toFixed(2);
+    const total_amount = formatRupeesFromPaisa(orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0));
 
     const url = new URL(ESEWA_STATUS_URL);
     url.searchParams.set('product_code', ESEWA_PRODUCT_CODE);
