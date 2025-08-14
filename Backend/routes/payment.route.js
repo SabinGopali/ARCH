@@ -232,8 +232,8 @@ router.post('/confirm', async (req, res) => {
 // - Status API:  https://rc.esewa.com.np/api/epay/transaction/status/
 
 const ESEWA_HOST = process.env.ESEWA_HOST || 'rc.esewa.com.np';
-const ESEWA_MAIN_URL = `https://${ESEWA_HOST}/epay/main`;
-const ESEWA_STATUS_URL = `https://${ESEWA_HOST}/epay/transaction/status/`;
+const ESEWA_MAIN_URL = `https://${ESEWA_HOST}/api/epay/main`;
+const ESEWA_STATUS_URL = `https://${ESEWA_HOST}/api/epay/transaction/status/`;
 const ESEWA_PRODUCT_CODE = process.env.ESEWA_PRODUCT_CODE || 'EPAYTEST';
 
 // Initiate eSewa payment: frontend will redirect/form-post to eSewa
@@ -269,8 +269,8 @@ router.post('/esewa/initiate', async (req, res) => {
     const transaction_uuid = `TXN-${Date.now()}-${Math.floor(Math.random()*100000)}`;
 
     const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
-    const success_url = `${frontendBase}/esewa-success`;
-    const failure_url = `${frontendBase}/esewa-failure`;
+    const success_url = `${frontendBase}/esewa-success?transaction_uuid=${encodeURIComponent(transaction_uuid)}`;
+    const failure_url = `${frontendBase}/esewa-failure?transaction_uuid=${encodeURIComponent(transaction_uuid)}`;
 
     // Persist a pending order set
     const creation = await createOrdersFromLineItems({
