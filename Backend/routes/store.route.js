@@ -8,7 +8,9 @@ import {
   createOrUpdateStoreProfile, 
   deleteStoreProfile,
   getAllStoreProfiles,
-  deleteStoreProfileByUserId
+  deleteStoreProfileByUserId,
+  getPublicStoreProfiles,
+  getPublicStoreProfileByUserId
 } from '../controllers/store.controller.js';
 
 const router = express.Router();
@@ -59,5 +61,9 @@ router.delete('/store-profile', verifyToken, deleteStoreProfile);
 // Admin routes
 router.get('/admin/all', verifyToken, getAllStoreProfiles);
 router.delete('/admin/delete/:userId', verifyToken, deleteStoreProfileByUserId);
+
+// Public routes (no auth)
+router.get('/public-list', getPublicStoreProfiles);
+router.get('/public/:id', getPublicStoreProfileByUserId);
 
 export default router;

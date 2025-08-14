@@ -1,14 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 export default function Supplierprofileshop() {
   const { currentUser } = useSelector((state) => state.user);
+  const { userId } = useParams();
   const [supplier, setSupplier] = useState(null);
   const [storeProfile, setStoreProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    async function fetchPublic(userIdParam) {
+      try {
+        const res = await fetch(`/backend/store/public/${userIdParam}`);
+        const data = await res.json();
+        if (res.ok) {
+          setStoreProfile(data.storeProfile);
+          setSupplier(data.supplier || null);
+        } else {
+          console.error(data.message || 'Failed to fetch public store');
+        }
+      } catch (err) {
+        console.error("Error fetching public store:", err);
+      }
+    }
+
     const fetchSupplierData = async () => {
       try {
         const res = await fetch("/backend/user/supplier-users", {
@@ -41,12 +58,15 @@ export default function Supplierprofileshop() {
       }
     };
 
-    if (currentUser?._id) {
+    setLoading(true);
+    if (userId) {
+      fetchPublic(userId).finally(() => setLoading(false));
+    } else if (currentUser?._id) {
       Promise.all([fetchSupplierData(), fetchStoreProfile()]).finally(() =>
         setLoading(false)
       );
     }
-  }, [currentUser]);
+  }, [currentUser, userId]);
 
   if (loading) {
     return <div className="text-center py-20 text-lg">Loading...</div>;
@@ -96,9 +116,9 @@ export default function Supplierprofileshop() {
               </p>
             </div>
           </div>
-          <Link to="/supplierproduct">
+          <Link to={userId ? "/shopindex" : "/supplierproduct"}>
             <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
-              Back to Store
+              {userId ? 'Back to Shop' : 'Back to Store'}
             </button>
           </Link>
         </div>
