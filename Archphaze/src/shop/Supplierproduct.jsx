@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FiSearch } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 const categories = ["All", "Headphones", "Health", "Supplements", "Gadgets"];
@@ -47,6 +47,7 @@ const defaultProducts = [
 
 export default function Supplierproduct() {
   const { currentUser } = useSelector((state) => state.user);
+  const { userId } = useParams();
 
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,50 +74,73 @@ export default function Supplierproduct() {
   }
 
   useEffect(() => {
-    if (!currentUser?._id) return;
-
     async function fetchData() {
       try {
-        const supRes = await fetch("/backend/user/supplier-users", {
-          credentials: "include",
-        });
-        const supData = await supRes.json();
-        if (supRes.ok) setSupplier(supData.supplier);
-        else console.error(supData.message);
+        if (userId) {
+          const res = await fetch(`/backend/store/public/${userId}`);
+          const data = await res.json();
+          if (res.ok) {
+            setStoreProfile(data.storeProfile);
+            setSupplier(data.supplier || null);
+          } else {
+            console.error(data.message);
+          }
+        } else if (currentUser?._id) {
+          const supRes = await fetch("/backend/user/supplier-users", {
+            credentials: "include",
+          });
+          const supData = await supRes.json();
+          if (supRes.ok) setSupplier(supData.supplier);
+          else console.error(supData.message);
 
-        const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
-          credentials: "include",
-        });
-        const storeData = await storeRes.json();
-        if (storeRes.ok) setStoreProfile(storeData.storeProfile);
-        else console.error(storeData.message);
+          const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, {
+            credentials: "include",
+          });
+          const storeData = await storeRes.json();
+          if (storeRes.ok) setStoreProfile(storeData.storeProfile);
+          else console.error(storeData.message);
+        }
       } catch (error) {
         console.error("Error fetching store or supplier data:", error);
       } finally {
         setLoading(false);
       }
     }
-
+    setLoading(true);
     fetchData();
-  }, [currentUser]);
+  }, [currentUser?._id, userId]);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!currentUser?._id) return;
       try {
-        const res = await fetch(`/backend/user/product/${currentUser._id}`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch products");
-        const data = await res.json();
+        if (userId) {
+          const res = await fetch(`/backend/product/getall`);
+          if (!res.ok) throw new Error("Failed to fetch products");
+          const data = await res.json();
+          const list = Array.isArray(data)
+            ? data
+            : data && Array.isArray(data.products)
+            ? data.products
+            : [];
+          const filtered = list.filter(
+            (p) => String(p.userRef) === String(userId) && (p.available === undefined || p.available)
+          );
+          setProducts(filtered.length ? filtered : defaultProducts);
+        } else if (currentUser?._id) {
+          const res = await fetch(`/backend/user/product/${currentUser._id}`, {
+            credentials: "include",
+          });
+          if (!res.ok) throw new Error("Failed to fetch products");
+          const data = await res.json();
 
-        if (Array.isArray(data)) {
-          setProducts(data);
-        } else if (data && Array.isArray(data.products)) {
-          setProducts(data.products);
-        } else {
-          console.log("No products found, using default products");
-          setProducts(defaultProducts);
+          if (Array.isArray(data)) {
+            setProducts(data);
+          } else if (data && Array.isArray(data.products)) {
+            setProducts(data.products);
+          } else {
+            console.log("No products found, using default products");
+            setProducts(defaultProducts);
+          }
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -124,7 +148,7 @@ export default function Supplierproduct() {
       }
     };
     fetchProducts();
-  }, [currentUser?._id]);
+  }, [currentUser?._id, userId]);
 
   // Filter only available products + category + search
   const filteredProducts = products
@@ -183,7 +207,7 @@ export default function Supplierproduct() {
               </p>
             </div>
           </div>
-          <Link to="/supplierprofileshop">
+          <Link to={userId ? `/store/${userId}` : "/supplierprofileshop"}>
             <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition">
               Check Store Profile
             </button>
