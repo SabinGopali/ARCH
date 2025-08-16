@@ -12,6 +12,7 @@ export default function ProductPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedVariantImages, setSelectedVariantImages] = useState({});
+  const [selectedVariantChoices, setSelectedVariantChoices] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,6 +50,7 @@ export default function ProductPage() {
         setSelectedProduct(data);
         setSelectedImage(data.images?.[0] || "");
         setSelectedVariantImages({});
+        setSelectedVariantChoices({});
       } catch (err) {
         setError(err.message);
       } finally {
@@ -83,6 +85,31 @@ export default function ProductPage() {
     }));
     setSelectedImage(image);
   };
+
+    const handleVariantSelectChange = (variantIdx, imagePath) => {
+     if (!imagePath) {
+       setSelectedVariantChoices((prev) => {
+         const next = { ...prev };
+         delete next[variantIdx];
+         return next;
+       });
+       setSelectedVariantImages((prev) => {
+         const next = { ...prev };
+         delete next[variantIdx];
+         return next;
+       });
+       return;
+     }
+     setSelectedVariantChoices((prev) => ({
+       ...prev,
+       [variantIdx]: imagePath,
+     }));
+     setSelectedVariantImages((prev) => ({
+       ...prev,
+       [variantIdx]: getProductImageUrl(imagePath),
+     }));
+     setSelectedImage(imagePath);
+   };
 
   const hasDiscount =
     selectedProduct?.specialPrice > 0 &&
@@ -242,30 +269,35 @@ export default function ProductPage() {
           {/* Variants */}
           {selectedProduct.variants?.length > 0 && (
             <div className="space-y-4">
-              <p className="text-xs text-gray-500">Choose your variant (optional)</p>
-              {selectedProduct.variants.map((variant, idx) => (
-                <div key={idx} className="space-y-2">
-                  <h4 className="text-sm font-semibold text-gray-800">{variant.name}</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {variant.images?.map((img, i) => {
-                      const thumbUrl = getProductImageUrl(img);
-                      return (
+              <p className="text-xs text-gray-500">Choose your variants (optional)</p>
+              {selectedProduct.variants.map((variant, idx) => {
+                const selectedRaw = selectedVariantChoices[idx] || "";
+                const selectedUrl = selectedVariantImages[idx];
+                return (
+                  <div key={idx} className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-800">{variant.name}</label>
+                    <div className="flex items-center gap-3">
+                      <select
+                        className="border rounded-lg p-2 text-sm"
+                        value={selectedRaw}
+                        onChange={(e) => handleVariantSelectChange(idx, e.target.value)}
+                      >
+                        <option value="">{`Select ${variant.name}`}</option>
+                        {variant.images?.map((img, i) => (
+                          <option key={i} value={img}>{`Option ${i + 1}`}</option>
+                        ))}
+                      </select>
+                      {selectedUrl && (
                         <img
-                          key={i}
-                          src={thumbUrl}
-                          alt={`${variant.name} ${i + 1}`}
-                          onClick={() => handleVariantImageClick(idx, img)}
-                          className={`w-12 h-12 rounded-lg object-cover cursor-pointer transition-transform ${
-                            selectedVariantImages[idx] === thumbUrl
-                              ? "ring-2 ring-blue-500 scale-110"
-                              : "ring-1 ring-gray-200 hover:ring-gray-400"
-                          }`}
+                          src={selectedUrl}
+                          alt={`${variant.name} selected`}
+                          className="w-10 h-10 rounded object-cover ring-1 ring-gray-200"
                         />
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -300,6 +332,27 @@ export default function ProductPage() {
                 {selectedProduct.description}
               </p>
             </div>
+          )}
+
+          {selectedProduct.warranty && (
+            <details className="bg-gray-50 border rounded-lg p-4">
+              <summary className="cursor-pointer font-semibold text-gray-900">Warranty</summary>
+              <div className="mt-3 text-sm text-gray-700 space-y-1">
+                {selectedProduct.warranty.type === "No" ? (
+                  <p>No warranty. Quality assured.</p>
+                ) : (
+                  <>
+                    <p><span className="font-medium">Type:</span> {selectedProduct.warranty.type} Warranty</p>
+                    {selectedProduct.warranty.period && (
+                      <p><span className="font-medium">Period:</span> {selectedProduct.warranty.period}</p>
+                    )}
+                    {selectedProduct.warranty.policy && (
+                      <p><span className="font-medium">Policy:</span> {selectedProduct.warranty.policy}</p>
+                    )}
+                  </>
+                )}
+              </div>
+            </details>
           )}
 
           {/* Supplier Info */}
@@ -375,8 +428,8 @@ export default function ProductPage() {
             <div className="flex items-center gap-2 text-gray-600 text-sm">
               <BsShieldCheck className="text-purple-600" />
               {selectedProduct.warranty?.type !== "No"
-                ? `${selectedProduct.warranty.period} Warranty`
-                : "Quality Assured"}
+                ? `${selectedProduct.warranty.type} Warranty${selectedProduct.warranty.period ? " - " + selectedProduct.warranty.period : ""}`
+                : "No Warranty"}
             </div>
           </div>
         </motion.div>
