@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { BsShieldCheck, BsTruck, BsArrowReturnLeft } from "react-icons/bs";
@@ -15,6 +15,7 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [supplierName, setSupplierName] = useState("");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -60,6 +61,24 @@ export default function ProductPage() {
     }
     fetchProductById();
   }, [productId]);
+
+  useEffect(() => {
+    async function fetchSupplierName() {
+      if (!selectedProduct?.userRef) return;
+      try {
+        const res = await fetch(`/backend/store/public/${selectedProduct.userRef}`);
+        const data = await res.json();
+        if (res.ok) {
+          setSupplierName(data?.supplier?.company_name || "Store");
+        } else {
+          setSupplierName("Store");
+        }
+      } catch (e) {
+        setSupplierName("Store");
+      }
+    }
+    fetchSupplierName();
+  }, [selectedProduct?.userRef]);
 
   const handleVariantImageClick = (variantIdx, image) => {
     setSelectedVariantImages((prev) => ({
@@ -298,6 +317,21 @@ export default function ProductPage() {
             <div className="space-y-3">
               <h3 className="font-semibold text-gray-900">Description</h3>
               <p className="text-gray-700 leading-relaxed">{selectedProduct.description}</p>
+            </div>
+          )}
+
+          {/* Supplier Info + Go to Store */}
+          {selectedProduct.userRef && (
+            <div className="mt-4 p-4 border border-gray-200 rounded-lg flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Sold by</p>
+                <p className="text-base font-semibold text-gray-900">{supplierName || "Store"}</p>
+              </div>
+              <Link to={`/supplierproduct/${selectedProduct.userRef}`}>
+                <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition">
+                  Go to the Store
+                </button>
+              </Link>
             </div>
           )}
 
