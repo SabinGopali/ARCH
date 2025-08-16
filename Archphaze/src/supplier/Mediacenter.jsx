@@ -8,44 +8,19 @@ import {
   FiX,
   FiTrash2,
 } from "react-icons/fi";
-import Suppliersidebar from "./Suppliersidebar"; // Make sure this exists
-
-const foldersData = [
-  { id: 1, name: "Women", type: "System", date: "09.06.2024" },
-];
-
-const staticImages = [
-  {
-    id: 101,
-    name: "Sunset Beach",
-    url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=150&q=80",
-    type: "Image",
-    date: "10.07.2025",
-  },
-  {
-    id: 102,
-    name: "Mountain View",
-    url: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=150&q=80",
-    type: "Image",
-    date: "15.07.2025",
-  },
-  {
-    id: 103,
-    name: "City Lights",
-    url: "https://images.unsplash.com/photo-1468071174046-657d9d351a40?auto=format&fit=crop&w=150&q=80",
-    type: "Image",
-    date: "20.07.2025",
-  },
-];
+import Suppliersidebar from "./Suppliersidebar"; // Ensure this exists
 
 function getImageUrl(imagePath) {
   if (!imagePath) return "";
   let url = String(imagePath).replace(/\\/g, "/");
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     if (url.startsWith("/")) url = url.slice(1);
-    const base = (typeof window !== "undefined" && window.location && window.location.origin)
-      ? (window.location.origin.includes("localhost") ? "http://localhost:3000" : window.location.origin)
-      : "http://localhost:3000";
+    const base =
+      typeof window !== "undefined" && window.location && window.location.origin
+        ? window.location.origin.includes("localhost")
+          ? "http://localhost:3000"
+          : window.location.origin
+        : "http://localhost:3000";
     url = `${base}/${url}`;
   }
   return url;
@@ -67,10 +42,10 @@ function Mediacenter() {
   const [imageFolderMap, setImageFolderMap] = useState({});
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const contextMenuRef = useRef();
 
+  // Close context menu on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -84,6 +59,7 @@ function Mediacenter() {
     return () => window.removeEventListener("click", handleClickOutside);
   }, [contextMenu]);
 
+  // Load media folders and files from backend
   useEffect(() => {
     const loadMedia = async () => {
       try {
@@ -108,7 +84,7 @@ function Mediacenter() {
           setImages(normalizedImages);
         }
       } catch (e) {
-        // swallow for now
+        console.error("Failed to load media:", e);
       }
     };
     loadMedia();
@@ -118,59 +94,62 @@ function Mediacenter() {
     folder.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addFolder = async () => {
-    const trimmedName = newFolderName.trim();
-    if (!trimmedName) {
-      alert("Folder name cannot be empty");
-      return;
-    }
-    if (
-      folders.some((f) => f.name.toLowerCase() === trimmedName.toLowerCase())
-    ) {
-      alert("Folder with this name already exists");
-      return;
-    }
-    try {
-      const res = await fetch("/backend/media/folder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name: trimmedName }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Failed to create folder");
-        return;
-      }
-      const f = data.folder;
-      const newFolder = {
-        id: f._id,
-        name: f.name,
-        type: "Custom",
-        date: f.createdAt ? new Date(f.createdAt).toLocaleDateString("en-GB") : "",
-        path: f.path,
-      };
-      setFolders([newFolder, ...folders]);
-      setNewFolderName("");
-      setIsCreatingFolder(false);
-    } catch (e) {
-      alert("Failed to create folder");
-    }
-  };
+  // Add new folder
+const addFolder = async () => {
+  const trimmedName = newFolderName.trim();
+  if (!trimmedName) return alert("Folder name cannot be empty");
+  if (folders.some((f) => f.name.toLowerCase() === trimmedName.toLowerCase()))
+    return alert("Folder with this name already exists");
 
-  function toggleFolderExpand() {
-    setFolderExpanded((v) => !v);
+  try {
+    const res = await fetch("/backend/media/folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name: trimmedName }),
+    });
+
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error("Backend did not return JSON:", text);
+      alert("Server error: did not return JSON");
+      return;
+    }
+
+    if (!res.ok) {
+      return alert(data.error || "Failed to create folder");
+    }
+
+    const newFolder = {
+      id: data.folder._id,
+      name: data.folder.name,
+      type: "Custom",
+      date: data.folder.createdAt
+        ? new Date(data.folder.createdAt).toLocaleDateString("en-GB")
+        : "",
+      path: data.folder.path,
+    };
+
+    setFolders([newFolder, ...folders]);
+    setNewFolderName("");
+    setIsCreatingFolder(false);
+  } catch (e) {
+    console.error("Create folder error:", e);
+    alert("Failed to create folder");
   }
+};
+
+
+
+  const toggleFolderExpand = () => setFolderExpanded((v) => !v);
 
   const handleContextMenu = (e, fileId) => {
     e.preventDefault();
     setSelectedFileId(fileId);
-    setContextMenu({
-      visible: true,
-      x: e.pageX,
-      y: e.pageY,
-      fileId,
-    });
+    setContextMenu({ visible: true, x: e.pageX, y: e.pageY, fileId });
   };
 
   const handleMenuAction = (action) => {
@@ -184,10 +163,9 @@ function Mediacenter() {
         a.click();
         document.body.removeChild(a);
       }
-      setContextMenu({ ...contextMenu, visible: false });
-      return;
+    } else {
+      alert(`Action: ${action} on file ID: ${selectedFileId}`);
     }
-    alert(`You clicked ${action} on file ID: ${selectedFileId}`);
     setContextMenu({ ...contextMenu, visible: false });
   };
 
@@ -195,10 +173,7 @@ function Mediacenter() {
     e.preventDefault();
     const draggedImageId = e.dataTransfer.getData("imageId");
     if (draggedImageId) {
-      setImageFolderMap((prev) => ({
-        ...prev,
-        [draggedImageId]: folderId,
-      }));
+      setImageFolderMap((prev) => ({ ...prev, [draggedImageId]: folderId }));
       setOpenFolderId(folderId);
     }
   };
@@ -212,16 +187,14 @@ function Mediacenter() {
     : images;
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-6 pb-10">  
-
+    <div className="min-h-screen bg-gray-50 pt-6 pb-10">
       <div className="max-w-screen-2xl mx-auto px-4 lg:flex lg:gap-8">
-       
-         <aside className="w-full lg:w-64 mb-10 lg:mb-0">
-                     <Suppliersidebar />
-          </aside>
-       
+        {/* Sidebar */}
+        <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+          <Suppliersidebar />
+        </aside>
 
-        {/* Main Content */}
+        {/* Main content */}
         <main className="flex-1">
           <section className="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-8">
             {/* Header */}
@@ -233,7 +206,6 @@ function Mediacenter() {
                   <button
                     onClick={() => setIsCreatingFolder(true)}
                     className="bg-white text-black px-4 py-2.5 border border-black rounded-md text-sm shadow hover:bg-black hover:text-white transition flex items-center gap-1"
-                    title="Create Folder"
                   >
                     <FiPlus /> Create Folder
                   </button>
@@ -257,7 +229,6 @@ function Mediacenter() {
                     <button
                       onClick={addFolder}
                       className="bg-green-600 text-white px-3 py-1 rounded-md text-sm shadow hover:bg-green-700 transition"
-                      title="Add Folder"
                     >
                       Add
                     </button>
@@ -267,7 +238,6 @@ function Mediacenter() {
                         setNewFolderName("");
                       }}
                       className="text-gray-500 hover:text-gray-700 transition"
-                      title="Cancel"
                     >
                       <FiX size={24} />
                     </button>
@@ -276,7 +246,7 @@ function Mediacenter() {
               </div>
             </header>
 
-            {/* Search Bar */}
+            {/* Search */}
             <div className="mb-6 relative max-w-md">
               <input
                 type="search"
@@ -288,7 +258,7 @@ function Mediacenter() {
               <FiSearch className="absolute top-2.5 left-3 text-gray-400" size={20} />
             </div>
 
-            {/* Folders Section */}
+            {/* Folders */}
             <div className="mb-8">
               <div
                 className="flex items-center gap-2 mb-3 cursor-pointer select-none"
@@ -310,13 +280,11 @@ function Mediacenter() {
                     filteredFolders.map(({ id, name, type, date }) => (
                       <div
                         key={id}
-                        className={`flex items-center gap-2 border rounded-md px-3 py-2 shadow-sm cursor-pointer transition bg-white min-w-[140px] relative
-                          ${
-                            openFolderId === id
-                              ? "border-orange-500 shadow-md"
-                              : "border-gray-200 hover:shadow-md"
-                          }
-                        `}
+                        className={`flex items-center gap-2 border rounded-md px-3 py-2 shadow-sm cursor-pointer transition bg-white min-w-[140px] relative ${
+                          openFolderId === id
+                            ? "border-orange-500 shadow-md"
+                            : "border-gray-200 hover:shadow-md"
+                        }`}
                         title={`${type} - ${date}`}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnFolder(e, id)}
@@ -335,7 +303,6 @@ function Mediacenter() {
                           </span>
                         </div>
 
-                        {/* Delete folder button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -347,7 +314,6 @@ function Mediacenter() {
                               setFolders((prev) =>
                                 prev.filter((folder) => folder.id !== id)
                               );
-                              // Remove image assignments to deleted folder
                               setImageFolderMap((prev) => {
                                 const newMap = { ...prev };
                                 Object.keys(newMap).forEach((imgId) => {
@@ -360,7 +326,6 @@ function Mediacenter() {
                           }}
                           title="Delete Folder"
                           className="text-red-500 hover:text-red-700 transition p-1 rounded-md"
-                          aria-label={`Delete folder ${name}`}
                         >
                           <FiTrash2 size={16} />
                         </button>
@@ -371,7 +336,7 @@ function Mediacenter() {
               )}
             </div>
 
-            {/* Show all images button if folder open */}
+            {/* Show all images */}
             {openFolderId && (
               <div className="mb-4">
                 <button
@@ -383,7 +348,7 @@ function Mediacenter() {
               </div>
             )}
 
-            {/* Images Section */}
+            {/* Images */}
             <div>
               <h2 className="font-semibold text-gray-700 text-lg mb-4">
                 {openFolderId
@@ -401,9 +366,7 @@ function Mediacenter() {
                       title={`${name} - ${type} - ${date}`}
                       onContextMenu={(e) => handleContextMenu(e, id)}
                       draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData("imageId", id);
-                      }}
+                      onDragStart={(e) => e.dataTransfer.setData("imageId", id)}
                     >
                       <img
                         src={url}
@@ -412,9 +375,7 @@ function Mediacenter() {
                         loading="lazy"
                       />
                       <span className="text-sm font-semibold text-gray-800">{name}</span>
-                      <span className="text-xs text-gray-400">
-                        {type} • {date}
-                      </span>
+                      <span className="text-xs text-gray-400">{type} • {date}</span>
                     </div>
                   ))
                 )}
@@ -428,36 +389,19 @@ function Mediacenter() {
                 style={{ top: contextMenu.y, left: contextMenu.x }}
                 className="fixed bg-white border border-gray-300 rounded-md shadow-lg w-48 text-gray-700 text-sm z-50"
               >
-                <li
-                  className="px-4 py-2 hover:bg-orange-100 cursor-pointer"
-                  onClick={() => handleMenuAction("Assign/Edit to Product")}
-                >
-                  Assign/Edit to Product
-                </li>
-                <li
-                  className="px-4 py-2 hover:bg-orange-100 cursor-pointer"
-                  onClick={() => handleMenuAction("Rename")}
-                >
-                  Rename
-                </li>
-                <li
-                  className="px-4 py-2 hover:bg-orange-100 cursor-pointer"
-                  onClick={() => handleMenuAction("Download")}
-                >
-                  Download
-                </li>
-                <li
-                  className="px-4 py-2 hover:bg-orange-100 cursor-pointer text-red-600"
-                  onClick={() => handleMenuAction("Send Trash")}
-                >
-                  Send Trash
-                </li>
-                <li
-                  className="px-4 py-2 hover:bg-orange-100 cursor-pointer"
-                  onClick={() => handleMenuAction("Cleanup Folder")}
-                >
-                  Cleanup Folder
-                </li>
+                {["Assign/Edit to Product", "Rename", "Download", "Send Trash", "Cleanup Folder"].map(
+                  (action) => (
+                    <li
+                      key={action}
+                      className={`px-4 py-2 hover:bg-orange-100 cursor-pointer ${
+                        action === "Send Trash" ? "text-red-600" : ""
+                      }`}
+                      onClick={() => handleMenuAction(action)}
+                    >
+                      {action}
+                    </li>
+                  )
+                )}
               </ul>
             )}
           </section>
