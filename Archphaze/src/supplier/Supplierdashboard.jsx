@@ -4,6 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { AiOutlineMenu, AiOutlineClose } from "react-icons/ai";
 import { FaBell, FaPlus } from "react-icons/fa";
 import Suppliersidebar from "../supplier/Suppliersidebar";
+import { useMemo } from "react";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 export default function Supplierdashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,9 +24,34 @@ export default function Supplierdashboard() {
   const [greeting, setGreeting] = useState("Good day");
   const [currentTime, setCurrentTime] = useState("");
   const [language, setLanguage] = useState("en");
+  const [orders, setOrders] = useState([]);
+  const [metrics, setMetrics] = useState({
+    totalItemsSold: 0,
+    totalRevenue: 0,
+    paidOrders: 0,
+    pendingOrders: 0,
+  });
+  const [chartData, setChartData] = useState(null);
 
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
+
+  const supplierId = useMemo(() => {
+    if (currentUser?.isSubUser) {
+      return (
+        currentUser?.supplierId ||
+        currentUser?.supplierRef ||
+        localStorage.getItem("supplierId") ||
+        ""
+      );
+    }
+    return (
+      currentUser?._id ||
+      currentUser?.id ||
+      localStorage.getItem("supplierId") ||
+      ""
+    );
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser || !(currentUser.isSupplier || currentUser.isSubUser)) {
@@ -86,6 +124,115 @@ export default function Supplierdashboard() {
     fetchSupplierData();
   }, [currentUser]);
 
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!supplierId) return;
+      try {
+        const res = await fetch(`http://localhost:3000/backend/order/supplier/${supplierId}`);
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+        const data = await res.json();
+        const list = Array.isArray(data?.orders) ? data.orders : Array.isArray(data) ? data : [];
+        setOrders(list);
+      } catch (e) {
+        setOrders([]);
+      }
+    };
+    fetchOrders();
+  }, [supplierId]);
+
+  useEffect(() => {
+    const paidStatuses = new Set(["paid", "fulfilled"]);
+    let totalItems = 0;
+    let revenuePaisa = 0;
+    let paid = 0;
+    let pending = 0;
+
+    orders.forEach((o) => {
+      if (String(o.status || "").toLowerCase() === "pending") pending += 1;
+      if (paidStatuses.has(String(o.status || "").toLowerCase())) {
+        paid += 1;
+        revenuePaisa += Number(o.totalAmount || 0);
+        if (Array.isArray(o.items)) {
+          o.items.forEach((it) => {
+            totalItems += Number(it.quantity || 0);
+          });
+        }
+      }
+    });
+
+    setMetrics({
+      totalItemsSold: totalItems,
+      totalRevenue: revenuePaisa / 100,
+      paidOrders: paid,
+      pendingOrders: pending,
+    });
+
+    // Build last 7 days revenue series
+    const days = 7;
+    const today = new Date();
+    const labels = [];
+    const sums = new Array(days).fill(0);
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      labels.push(
+        d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+      );
+    }
+
+    orders.forEach((o) => {
+      if (!paidStatuses.has(String(o.status || "").toLowerCase())) return;
+      const created = new Date(o.createdAt);
+
+      for (let idx = 0; idx < days; idx++) {
+        const start = new Date();
+        start.setDate(today.getDate() - (days - 1 - idx));
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 1);
+        if (created >= start && created < end) {
+          sums[idx] += Number(o.totalAmount || 0) / 100;
+          break;
+        }
+      }
+    });
+
+    setChartData({
+      labels,
+      datasets: [
+        {
+          label: "Revenue (NPR)",
+          data: sums,
+          borderColor: "rgb(59, 130, 246)",
+          backgroundColor: "rgba(59, 130, 246, 0.2)",
+          tension: 0.3,
+          fill: true,
+        },
+      ],
+    });
+  }, [orders]);
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { mode: "index", intersect: false },
+    },
+    interaction: { mode: "index", intersect: false },
+    scales: {
+      x: { grid: { display: false } },
+      y: {
+        grid: { color: "#f3f4f6" },
+        ticks: {
+          callback: (value) => {
+            try { return Number(value).toLocaleString(); } catch { return value; }
+          },
+        },
+      },
+    },
+  }), []);
+
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === "en" ? "np" : "en"));
   };
@@ -129,30 +276,22 @@ export default function Supplierdashboard() {
 
               {/* Stats Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-                <StatCard title="Product Sold" value="48,951" change="+4.13%" chartColor="blue" />
-                <StatCard title="Total Balance" value="43,956" change="-63.1%" chartColor="red" />
-                <StatCard title="Sales Profit" value="28,971" change="+66.3%" chartColor="yellow" />
-                <StatCard title="Abandoned Cart" value="1,526" change="-24.8%" chartColor="green" />
+                <StatCard title="Products Sold" value={metrics.totalItemsSold.toLocaleString()} chartColor="blue" />
+                <StatCard title="Total Revenue (NPR)" value={metrics.totalRevenue.toLocaleString()} chartColor="green" />
+                <StatCard title="Paid Orders" value={metrics.paidOrders.toLocaleString()} chartColor="yellow" />
+                <StatCard title="Pending Orders" value={metrics.pendingOrders.toLocaleString()} chartColor="red" />
               </div>
 
-              {/* Subscriptions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SubscriptionCard
-                  color="yellow"
-                  title="Asset Management Subscription"
-                  daysLeft={84}
-                  message="Manage your assets efficiently"
-                  description="Track asset tools, usage, and renew or upgrade as needed."
-                  buttonText="UPGRADE"
-                />
-                <SubscriptionCard
-                  color="blue"
-                  title="Shop Management Subscription"
-                  daysLeft={100}
-                  message="Control your store operations"
-                  description="Your shop tools are active. Upgrade to unlock more features."
-                  buttonText="UPGRADE"
-                />
+              {/* Sales Chart */}
+              <div className="grid grid-cols-1 gap-6">
+                <div className="bg-white rounded-xl shadow p-6">
+                  <h3 className="text-lg font-semibold mb-4">Sales (Last 7 Days)</h3>
+                  {chartData ? (
+                    <Line data={chartData} options={chartOptions} height={100} />
+                  ) : (
+                    <div className="text-sm text-gray-500">No sales data yet.</div>
+                  )}
+                </div>
               </div>
             </section>
           </main>
@@ -174,41 +313,13 @@ function StatCard({ title, value, change, chartColor }) {
       <h3 className="text-sm text-gray-500 font-medium">{title}</h3>
       <div className="flex justify-between items-center mt-2">
         <span className="text-2xl font-bold text-gray-800">{value}</span>
-        <span className={`px-2 py-1 text-sm rounded ${colors[chartColor]} font-semibold`}>
-          {change}
-        </span>
+        {change ? (
+          <span className={`px-2 py-1 text-sm rounded ${colors[chartColor]} font-semibold`}>
+            {change}
+          </span>
+        ) : null}
       </div>
       <div className={`h-1.5 rounded-full mt-4 ${colors[chartColor]}`}></div>
-    </div>
-  );
-}
-
-function SubscriptionCard({ color, title, daysLeft, message, description, buttonText }) {
-  const colorClasses = {
-    yellow: {
-      bg: "bg-yellow-50",
-      text: "text-yellow-700",
-      button: "bg-black text-white hover:bg-gray-800",
-    },
-    blue: {
-      bg: "bg-blue-50",
-      text: "text-blue-700",
-      button: "bg-blue-700 text-white hover:bg-blue-800",
-    },
-  };
-
-  const { bg, text, button } = colorClasses[color];
-  return (
-    <div className={`${bg} p-6 rounded-xl shadow-md`}>
-      <h3 className={`text-lg font-bold ${text} mb-2`}>{title}</h3>
-      <h2 className="text-3xl font-bold text-gray-800 mb-2">
-        {daysLeft} <span className="text-sm font-normal">/ Days Left</span>
-      </h2>
-      <p className="text-gray-700 font-semibold mb-2">{message}</p>
-      <p className="text-gray-600 mb-4">{description}</p>
-      <button className={`${button} px-5 py-2 rounded-lg transition`}>
-        {buttonText}
-      </button>
     </div>
   );
 }
