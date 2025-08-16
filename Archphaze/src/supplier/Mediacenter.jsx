@@ -38,8 +38,22 @@ const staticImages = [
   },
 ];
 
+function getImageUrl(imagePath) {
+  if (!imagePath) return "";
+  let url = String(imagePath).replace(/\\/g, "/");
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    if (url.startsWith("/")) url = url.slice(1);
+    const base = (typeof window !== "undefined" && window.location && window.location.origin)
+      ? (window.location.origin.includes("localhost") ? "http://localhost:3000" : window.location.origin)
+      : "http://localhost:3000";
+    url = `${base}/${url}`;
+  }
+  return url;
+}
+
 function Mediacenter() {
-  const [folders, setFolders] = useState(foldersData);
+  const [folders, setFolders] = useState([]);
+  const [images, setImages] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [contextMenu, setContextMenu] = useState({
     visible: false,
@@ -70,11 +84,41 @@ function Mediacenter() {
     return () => window.removeEventListener("click", handleClickOutside);
   }, [contextMenu]);
 
+  useEffect(() => {
+    const loadMedia = async () => {
+      try {
+        const res = await fetch("/backend/media/list", { credentials: "include" });
+        const data = await res.json();
+        if (res.ok) {
+          const normalizedFolders = (data.folders || []).map((f) => ({
+            id: f._id,
+            name: f.name,
+            type: "Custom",
+            date: f.createdAt ? new Date(f.createdAt).toLocaleDateString("en-GB") : "",
+            path: f.path,
+          }));
+          const normalizedImages = (data.files || []).map((f) => ({
+            id: f.url,
+            name: f.name || (f.url && f.url.split("/").pop()) || "image",
+            url: getImageUrl(f.url),
+            type: "Image",
+            date: "",
+          }));
+          setFolders(normalizedFolders);
+          setImages(normalizedImages);
+        }
+      } catch (e) {
+        // swallow for now
+      }
+    };
+    loadMedia();
+  }, []);
+
   const filteredFolders = folders.filter((folder) =>
     folder.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const addFolder = () => {
+  const addFolder = async () => {
     const trimmedName = newFolderName.trim();
     if (!trimmedName) {
       alert("Folder name cannot be empty");
@@ -86,15 +130,32 @@ function Mediacenter() {
       alert("Folder with this name already exists");
       return;
     }
-    const newFolder = {
-      id: Date.now(),
-      name: trimmedName,
-      type: "Custom",
-      date: new Date().toLocaleDateString("en-GB"),
-    };
-    setFolders([newFolder, ...folders]);
-    setNewFolderName("");
-    setIsCreatingFolder(false);
+    try {
+      const res = await fetch("/backend/media/folder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name: trimmedName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to create folder");
+        return;
+      }
+      const f = data.folder;
+      const newFolder = {
+        id: f._id,
+        name: f.name,
+        type: "Custom",
+        date: f.createdAt ? new Date(f.createdAt).toLocaleDateString("en-GB") : "",
+        path: f.path,
+      };
+      setFolders([newFolder, ...folders]);
+      setNewFolderName("");
+      setIsCreatingFolder(false);
+    } catch (e) {
+      alert("Failed to create folder");
+    }
   };
 
   function toggleFolderExpand() {
@@ -113,6 +174,19 @@ function Mediacenter() {
   };
 
   const handleMenuAction = (action) => {
+    if (action === "Download") {
+      const file = images.find((img) => img.id === selectedFileId);
+      if (file) {
+        const a = document.createElement("a");
+        a.href = file.url;
+        a.download = file.name || "file";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      setContextMenu({ ...contextMenu, visible: false });
+      return;
+    }
     alert(`You clicked ${action} on file ID: ${selectedFileId}`);
     setContextMenu({ ...contextMenu, visible: false });
   };
@@ -134,8 +208,8 @@ function Mediacenter() {
   };
 
   const imagesToShow = openFolderId
-    ? staticImages.filter((img) => imageFolderMap[img.id] === openFolderId)
-    : staticImages;
+    ? images.filter((img) => imageFolderMap[img.id] === openFolderId)
+    : images;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-6 pb-10">  
