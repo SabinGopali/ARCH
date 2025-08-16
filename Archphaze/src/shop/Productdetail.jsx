@@ -15,6 +15,8 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [supplier, setSupplier] = useState(null);
+  const [storeProfile, setStoreProfile] = useState(null);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -52,6 +54,18 @@ export default function ProductPage() {
         setSelectedProduct(data);
         setSelectedImage(data.images?.[0] || "");
         setSelectedVariantImages({});
+
+        // Fetch supplier + store profile for this product using userRef
+        if (data?.userRef) {
+          try {
+            const publicRes = await fetch(`/backend/store/public/${data.userRef}`);
+            const publicData = await publicRes.json();
+            if (publicRes.ok) {
+              setStoreProfile(publicData.storeProfile || null);
+              setSupplier(publicData.supplier || null);
+            }
+          } catch {}
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -115,6 +129,16 @@ export default function ProductPage() {
     }
     handleAddToCart();
     navigate("/cart");
+  };
+
+  const goToSupplierStore = () => {
+    const ownerId = selectedProduct?.userRef;
+    if (ownerId) navigate(`/supplierproduct/${ownerId}`);
+  };
+
+  const goToStoreProfile = () => {
+    const ownerId = selectedProduct?.userRef;
+    if (ownerId) navigate(`/store/${ownerId}`);
   };
 
   if (loading)
@@ -292,6 +316,27 @@ export default function ProductPage() {
               )}
             </div>
           </div>
+
+          {/* Supplier / Store Info */}
+          {(supplier || storeProfile) && (
+            <div className="border rounded-xl p-4 bg-gray-50">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Sold by</p>
+                  <p className="text-base font-semibold text-gray-900">{supplier?.company_name || "Supplier Store"}</p>
+                  <p className="text-sm text-gray-600">{supplier?.email || ""}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={goToStoreProfile} className="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600">
+                    Store Profile
+                  </button>
+                  <button onClick={goToSupplierStore} className="px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800">
+                    Go to the store
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           {selectedProduct.description && (
