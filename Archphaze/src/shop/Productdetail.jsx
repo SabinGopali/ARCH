@@ -135,11 +135,11 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-2 gap-10 animate-pulse">
-        <div className="bg-gray-200 h-96 rounded-xl"></div>
+        <div className="bg-white h-96 rounded-xl"></div>
         <div className="space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-2/3"></div>
-          <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-24 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-white rounded w-2/3"></div>
+          <div className="h-6 bg-white rounded w-1/3"></div>
+          <div className="h-24 bg-white rounded"></div>
         </div>
       </div>
     );
@@ -243,29 +243,31 @@ export default function ProductPage() {
           {selectedProduct.variants?.length > 0 && (
             <div className="space-y-4">
               <p className="text-xs text-gray-500">Choose your variant (optional)</p>
-              {selectedProduct.variants.map((variant, idx) => (
-                <div key={idx} className="space-y-2">
-                  <h4 className="text-sm font-semibold text-gray-800">{variant.name}</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {variant.images?.map((img, i) => {
-                      const thumbUrl = getProductImageUrl(img);
-                      return (
-                        <img
-                          key={i}
-                          src={thumbUrl}
-                          alt={`${variant.name} ${i + 1}`}
-                          onClick={() => handleVariantImageClick(idx, img)}
-                          className={`w-12 h-12 rounded-lg object-cover cursor-pointer transition-transform ${
-                            selectedVariantImages[idx] === thumbUrl
-                              ? "ring-2 ring-blue-500 scale-110"
-                              : "ring-1 ring-gray-200 hover:ring-gray-400"
-                          }`}
-                        />
-                      );
-                    })}
+              <div className="flex flex-wrap gap-6">
+                {selectedProduct.variants.map((variant, idx) => (
+                  <div key={idx} className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-800">{variant.name}</h4>
+                    <div className="flex gap-2">
+                      {variant.images?.map((img, i) => {
+                        const thumbUrl = getProductImageUrl(img);
+                        return (
+                          <img
+                            key={i}
+                            src={thumbUrl}
+                            alt={`${variant.name} ${i + 1}`}
+                            onClick={() => handleVariantImageClick(idx, img)}
+                            className={`w-12 h-12 rounded-lg object-cover cursor-pointer transition-transform ${
+                              selectedVariantImages[idx] === thumbUrl
+                                ? "ring-2 ring-blue-500 scale-110"
+                                : "ring-1 ring-gray-200 hover:ring-gray-400"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
@@ -292,32 +294,7 @@ export default function ProductPage() {
             </span>
           </div>
 
-          {/* Description */}
-          {selectedProduct.description && (
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-              <p className="text-gray-700 leading-relaxed text-sm lg:text-base">
-                {selectedProduct.description}
-              </p>
-            </div>
-          )}
-
-          {/* Supplier Info */}
-          {selectedProduct.userRef && (
-            <div className="p-4 border rounded-lg flex items-center justify-between shadow-sm bg-gray-50">
-              <div>
-                <p className="text-sm text-gray-600">Sold by</p>
-                <p className="text-base font-semibold">{supplierName}</p>
-              </div>
-              <Link to={`/supplierproduct/${selectedProduct.userRef}`}>
-                <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition">
-                  Visit Store
-                </button>
-              </Link>
-            </div>
-          )}
-
-          {/* Quantity + Buttons */}
+          {/* ✅ Quantity + Buttons (MOVED ABOVE Description) */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex items-center border rounded-lg">
               <button
@@ -341,10 +318,10 @@ export default function ProductPage() {
               <button
                 disabled={isActionDisabled}
                 onClick={handleAddToCart}
-                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-semibold shadow ${
+                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-black bg-white border border-black font-semibold shadow ${
                   isActionDisabled
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gray-900 hover:bg-gray-800"
+                    : "bg-black hover:bg-black hover:text-white"
                 }`}
               >
                 <AiOutlineShoppingCart size={20} />
@@ -353,16 +330,41 @@ export default function ProductPage() {
               <button
                 disabled={isActionDisabled}
                 onClick={handleBuyNow}
-                className={`px-6 py-3 rounded-lg text-white font-semibold shadow ${
+                className={`px-6 py-3 rounded-lg text-white font-semibold  shadow ${
                   isActionDisabled
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
+                    : "bg-green-600 hover:bg-green-700"
                 }`}
               >
                 Buy Now
               </button>
             </div>
           </div>
+
+          {/* Description */}
+          {selectedProduct.description && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
+              <p className="text-gray-700 leading-relaxed text-sm lg:text-base">
+                {selectedProduct.description}
+              </p>
+            </div>
+          )}
+
+          {/* Supplier Info */}
+          {selectedProduct.userRef && (
+            <div className="p-4 border rounded-lg flex items-center justify-between shadow-sm bg-gray-50">
+              <div>
+                <p className="text-sm text-gray-600">Sold by</p>
+                <p className="text-base font-semibold">{supplierName}</p>
+              </div>
+              <Link to={`/supplierproduct/${selectedProduct.userRef}`}>
+                <button className="px-4 py-2 bg-white text-black border border-black hover:bg-black hover:text-white rounded-md transition">
+                  Visit Store
+                </button>
+              </Link>
+            </div>
+          )}
 
           {/* Extra Features */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t">
