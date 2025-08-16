@@ -1,8 +1,16 @@
 import fs from "fs";
 import path from "path";
 import MediaFolder from "../models/mediaFolder.model.js";
+import Product from "../models/product.model.js";
 
 const uploadsRoot = path.join(process.cwd(), "uploads");
+
+function getActingOwnerUserIdFromReq(req) {
+  if (req.user?.isSubUser) {
+    return req.user.supplierRef || req.user.supplierId;
+  }
+  return req.user?.id;
+}
 
 // Recursively collect image files from the uploads directory
 function walkDirCollectFiles(dirPath) {
@@ -34,7 +42,34 @@ function walkDirCollectFiles(dirPath) {
 // List all media files and folders
 export async function listMedia(req, res) {
   try {
-    const files = walkDirCollectFiles(uploadsRoot);
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+
+    // Gather images from products owned by this user (including variant images)
+    const products = await Product.find({ userRef: ownerUserId }).select("images variants.images");
+
+    const imageUrlSet = new Set();
+    for (const product of products) {
+      (product.images || []).forEach((imgPath) => {
+        if (typeof imgPath === "string" && imgPath.startsWith("/uploads/")) {
+          imageUrlSet.add(imgPath);
+        }
+      });
+      (product.variants || []).forEach((variant) => {
+        (variant.images || []).forEach((imgPath) => {
+          if (typeof imgPath === "string" && imgPath.startsWith("/uploads/")) {
+            imageUrlSet.add(imgPath);
+          }
+        });
+      });
+    }
+
+    // Convert to files array, ensuring the file actually exists on disk
+    const files = Array.from(imageUrlSet).map((url) => ({ name: path.basename(url), url }))
+      .filter((file) => {
+        const diskPath = path.join(process.cwd(), file.url.replace(/^\/+/, ""));
+        return fs.existsSync(diskPath);
+      });
+
     const folders = await MediaFolder.find().sort({ createdAt: -1 });
 
     return res.json({ files, folders });
