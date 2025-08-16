@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 
 export default function FailureEsewa() {
   const [params] = useSearchParams();
-  const pid = params.get('pid');
+  const pid = params.get('transaction_uuid') || params.get('pid');
 
   return (
     <div className="max-w-3xl mx-auto py-20 px-6 text-center">

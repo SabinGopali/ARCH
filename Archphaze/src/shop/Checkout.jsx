@@ -113,7 +113,7 @@ export default function Checkout() {
   if (!esewa?.endpoint || !esewa?.params) throw new Error("Invalid eSewa initiate response");
 
   // Use endpoint from response, fallback to UAT if missing
-  const endpoint = esewa.endpoint || "https://uat.esewa.com.np/epay/main";
+  const endpoint = esewa.endpoint || "https://epay.esewa.com.np/api/epay/main/v2/form" ;
 
   // Create and submit a form to eSewa
   const formEl = document.createElement("form");

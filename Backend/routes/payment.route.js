@@ -231,12 +231,15 @@ router.post('/confirm', async (req, res) => {
 // - Main:        https://rc.esewa.com.np/api/epay/main
 // - Status API:  https://rc.esewa.com.np/api/epay/transaction/status/
 
-const ESEWA_HOST = process.env.ESEWA_HOST || 'rc.esewa.com.np';
-const ESEWA_MAIN_URL = `https://${ESEWA_HOST}/epay/main`;
-const ESEWA_STATUS_URL = `https://${ESEWA_HOST}/epay/transaction/status/`;
+const ESEWA_MAIN_URL = 'https://epay.esewa.com.np/api/epay/main/v2/form '; // for redirect
+const ESEWA_STATUS_URL = 'https://rc.esewa.com.np/api/epay/transaction/status/'; // server-to-server
 const ESEWA_PRODUCT_CODE = process.env.ESEWA_PRODUCT_CODE || 'EPAYTEST';
 
-// Initiate eSewa payment: frontend will redirect/form-post to eSewa
+function formatRupeesFromPaisa(paisa) {
+  return (Number(paisa || 0) / 100).toFixed(2);
+}
+
+// Initiate eSewa payment
 router.post('/esewa/initiate', async (req, res) => {
   try {
     const { products, userId, email, phone } = req.body || {};
@@ -244,58 +247,54 @@ router.post('/esewa/initiate', async (req, res) => {
       return res.status(400).json({ error: 'Products array is required' });
     }
 
-    const items = [];
     let totalPaisa = 0;
-    for (const [index, p] of products.entries()) {
-      const name = typeof p?.name === 'string' && p.name.trim().length > 0 ? p.name.trim() : null;
+    const items = [];
+
+    for (const p of products) {
+      const name = p?.name?.trim();
       const price = Number(p?.price);
       const qty = Number(p?.qty);
-      const productId = typeof p?.productId === 'string' ? p.productId : null;
-      if (!name) throw new Error(`Product at index ${index} is missing a valid name`);
-      if (!Number.isFinite(price) || price <= 0) throw new Error(`Product '${name}' has invalid price`);
-      if (!Number.isInteger(qty) || qty <= 0) throw new Error(`Product '${name}' has invalid quantity`);
+      const productId = p?.productId;
+
+      if (!name || !Number.isFinite(price) || price <= 0 || !Number.isInteger(qty) || qty <= 0) {
+        throw new Error(`Invalid product data`);
+      }
+
       const unitAmount = Math.round(price * 100);
-      items.push({ productId, name, unitAmount, quantity: qty });
       totalPaisa += unitAmount * qty;
+      items.push({ productId, name, unitAmount, quantity: qty });
     }
 
-    // eSewa amounts are in rupees for RC API
-    const amount = (totalPaisa / 100).toFixed(2);
-    const tax_amount = (0).toFixed(2);
-    const product_service_charge = (0).toFixed(2);
-    const product_delivery_charge = (0).toFixed(2);
-    const total_amount = amount; // amount + tax + charges
-
+    const amount = formatRupeesFromPaisa(totalPaisa); // in rupees
     const transaction_uuid = `TXN-${Date.now()}-${Math.floor(Math.random()*100000)}`;
 
-    const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
-    const success_url = `${frontendBase}/esewa-success`;
-    const failure_url = `${frontendBase}/esewa-failure`;
-
-    // Persist a pending order set
-    const creation = await createOrdersFromLineItems({
+    // Persist pending orders
+    await createOrdersFromLineItems({
       lineItems: items,
-      sessionLike: { name: undefined, email, phone, userId, shippingAddress: undefined },
+      sessionLike: { name: undefined, email, phone, userId },
       paymentMeta: { method: 'wallet_esewa', provider: 'esewa', ref: undefined, esewaPid: transaction_uuid },
       statusOverride: 'pending',
     });
+
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+    const success_url = `${frontendBase}/esewa-success?transaction_uuid=${transaction_uuid}`;
+    const failure_url = `${frontendBase}/esewa-failure?transaction_uuid=${transaction_uuid}`;
 
     res.json({
       esewa: {
         endpoint: ESEWA_MAIN_URL,
         params: {
           amount,
-          tax_amount,
-          total_amount,
-          transaction_uuid,
+          total_amount: amount,
+          tax_amount: '0',
           product_code: ESEWA_PRODUCT_CODE,
-          product_service_charge,
-          product_delivery_charge,
+          product_service_charge: '0',
+          product_delivery_charge: '0',
+          transaction_uuid,
           success_url,
           failure_url,
         },
       },
-      productIds: creation.productIds,
     });
   } catch (err) {
     console.error('Esewa initiate error:', err);
@@ -303,24 +302,31 @@ router.post('/esewa/initiate', async (req, res) => {
   }
 });
 
-// eSewa verification (server-to-server) after success redirect
+// Verify eSewa payment (server-to-server)
 router.post('/esewa/verify', async (req, res) => {
   try {
     const { transaction_uuid, pid } = req.body || {};
-    const txn = transaction_uuid || pid; // support legacy param name
+    const txn = transaction_uuid || pid;
     if (!txn) return res.status(400).json({ error: 'transaction_uuid is required' });
 
-    // Compute total_amount from pending orders we created for this txn
+    // Get total_amount from pending orders
     const orders = await Order.find({ esewaPid: txn }).lean();
     if (!orders || orders.length === 0) return res.status(404).json({ error: 'No orders found for transaction' });
-    const total_amount = (orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0) / 100).toFixed(2);
 
-    const url = new URL(ESEWA_STATUS_URL);
-    url.searchParams.set('product_code', ESEWA_PRODUCT_CODE);
-    url.searchParams.set('total_amount', total_amount);
-    url.searchParams.set('transaction_uuid', txn);
+    const total_amount = formatRupeesFromPaisa(orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0));
 
-    const verifyRes = await fetch(url.toString(), { method: 'GET' });
+    // Send POST request to RC status endpoint
+    const params = new URLSearchParams();
+    params.append('product_code', ESEWA_PRODUCT_CODE);
+    params.append('total_amount', total_amount);
+    params.append('transaction_uuid', txn);
+
+    const verifyRes = await fetch(ESEWA_STATUS_URL, {
+      method: 'POST',
+      body: params,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+
     const raw = await verifyRes.text();
 
     let ok = false;
@@ -332,17 +338,12 @@ router.post('/esewa/verify', async (req, res) => {
       ok = /success|complete|settled/i.test(raw);
     }
 
-    if (!ok) {
-      return res.status(400).json({ error: 'Verification failed', raw });
-    }
+    if (!ok) return res.status(400).json({ error: 'Verification failed', raw });
 
-    // Mark orders with txn as paid
-    await Order.updateMany({ esewaPid: txn }, {
-      $set: { status: 'paid' }
-    });
+    // Mark orders as paid
+    await Order.updateMany({ esewaPid: txn }, { $set: { status: 'paid' } });
 
     const productIds = Array.from(new Set(orders.flatMap(o => (o.items || []).map(i => i.productId)).filter(Boolean)));
-
     res.json({ ok: true, productIds });
   } catch (err) {
     console.error('Esewa verify error:', err);
