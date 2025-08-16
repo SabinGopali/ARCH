@@ -15,6 +15,7 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [supplierName, setSupplierName] = useState("");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -60,6 +61,24 @@ export default function ProductPage() {
     }
     fetchProductById();
   }, [productId]);
+
+  useEffect(() => {
+    async function fetchSupplierName() {
+      if (!selectedProduct?.userRef) return;
+      try {
+        const res = await fetch(`/backend/store/public/${selectedProduct.userRef}`);
+        const data = await res.json();
+        if (res.ok) {
+          setSupplierName(data?.supplier?.company_name || "Store");
+        } else {
+          setSupplierName("Store");
+        }
+      } catch (e) {
+        setSupplierName("Store");
+      }
+    }
+    fetchSupplierName();
+  }, [selectedProduct?.userRef]);
 
   const handleVariantImageClick = (variantIdx, image) => {
     setSelectedVariantImages((prev) => ({
@@ -306,7 +325,7 @@ export default function ProductPage() {
             <div className="mt-4 p-4 border border-gray-200 rounded-lg flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Sold by</p>
-                <p className="text-base font-semibold text-gray-900">Store</p>
+                <p className="text-base font-semibold text-gray-900">{supplierName || "Store"}</p>
               </div>
               <Link to={`/supplierproduct/${selectedProduct.userRef}`}>
                 <button className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition">
