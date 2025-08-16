@@ -27,7 +27,7 @@ export default function SidebarItem({
         <div
           onClick={() => setDropdownOpen(!dropdownOpen)}
           className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors
-            ${active ? "bg-blue-100 text-blue-700 font-semibold" : "text-gray-700 hover:bg-gray-100"}
+            ${active ? "bg-black text-white font-semibold" : "text-gray-700 hover:bg-gray-100"}
           `}
         >
           <div className="flex items-center gap-2">
@@ -48,7 +48,7 @@ export default function SidebarItem({
                     onClick?.();            // Close sidebar on mobile
                   }}
                   className={`block p-1 rounded-md transition-colors text-sm
-                    ${location.pathname === child.link ? "bg-blue-50 text-blue-600 font-medium" : "hover:bg-gray-100 text-gray-600"}
+                    ${location.pathname === child.link ? "bg-black text-white font-medium" : "hover:bg-gray-100 text-gray-600"}
                   `}
                 >
                   {child.name}
@@ -67,7 +67,7 @@ export default function SidebarItem({
         to={link}
         onClick={onClick}
         className={`flex items-center justify-between p-2 rounded-md transition-colors
-          ${active ? "bg-blue-100 text-blue-700 font-semibold" : "text-gray-700 hover:bg-gray-100"}
+          ${active ? "bg-black text-white font-semibold" : "text-gray-700 hover:bg-gray-100"}
         `}
       >
         <div className="flex items-center gap-2">

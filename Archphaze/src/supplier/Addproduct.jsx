@@ -180,6 +180,7 @@ export default function Productbasicinformation() {
 
       const res = await fetch("/backend/product/create", {
         method: "POST",
+        credentials: "include",
         body,
       });
 
