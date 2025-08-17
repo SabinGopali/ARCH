@@ -47,30 +47,49 @@ export async function listMedia(req, res) {
     // Gather images from products owned by this user (including variant images)
     const products = await Product.find({ userRef: ownerUserId }).select("images variants.images");
 
-    const imageUrlSet = new Set();
+    const fileEntries = [];
+
     for (const product of products) {
       (product.images || []).forEach((imgPath) => {
         if (typeof imgPath === "string" && imgPath.startsWith("/uploads/")) {
-          imageUrlSet.add(imgPath);
+          fileEntries.push({
+            name: path.basename(imgPath),
+            url: imgPath,
+            type: "product",
+          });
         }
       });
       (product.variants || []).forEach((variant) => {
         (variant.images || []).forEach((imgPath) => {
           if (typeof imgPath === "string" && imgPath.startsWith("/uploads/")) {
-            imageUrlSet.add(imgPath);
+            fileEntries.push({
+              name: path.basename(imgPath),
+              url: imgPath,
+              type: "variant",
+            });
           }
         });
       });
     }
 
-    // Convert to files array, ensuring the file actually exists on disk
-    const files = Array.from(imageUrlSet).map((url) => ({ name: path.basename(url), url }))
+    // Deduplicate by URL
+    const urlToFile = new Map();
+    for (const file of fileEntries) {
+      if (!urlToFile.has(file.url)) {
+        urlToFile.set(file.url, file);
+      }
+    }
+
+    // Ensure the file actually exists on disk
+    const files = Array.from(urlToFile.values())
       .filter((file) => {
         const diskPath = path.join(process.cwd(), file.url.replace(/^\/+/, ""));
         return fs.existsSync(diskPath);
-      });
+      })
+      .map((file) => ({ name: file.name, url: file.url, type: file.type }));
 
-    const folders = await MediaFolder.find().sort({ createdAt: -1 });
+    // Only folders owned by this supplier
+    const folders = await MediaFolder.find({ ownerUserId: ownerUserId }).sort({ createdAt: -1 });
 
     return res.json({ files, folders });
   } catch (err) {
@@ -87,7 +106,9 @@ export async function createFolder(req, res) {
       return res.status(400).json({ error: "Folder name is required" });
     }
 
-    const folder = await MediaFolder.create({ name: String(name).trim() });
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+
+    const folder = await MediaFolder.create({ name: String(name).trim(), ownerUserId });
     return res.status(201).json({ folder });
   } catch (err) {
     return res.status(500).json({ error: "Failed to create folder", details: err.message });

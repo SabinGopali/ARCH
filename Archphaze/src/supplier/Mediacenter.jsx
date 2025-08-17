@@ -13,16 +13,12 @@ import Suppliersidebar from "./Suppliersidebar"; // Ensure this exists
 function getImageUrl(imagePath) {
   if (!imagePath) return "";
   let url = String(imagePath).replace(/\\/g, "/");
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    if (url.startsWith("/")) url = url.slice(1);
-    const base =
-      typeof window !== "undefined" && window.location && window.location.origin
-        ? window.location.origin.includes("localhost")
-          ? "http://localhost:3000"
-          : window.location.origin
-        : "http://localhost:3000";
-    url = `${base}/${url}`;
+  // If already absolute, return as-is
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
   }
+  // Return relative path like /uploads/... so the dev proxy serves it
+  if (!url.startsWith("/")) url = `/${url}`;
   return url;
 }
 
@@ -77,7 +73,7 @@ function Mediacenter() {
             id: f.url,
             name: f.name || (f.url && f.url.split("/").pop()) || "image",
             url: getImageUrl(f.url),
-            type: "Image",
+            type: f.type === "variant" ? "Variant" : "Product",
             date: "",
           }));
           setFolders(normalizedFolders);
@@ -95,54 +91,52 @@ function Mediacenter() {
   );
 
   // Add new folder
-const addFolder = async () => {
-  const trimmedName = newFolderName.trim();
-  if (!trimmedName) return alert("Folder name cannot be empty");
-  if (folders.some((f) => f.name.toLowerCase() === trimmedName.toLowerCase()))
-    return alert("Folder with this name already exists");
+  const addFolder = async () => {
+    const trimmedName = newFolderName.trim();
+    if (!trimmedName) return alert("Folder name cannot be empty");
+    if (folders.some((f) => f.name.toLowerCase() === trimmedName.toLowerCase()))
+      return alert("Folder with this name already exists");
 
-  try {
-    const res = await fetch("/backend/media/folder", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ name: trimmedName }),
-    });
-
-    let data;
-    const text = await res.text();
     try {
-      data = JSON.parse(text);
-    } catch {
-      console.error("Backend did not return JSON:", text);
-      alert("Server error: did not return JSON");
-      return;
+      const res = await fetch("/backend/media/folder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name: trimmedName }),
+      });
+
+      let data;
+      const text = await res.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("Backend did not return JSON:", text);
+        alert("Server error: did not return JSON");
+        return;
+      }
+
+      if (!res.ok) {
+        return alert(data.error || "Failed to create folder");
+      }
+
+      const newFolder = {
+        id: data.folder._id,
+        name: data.folder.name,
+        type: "Custom",
+        date: data.folder.createdAt
+          ? new Date(data.folder.createdAt).toLocaleDateString("en-GB")
+          : "",
+        path: data.folder.path,
+      };
+
+      setFolders([newFolder, ...folders]);
+      setNewFolderName("");
+      setIsCreatingFolder(false);
+    } catch (e) {
+      console.error("Create folder error:", e);
+      alert("Failed to create folder");
     }
-
-    if (!res.ok) {
-      return alert(data.error || "Failed to create folder");
-    }
-
-    const newFolder = {
-      id: data.folder._id,
-      name: data.folder.name,
-      type: "Custom",
-      date: data.folder.createdAt
-        ? new Date(data.folder.createdAt).toLocaleDateString("en-GB")
-        : "",
-      path: data.folder.path,
-    };
-
-    setFolders([newFolder, ...folders]);
-    setNewFolderName("");
-    setIsCreatingFolder(false);
-  } catch (e) {
-    console.error("Create folder error:", e);
-    alert("Failed to create folder");
-  }
-};
-
-
+  };
 
   const toggleFolderExpand = () => setFolderExpanded((v) => !v);
 
