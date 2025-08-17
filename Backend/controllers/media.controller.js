@@ -142,3 +142,23 @@ export async function createFolder(req, res) {
     return res.status(500).json({ error: "Failed to create folder", details: err.message });
   }
 }
+
+export async function deleteFolder(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: "Folder id is required" });
+    }
+
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+
+    const deleted = await MediaFolder.findOneAndDelete({ _id: id, ownerUserId });
+    if (!deleted) {
+      return res.status(404).json({ error: "Folder not found" });
+    }
+
+    return res.json({ success: true, deletedId: id });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to delete folder", details: err.message });
+  }
+}

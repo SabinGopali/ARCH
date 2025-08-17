@@ -298,24 +298,45 @@ function Mediacenter() {
                         </div>
 
                         <button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
                             if (
                               window.confirm(
                                 `Are you sure you want to delete folder "${name}"?`
                               )
                             ) {
-                              setFolders((prev) =>
-                                prev.filter((folder) => folder.id !== id)
-                              );
-                              setImageFolderMap((prev) => {
-                                const newMap = { ...prev };
-                                Object.keys(newMap).forEach((imgId) => {
-                                  if (newMap[imgId] === id) delete newMap[imgId];
+                              try {
+                                const res = await fetch(`/backend/media/folder/${id}`, {
+                                  method: "DELETE",
+                                  credentials: "include",
                                 });
-                                return newMap;
-                              });
-                              if (openFolderId === id) setOpenFolderId(null);
+                                const text = await res.text();
+                                let data;
+                                try {
+                                  data = JSON.parse(text);
+                                } catch {
+                                  console.error("Backend did not return JSON:", text);
+                                }
+                                if (!res.ok) {
+                                  alert((data && data.error) || "Failed to delete folder");
+                                  return;
+                                }
+
+                                setFolders((prev) =>
+                                  prev.filter((folder) => folder.id !== id)
+                                );
+                                setImageFolderMap((prev) => {
+                                  const newMap = { ...prev };
+                                  Object.keys(newMap).forEach((imgId) => {
+                                    if (newMap[imgId] === id) delete newMap[imgId];
+                                  });
+                                  return newMap;
+                                });
+                                if (openFolderId === id) setOpenFolderId(null);
+                              } catch (err) {
+                                console.error("Delete folder error:", err);
+                                alert("Failed to delete folder");
+                              }
                             }
                           }}
                           title="Delete Folder"
