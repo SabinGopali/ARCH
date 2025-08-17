@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import MediaFolder from "../models/mediaFolder.model.js";
 import Product from "../models/product.model.js";
+import StoreProfile from "../models/store.model.js";
 
 const uploadsRoot = path.join(process.cwd(), "uploads");
 
@@ -51,25 +52,52 @@ export async function listMedia(req, res) {
 
     for (const product of products) {
       (product.images || []).forEach((imgPath) => {
-        if (typeof imgPath === "string" && imgPath.startsWith("/uploads/")) {
-          fileEntries.push({
-            name: path.basename(imgPath),
-            url: imgPath,
-            type: "product",
-          });
+        if (typeof imgPath === "string") {
+          const normalized = imgPath.replace(/\\/g, "/");
+          const url = normalized.startsWith("/") ? normalized : `/${normalized}`;
+          if (url.startsWith("/uploads/")) {
+            fileEntries.push({
+              name: path.basename(url),
+              url,
+              type: "product",
+            });
+          }
         }
       });
       (product.variants || []).forEach((variant) => {
         (variant.images || []).forEach((imgPath) => {
-          if (typeof imgPath === "string" && imgPath.startsWith("/uploads/")) {
-            fileEntries.push({
-              name: path.basename(imgPath),
-              url: imgPath,
-              type: "variant",
-            });
+          if (typeof imgPath === "string") {
+            const normalized = imgPath.replace(/\\/g, "/");
+            const url = normalized.startsWith("/") ? normalized : `/${normalized}`;
+            if (url.startsWith("/uploads/")) {
+              fileEntries.push({
+                name: path.basename(url),
+                url,
+                type: "variant",
+              });
+            }
           }
         });
       });
+    }
+
+    // Include store profile images (logo and bgImage) for this supplier
+    const storeProfile = await StoreProfile.findOne({ userId: ownerUserId }).select("logo bgImage");
+    if (storeProfile) {
+      const addStoreImage = (imgPathRaw) => {
+        if (!imgPathRaw) return;
+        const normalized = String(imgPathRaw).replace(/\\/g, "/");
+        const url = normalized.startsWith("/") ? normalized : `/${normalized}`;
+        if (url.startsWith("/uploads/")) {
+          fileEntries.push({
+            name: path.basename(url),
+            url,
+            type: "store",
+          });
+        }
+      };
+      addStoreImage(storeProfile.logo);
+      addStoreImage(storeProfile.bgImage);
     }
 
     // Deduplicate by URL
