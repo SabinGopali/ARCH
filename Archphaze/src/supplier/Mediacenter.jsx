@@ -7,6 +7,7 @@ import {
   FiPlus,
   FiX,
   FiTrash2,
+  FiMoreVertical,
 } from "react-icons/fi";
 import Suppliersidebar from "./Suppliersidebar"; // Ensure this exists
 
@@ -26,12 +27,7 @@ function Mediacenter() {
   const [folders, setFolders] = useState([]);
   const [images, setImages] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [contextMenu, setContextMenu] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-    fileId: null,
-  });
+  const [menuOpenForId, setMenuOpenForId] = useState(null);
   const [selectedFileId, setSelectedFileId] = useState(null);
   const [folderExpanded, setFolderExpanded] = useState(true);
   const [openFolderId, setOpenFolderId] = useState(null);
@@ -39,21 +35,17 @@ function Mediacenter() {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
 
-  const contextMenuRef = useRef();
+  const menuRef = useRef(null);
 
-  // Close context menu on outside click
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        contextMenuRef.current &&
-        !contextMenuRef.current.contains(event.target)
-      ) {
-        setContextMenu({ ...contextMenu, visible: false });
+    function onWindowClick(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpenForId(null);
       }
     }
-    window.addEventListener("click", handleClickOutside);
-    return () => window.removeEventListener("click", handleClickOutside);
-  }, [contextMenu]);
+    window.addEventListener("click", onWindowClick);
+    return () => window.removeEventListener("click", onWindowClick);
+  }, []);
 
   // Load media folders and files from backend
   useEffect(() => {
@@ -140,13 +132,8 @@ function Mediacenter() {
 
   const toggleFolderExpand = () => setFolderExpanded((v) => !v);
 
-  const handleContextMenu = (e, fileId) => {
-    e.preventDefault();
-    setSelectedFileId(fileId);
-    setContextMenu({ visible: true, x: e.pageX, y: e.pageY, fileId });
-  };
 
-  const handleMenuAction = (action) => {
+  const handleMenuAction = async (action) => {
     if (action === "Download") {
       const file = images.find((img) => img.id === selectedFileId);
       if (file) {
@@ -157,10 +144,54 @@ function Mediacenter() {
         a.click();
         document.body.removeChild(a);
       }
-    } else {
-      alert(`Action: ${action} on file ID: ${selectedFileId}`);
+    } else if (action === "Rename") {
+      const file = images.find((img) => img.id === selectedFileId);
+      if (!file) {
+        setMenuOpenForId(null);
+        return;
+      }
+      const suggested = file.name || (file.url.split("/").pop()) || "image";
+      const newName = window.prompt("Enter new file name (with or without extension)", suggested);
+      if (!newName || !newName.trim()) {
+        setMenuOpenForId(null);
+        return;
+      }
+      try {
+        const res = await fetch("/backend/media/rename", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ currentUrl: file.url, newName: newName.trim() }),
+        });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = null; }
+        if (!res.ok) {
+          alert((data && data.error) || `Failed to rename: ${res.status}`);
+        } else {
+          const updatedUrl = data.newUrl || file.url;
+          const updatedName = data.newName || (updatedUrl.split("/").pop());
+          setImages((prev) => prev.map((img) => (
+            img.id === selectedFileId
+              ? { ...img, id: updatedUrl, url: getImageUrl(updatedUrl), name: updatedName }
+              : img
+          )));
+          setImageFolderMap((prev) => {
+            if (!prev || !(selectedFileId in prev)) return prev;
+            const copy = { ...prev };
+            const folder = copy[selectedFileId];
+            delete copy[selectedFileId];
+            copy[updatedUrl] = folder;
+            return copy;
+          });
+          setSelectedFileId(updatedUrl);
+        }
+      } catch (err) {
+        console.error("Rename failed", err);
+        alert("Failed to rename file");
+      }
     }
-    setContextMenu({ ...contextMenu, visible: false });
+    setMenuOpenForId(null);
   };
 
   const handleDropOnFolder = (e, folderId) => {
@@ -377,48 +408,54 @@ function Mediacenter() {
                   imagesToShow.map(({ id, name, url, type, date }) => (
                     <div
                       key={id}
-                      className="border border-gray-200 rounded-md px-2 py-2 shadow-sm hover:shadow-md cursor-pointer transition bg-white min-w-[140px] flex flex-col items-center"
+                      className="border border-gray-200 rounded-md px-2 py-2 shadow-sm hover:shadow-md cursor-pointer transition bg-white min-w-[140px] flex flex-col items-stretch relative"
                       title={`${name} - ${type} - ${date}`}
-                      onContextMenu={(e) => handleContextMenu(e, id)}
                       draggable
                       onDragStart={(e) => e.dataTransfer.setData("imageId", id)}
                     >
+                      <button
+                        type="button"
+                        aria-label="More actions"
+                        className="absolute top-2 right-2 p-1 rounded hover:bg-gray-100 text-gray-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFileId(id);
+                          setMenuOpenForId((prev) => (prev === id ? null : id));
+                        }}
+                      >
+                        <FiMoreVertical size={18} />
+                      </button>
+
                       <img
                         src={url}
                         alt={name}
-                        className="w-32 h-20 object-cover rounded-md mb-2"
+                        className="w-32 h-20 object-cover rounded-md mb-2 mx-auto"
                         loading="lazy"
                       />
-                      <span className="text-sm font-semibold text-gray-800">{name}</span>
-                      <span className="text-xs text-gray-400">{type} • {date}</span>
+                      <span className="text-sm font-semibold text-gray-800 text-center">{name}</span>
+                      <span className="text-xs text-gray-400 text-center">{type} • {date}</span>
+
+                      {menuOpenForId === id && (
+                        <ul ref={menuRef} className="absolute z-50 top-8 right-2 bg-white border border-gray-300 rounded-md shadow-lg w-48 text-gray-700 text-sm">
+                          {["Rename", "Download"].map((action) => (
+                            <li
+                              key={action}
+                              className="px-4 py-2 hover:bg-orange-100 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMenuAction(action);
+                              }}
+                            >
+                              {action}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   ))
                 )}
               </div>
             </div>
-
-            {/* Context Menu */}
-            {contextMenu.visible && (
-              <ul
-                ref={contextMenuRef}
-                style={{ top: contextMenu.y, left: contextMenu.x }}
-                className="fixed bg-white border border-gray-300 rounded-md shadow-lg w-48 text-gray-700 text-sm z-50"
-              >
-                {["Assign/Edit to Product", "Rename", "Download", "Send Trash", "Cleanup Folder"].map(
-                  (action) => (
-                    <li
-                      key={action}
-                      className={`px-4 py-2 hover:bg-orange-100 cursor-pointer ${
-                        action === "Send Trash" ? "text-red-600" : ""
-                      }`}
-                      onClick={() => handleMenuAction(action)}
-                    >
-                      {action}
-                    </li>
-                  )
-                )}
-              </ul>
-            )}
           </section>
         </main>
       </div>
