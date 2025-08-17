@@ -13,16 +13,12 @@ import Suppliersidebar from "./Suppliersidebar"; // Ensure this exists
 function getImageUrl(imagePath) {
   if (!imagePath) return "";
   let url = String(imagePath).replace(/\\/g, "/");
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    if (url.startsWith("/")) url = url.slice(1);
-    const base =
-      typeof window !== "undefined" && window.location && window.location.origin
-        ? window.location.origin.includes("localhost")
-          ? "http://localhost:3000"
-          : window.location.origin
-        : "http://localhost:3000";
-    url = `${base}/${url}`;
+  // If already absolute, return as-is
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
   }
+  // Return relative path like /uploads/... so the dev proxy serves it
+  if (!url.startsWith("/")) url = `/${url}`;
   return url;
 }
 
