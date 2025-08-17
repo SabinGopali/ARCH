@@ -12,6 +12,11 @@ const mediaFolderSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    ownerUserId: {
+      type: String,
+      required: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );
