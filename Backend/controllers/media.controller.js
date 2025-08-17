@@ -170,7 +170,30 @@ export async function renameFile(req, res) {
       return res.status(400).json({ error: "currentUrl and newName are required" });
     }
 
-    if (!String(currentUrl).startsWith("/uploads/")) {
+    const normalizeUploadsUrl = (input) => {
+      if (!input) return null;
+      let s = String(input).replace(/\\/g, "/").trim();
+      const lower = s.toLowerCase();
+      const idx = lower.indexOf("/uploads/");
+      if (idx !== -1) {
+        s = s.slice(idx);
+      }
+      if (s.toLowerCase().startsWith("uploads/")) {
+        s = "/" + s;
+      }
+      const qIdx = s.indexOf("?");
+      if (qIdx !== -1) s = s.slice(0, qIdx);
+      const hIdx = s.indexOf("#");
+      if (hIdx !== -1) s = s.slice(0, hIdx);
+      s = s.replace(/\/{2,}/g, "/");
+      if (!s.toLowerCase().startsWith("/uploads/")) {
+        return null;
+      }
+      return s;
+    };
+
+    const oldUrl = normalizeUploadsUrl(currentUrl);
+    if (!oldUrl) {
       return res.status(400).json({ error: "Invalid currentUrl" });
     }
 
@@ -180,7 +203,6 @@ export async function renameFile(req, res) {
       return cleaned;
     };
 
-    const oldUrl = String(currentUrl);
     const oldDiskPath = path.join(process.cwd(), oldUrl.replace(/^\/+/g, ""));
     if (!fs.existsSync(oldDiskPath)) {
       return res.status(404).json({ error: "File not found" });
@@ -208,13 +230,18 @@ export async function renameFile(req, res) {
     // Authorization: ensure the user owns references to this file in DB (product or store)
     const ownerUserId = getActingOwnerUserIdFromReq(req);
 
-    const products = await Product.find({ userRef: ownerUserId }).select("images variants");
+    const products = await Product.find({ userRef: ownerUserId }).select("images variants.images");
     const storeProfile = await StoreProfile.findOne({ userId: ownerUserId }).select("logo bgImage");
 
-    const isReferencedByOwner = (
-      (products || []).some((p) => (p.images || []).includes(oldUrl) || (p.variants || []).some((v) => (v.images || []).includes(oldUrl))) ||
-      (storeProfile && (storeProfile.logo === oldUrl || storeProfile.bgImage === oldUrl))
-    );
+    const arrayContainsOldUrl = (arr) => (arr || []).some((img) => normalizeUploadsUrl(img) === oldUrl);
+
+    const isReferencedByOwner =
+      (products || []).some(
+        (p) => arrayContainsOldUrl(p.images) || (p.variants || []).some((v) => arrayContainsOldUrl(v.images))
+      ) ||
+      (storeProfile &&
+        (normalizeUploadsUrl(storeProfile.logo) === oldUrl ||
+          normalizeUploadsUrl(storeProfile.bgImage) === oldUrl));
 
     if (!isReferencedByOwner) {
       return res.status(403).json({ error: "Not authorized to rename this file" });
@@ -226,23 +253,42 @@ export async function renameFile(req, res) {
     // Update DB references
     for (const product of products) {
       let changed = false;
-      if (Array.isArray(product.images)) {
-        product.images = product.images.map((img) => (img === oldUrl ? newUrl : img));
-        changed = changed || product.images.includes(newUrl);
-      }
-      if (Array.isArray(product.variants)) {
-        product.variants = product.variants.map((variant) => {
-          const updated = {
-            ...variant.toObject(),
-            images: (variant.images || []).map((img) => (img === oldUrl ? newUrl : img)),
-          };
-          return updated;
+
+      if (Array.isArray(product.images) && product.images.length) {
+        let modified = false;
+        const updated = product.images.map((img) => {
+          const normalized = normalizeUploadsUrl(img);
+          if (normalized && normalized === oldUrl) {
+            modified = true;
+            return newUrl;
+          }
+          return img;
         });
-        // If any variant changed, mark changed
-        if (product.variants.some((v) => (v.images || []).includes(newUrl))) {
+        if (modified) {
+          product.images = updated;
           changed = true;
         }
       }
+
+      if (Array.isArray(product.variants) && product.variants.length) {
+        for (const variant of product.variants) {
+          if (!Array.isArray(variant.images) || variant.images.length === 0) continue;
+          let variantModified = false;
+          const updatedVariantImages = variant.images.map((img) => {
+            const normalized = normalizeUploadsUrl(img);
+            if (normalized && normalized === oldUrl) {
+              variantModified = true;
+              return newUrl;
+            }
+            return img;
+          });
+          if (variantModified) {
+            variant.images = updatedVariantImages;
+            changed = true;
+          }
+        }
+      }
+
       if (changed) {
         await product.save();
       }
@@ -250,11 +296,11 @@ export async function renameFile(req, res) {
 
     if (storeProfile) {
       let updated = false;
-      if (storeProfile.logo === oldUrl) {
+      if (normalizeUploadsUrl(storeProfile.logo) === oldUrl) {
         storeProfile.logo = newUrl;
         updated = true;
       }
-      if (storeProfile.bgImage === oldUrl) {
+      if (normalizeUploadsUrl(storeProfile.bgImage) === oldUrl) {
         storeProfile.bgImage = newUrl;
         updated = true;
       }
