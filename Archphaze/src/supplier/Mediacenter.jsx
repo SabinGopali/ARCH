@@ -73,7 +73,7 @@ function Mediacenter() {
             id: f.url,
             name: f.name || (f.url && f.url.split("/").pop()) || "image",
             url: getImageUrl(f.url),
-            type: f.type === "variant" ? "Variant" : "Product",
+            type: f.type === "variant" ? "Variant" : f.type === "store" ? "Store" : "Product",
             date: "",
           }));
           setFolders(normalizedFolders);
