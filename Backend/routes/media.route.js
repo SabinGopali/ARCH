@@ -1,5 +1,5 @@
 import express from "express";
-import { listMedia, createFolder, deleteFolder } from "../controllers/media.controller.js";
+import { listMedia, createFolder, deleteFolder, renameFile } from "../controllers/media.controller.js";
 import { verifyToken } from "../utils/verifyuser.js";
 import { requireAnySupplier } from "../utils/roles.js";
 
@@ -13,5 +13,8 @@ router.post("/folder", verifyToken, requireAnySupplier, createFolder);
 
 // Delete a media folder by id
 router.delete("/folder/:id", verifyToken, requireAnySupplier, deleteFolder);
+
+// Rename a media file
+router.put("/rename", verifyToken, requireAnySupplier, renameFile);
 
 export default router;

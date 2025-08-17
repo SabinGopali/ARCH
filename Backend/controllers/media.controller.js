@@ -162,3 +162,109 @@ export async function deleteFolder(req, res) {
     return res.status(500).json({ error: "Failed to delete folder", details: err.message });
   }
 }
+
+export async function renameFile(req, res) {
+  try {
+    const { currentUrl, newName } = req.body || {};
+    if (!currentUrl || !newName) {
+      return res.status(400).json({ error: "currentUrl and newName are required" });
+    }
+
+    if (!String(currentUrl).startsWith("/uploads/")) {
+      return res.status(400).json({ error: "Invalid currentUrl" });
+    }
+
+    const sanitize = (name) => {
+      const base = path.basename(String(name));
+      const cleaned = base.replace(/[^a-zA-Z0-9._-]/g, "");
+      return cleaned;
+    };
+
+    const oldUrl = String(currentUrl);
+    const oldDiskPath = path.join(process.cwd(), oldUrl.replace(/^\/+/g, ""));
+    if (!fs.existsSync(oldDiskPath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const dirOnDisk = path.dirname(oldDiskPath);
+    const dirUrl = path.dirname(oldUrl).replace(/\\/g, "/");
+    const oldExt = path.extname(oldDiskPath).toLowerCase();
+
+    const requestedName = sanitize(newName);
+    if (!requestedName) {
+      return res.status(400).json({ error: "Invalid new name" });
+    }
+
+    const requestedExt = path.extname(requestedName);
+    const finalFileName = requestedExt ? requestedName : `${requestedName}${oldExt}`;
+
+    const newDiskPath = path.join(dirOnDisk, finalFileName);
+    const newUrl = `${dirUrl}/${finalFileName}`.replace(/\\/g, "/");
+
+    if (fs.existsSync(newDiskPath)) {
+      return res.status(409).json({ error: "A file with the new name already exists" });
+    }
+
+    // Authorization: ensure the user owns references to this file in DB (product or store)
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+
+    const products = await Product.find({ userRef: ownerUserId }).select("images variants");
+    const storeProfile = await StoreProfile.findOne({ userId: ownerUserId }).select("logo bgImage");
+
+    const isReferencedByOwner = (
+      (products || []).some((p) => (p.images || []).includes(oldUrl) || (p.variants || []).some((v) => (v.images || []).includes(oldUrl))) ||
+      (storeProfile && (storeProfile.logo === oldUrl || storeProfile.bgImage === oldUrl))
+    );
+
+    if (!isReferencedByOwner) {
+      return res.status(403).json({ error: "Not authorized to rename this file" });
+    }
+
+    // Perform disk rename
+    await fs.promises.rename(oldDiskPath, newDiskPath);
+
+    // Update DB references
+    for (const product of products) {
+      let changed = false;
+      if (Array.isArray(product.images)) {
+        product.images = product.images.map((img) => (img === oldUrl ? newUrl : img));
+        changed = changed || product.images.includes(newUrl);
+      }
+      if (Array.isArray(product.variants)) {
+        product.variants = product.variants.map((variant) => {
+          const updated = {
+            ...variant.toObject(),
+            images: (variant.images || []).map((img) => (img === oldUrl ? newUrl : img)),
+          };
+          return updated;
+        });
+        // If any variant changed, mark changed
+        if (product.variants.some((v) => (v.images || []).includes(newUrl))) {
+          changed = true;
+        }
+      }
+      if (changed) {
+        await product.save();
+      }
+    }
+
+    if (storeProfile) {
+      let updated = false;
+      if (storeProfile.logo === oldUrl) {
+        storeProfile.logo = newUrl;
+        updated = true;
+      }
+      if (storeProfile.bgImage === oldUrl) {
+        storeProfile.bgImage = newUrl;
+        updated = true;
+      }
+      if (updated) {
+        await storeProfile.save();
+      }
+    }
+
+    return res.json({ success: true, currentUrl: oldUrl, newUrl, newName: finalFileName });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to rename file", details: err.message });
+  }
+}

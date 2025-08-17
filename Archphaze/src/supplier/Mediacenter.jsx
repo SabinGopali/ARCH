@@ -133,7 +133,7 @@ function Mediacenter() {
   const toggleFolderExpand = () => setFolderExpanded((v) => !v);
 
 
-  const handleMenuAction = (action) => {
+  const handleMenuAction = async (action) => {
     if (action === "Download") {
       const file = images.find((img) => img.id === selectedFileId);
       if (file) {
@@ -144,8 +144,52 @@ function Mediacenter() {
         a.click();
         document.body.removeChild(a);
       }
-    } else {
-      alert(`Action: ${action} on file ID: ${selectedFileId}`);
+    } else if (action === "Rename") {
+      const file = images.find((img) => img.id === selectedFileId);
+      if (!file) {
+        setMenuOpenForId(null);
+        return;
+      }
+      const suggested = file.name || (file.url.split("/").pop()) || "image";
+      const newName = window.prompt("Enter new file name (with or without extension)", suggested);
+      if (!newName || !newName.trim()) {
+        setMenuOpenForId(null);
+        return;
+      }
+      try {
+        const res = await fetch("/backend/media/rename", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ currentUrl: file.url, newName: newName.trim() }),
+        });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = null; }
+        if (!res.ok) {
+          alert((data && data.error) || `Failed to rename: ${res.status}`);
+        } else {
+          const updatedUrl = data.newUrl || file.url;
+          const updatedName = data.newName || (updatedUrl.split("/").pop());
+          setImages((prev) => prev.map((img) => (
+            img.id === selectedFileId
+              ? { ...img, id: updatedUrl, url: getImageUrl(updatedUrl), name: updatedName }
+              : img
+          )));
+          setImageFolderMap((prev) => {
+            if (!prev || !(selectedFileId in prev)) return prev;
+            const copy = { ...prev };
+            const folder = copy[selectedFileId];
+            delete copy[selectedFileId];
+            copy[updatedUrl] = folder;
+            return copy;
+          });
+          setSelectedFileId(updatedUrl);
+        }
+      } catch (err) {
+        console.error("Rename failed", err);
+        alert("Failed to rename file");
+      }
     }
     setMenuOpenForId(null);
   };
@@ -393,10 +437,10 @@ function Mediacenter() {
 
                       {menuOpenForId === id && (
                         <ul ref={menuRef} className="absolute z-50 top-8 right-2 bg-white border border-gray-300 rounded-md shadow-lg w-48 text-gray-700 text-sm">
-                          {["Assign/Edit to Product", "Rename", "Download", "Send Trash", "Cleanup Folder"].map((action) => (
+                          {["Rename", "Download"].map((action) => (
                             <li
                               key={action}
-                              className={`px-4 py-2 hover:bg-orange-100 cursor-pointer ${action === "Send Trash" ? "text-red-600" : ""}`}
+                              className="px-4 py-2 hover:bg-orange-100 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleMenuAction(action);
