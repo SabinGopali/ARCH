@@ -2,10 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Earphonecards from "./Earphonecards";
 import Speakercards from "./Speakercards";
-// import BowlCards from "./BowlCards";
-// import SnackCupCards from "./SnackCupCards";
-// import GlassCards from "./GlassCards";
-// import CoveredCards from "./CoveredCards";
+
 
 const categories = ["Earphone", "Speaker", "Bowl", "Snack cup", "Glass", "Covered"];
 
