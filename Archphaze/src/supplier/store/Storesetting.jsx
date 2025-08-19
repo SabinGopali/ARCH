@@ -5,6 +5,8 @@
   import Suppliersidebar from "../Suppliersidebar";
   import { useNavigate } from "react-router-dom";
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   function getCroppedImg(imageSrc, crop, zoom) {
     const createImage = (url) =>
       new Promise((resolve, reject) => {
@@ -180,6 +182,31 @@
 
     return (
       <div className="min-h-screen bg-gray-100">
+        {/* Mobile Sidebar Toggle */}
+        <div className="px-4 py-4 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen && setSidebarOpen((v) => !v)}
+            className="p-2 bg-white border shadow rounded-md hover:bg-gray-100 transition"
+            aria-label="Toggle Sidebar"
+          >
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Mobile Aside */}
+        <aside
+          className={`fixed z-40 top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:hidden`}
+        >
+          <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen || (()=>{})} />
+        </aside>
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden" onClick={() => setSidebarOpen && setSidebarOpen(false)} />
+        )}
+
         <div className="p-4 md:p-8 lg:flex lg:gap-8 relative z-10">
           <aside className="hidden lg:block w-62 sticky top-6 self-start">
             <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />

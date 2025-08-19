@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   FiGrid,
@@ -64,20 +64,35 @@ const sections = [
   },
 ];
 
-export default function Suppliersidebar() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function Suppliersidebar({ sidebarOpen, setSidebarOpen, showToggleButton }) {
+  // Determine if component is controlled by parent
+  const isControlled = useMemo(() => typeof sidebarOpen === "boolean" && typeof setSidebarOpen === "function", [sidebarOpen, setSidebarOpen]);
+
+  // Local state for uncontrolled usage
+  const [internalOpen, setInternalOpen] = useState(false);
   const location = useLocation();
   const activePath = location.pathname;
 
-  const toggleSidebar = () => setIsOpen(!isOpen);
+  const isOpen = isControlled ? sidebarOpen : internalOpen;
+  const toggleSidebar = () => {
+    if (isControlled) {
+      setSidebarOpen(!sidebarOpen);
+    } else {
+      setInternalOpen(!internalOpen);
+    }
+  };
 
   return (
     <>
       {/* Sidebar */}
       <div
         className={`sticky top-24 z-30 h-[calc(100vh-96px)] w-64 bg-white shadow-md border-r p-4 overflow-auto hide-scrollbar
-          transform transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+          ${
+            // Only apply slide animation in UNCONTROLLED mode. In controlled mode, the parent container manages positioning/visibility.
+            isControlled
+              ? ""
+              : `transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`
+          }`}
       >
         {sections.map((section, index) => (
           <div key={index} className="mb-6">
@@ -99,7 +114,13 @@ export default function Suppliersidebar() {
                     badge={item.badge}
                     children={item.children}
                     active={isActive}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      if (isControlled) {
+                        setSidebarOpen(false);
+                      } else {
+                        setInternalOpen(false);
+                      }
+                    }}
                   />
                 );
               })}
@@ -108,19 +129,21 @@ export default function Suppliersidebar() {
         ))}
       </div>
 
-      {/* Toggle button - top right for mobile */}
-      <div className="md:hidden fixed top-24 right-0 z-40">
-        <button
-          onClick={toggleSidebar}
-          className="m-2 p-2 rounded-md bg-white shadow-md border"
-          aria-label="Toggle sidebar"
-        >
-          {isOpen ? <FiX size={20} /> : <FiMenu size={20} />}
-        </button>
-      </div>
+      {/* Toggle button - top right for mobile (only when UNCONTROLLED or explicitly forced) */}
+      {(!isControlled && showToggleButton !== false) && (
+        <div className="md:hidden fixed top-24 right-0 z-40">
+          <button
+            onClick={toggleSidebar}
+            className="m-2 p-2 rounded-md bg-white shadow-md border"
+            aria-label="Toggle sidebar"
+          >
+            {isOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+          </button>
+        </div>
+      )}
 
-      {/* Mobile Overlay */}
-      {isOpen && (
+      {/* Mobile Overlay (only for UNCONTROLLED) */}
+      {!isControlled && isOpen && (
         <div
           onClick={toggleSidebar}
           className="fixed inset-0 bg-black opacity-30 z-20 md:hidden"
