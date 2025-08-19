@@ -181,7 +181,7 @@
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="p-4 md:p-8 lg:flex lg:gap-8 relative z-10">
-          <aside className="hidden lg:block w-62 sticky top-6 self-start">
+          <aside className="hidden lg:block w-64 sticky top-6 self-start">
             <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
           </aside>
 
