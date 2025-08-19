@@ -34,6 +34,7 @@ function Mediacenter() {
   const [imageFolderMap, setImageFolderMap] = useState({});
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuRef = useRef(null);
 
@@ -213,10 +214,34 @@ function Mediacenter() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-6 pb-10">
+      {/* Mobile Sidebar Toggle */}
+      <div className="px-4 lg:hidden mb-5">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 bg-white border shadow rounded-md hover:bg-gray-100 transition"
+        >
+          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile Aside */}
+      <aside
+        className={`fixed z-40 top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:hidden`}
+      >
+        <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      </aside>
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
       <div className="max-w-screen-2xl mx-auto px-4 lg:flex lg:gap-8">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-64 mb-10 lg:mb-0">
-          <Suppliersidebar />
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:block w-64 sticky top-6 self-start">
+          <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
         </aside>
 
         {/* Main content */}

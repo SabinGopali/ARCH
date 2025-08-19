@@ -1,15 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
 import { FiRefreshCcw, FiLogOut } from "react-icons/fi";
 import Suppliersidebar from "../supplier/Suppliersidebar";
 
 export default function Security() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="min-h-screen bg-gray-50 pt-5 pb-10">
+      {/* Mobile Sidebar Toggle */}
+      <div className="px-4 lg:hidden mb-4">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 bg-white border shadow rounded-md hover:bg-gray-100 transition"
+          aria-label="Toggle Sidebar"
+        >
+          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile Aside */}
+      <aside
+        className={`fixed z-40 top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:hidden`}
+      >
+        <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      </aside>
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
       <div className="mx-auto max-w-screen-2xl px-4">
         <div className="flex flex-col lg:flex-row lg:gap-6">
-          {/* Sidebar */}
-          <aside className="w-full lg:w-[20rem] xl:w-[22rem] mb-8 lg:mb-0">
-            <Suppliersidebar />
+          {/* Desktop Sidebar */}
+          <aside className="hidden lg:block w-64 sticky top-6 self-start mb-8 lg:mb-0">
+            <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
           </aside>
 
           {/* Main Content */}
