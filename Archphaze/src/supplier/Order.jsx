@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { FiSearch, FiMenu } from "react-icons/fi";
+import { FiSearch, FiMenu, FiX } from "react-icons/fi";
 import Suppliersidebar from "./Suppliersidebar";
 import { useSelector } from "react-redux";
 
 export default function Order() {
   const [search, setSearch] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedPayment, setSelectedPayment] = useState("All");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const currentUser = useSelector((state) => state.user?.currentUser);
 
@@ -33,7 +33,6 @@ export default function Order() {
   useEffect(() => {
     const fetchOrders = async () => {
       if (!supplierId) {
-        console.warn("No supplierId found, skipping fetch.");
         setLoading(false);
         return;
       }
@@ -42,29 +41,16 @@ export default function Order() {
         const res = await fetch(
           `http://localhost:3000/backend/order/supplier/${supplierId}`
         );
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch: ${res.status}`);
-        }
-
         const data = await res.json();
-
-        if (Array.isArray(data.orders)) {
-          setOrders(data.orders);
-        } else if (Array.isArray(data)) {
-          setOrders(data);
-        } else {
-          setOrders([]);
-          console.warn("Unexpected response format from API");
-        }
+        if (Array.isArray(data.orders)) setOrders(data.orders);
+        else if (Array.isArray(data)) setOrders(data);
+        else setOrders([]);
       } catch (e) {
-        console.error("Failed to load orders", e);
         setOrders([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchOrders();
   }, [supplierId]);
 
@@ -98,83 +84,79 @@ export default function Order() {
       });
   }, [orders, search, selectedStatus, selectedPayment]);
 
-  // ---------------- Image Helper ----------------
   function imageUrl(path) {
     if (!path) return "https://via.placeholder.com/40x40";
-
-    // Already a full URL
     if (/^https?:\/\//i.test(path)) return path;
-
-    // Normalize Windows paths
     let normalized = path.replace(/\\/g, "/");
     if (normalized.startsWith("/")) normalized = normalized.slice(1);
-
-    // Backend base URL (change if needed)
-    const backendBaseUrl = "http://localhost:3000"; // match your backend port
-    return `${backendBaseUrl}/${normalized}`;
+    return `http://localhost:3000/${normalized}`;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row relative">
-      {/* Mobile Toggle */}
-      <button
-        className="lg:hidden p-3 fixed top-4 left-4 z-50 bg-white rounded-full shadow-md"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <FiMenu size={22} />
-      </button>
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed z-40 top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0 lg:static lg:shadow-none`}
-      >
-        <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      </aside>
-
-      {/* Mobile Backdrop */}
-      {sidebarOpen && (
+    <div className="min-h-screen flex bg-gray-100">
+      {/* Sidebar mobile overlay */}
+      <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? "" : "hidden"}`}>
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-25"
           onClick={() => setSidebarOpen(false)}
         />
-      )}
+        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white p-4 shadow-lg overflow-y-auto">
+          <div className="flex justify-end mb-4">
+            <button onClick={() => setSidebarOpen(false)}>
+              <FiX size={24} />
+            </button>
+          </div>
+          <Suppliersidebar />
+        </aside>
+      </div>
+
+      {/* Sidebar desktop */}
+      <aside className="hidden md:block w-64 p-4">
+        <Suppliersidebar />
+      </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h1 className="text-2xl font-semibold mb-2">Orders</h1>
-          <p className="text-gray-500 mb-6">
+        {/* Mobile menu button */}
+        <div className="md:hidden flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold">Orders</h1>
+          <button onClick={() => setSidebarOpen(true)}>
+            <FiMenu size={24} />
+          </button>
+        </div>
+
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
+          <h2 className="text-xl md:text-2xl font-semibold mb-2 hidden md:block">
+            Orders
+          </h2>
+          <p className="text-gray-500 mb-4 md:mb-6 text-sm md:text-base">
             Manage your customers' orders and logistics.
           </p>
 
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             {/* Status Tabs */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1 md:gap-2">
               {allStatuses.map((status) => (
                 <button
                   key={status}
                   onClick={() => setSelectedStatus(status)}
-                  className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-all duration-150 ${
+                  className={`px-2 py-1 md:px-3 md:py-1.5 rounded-full border text-xs md:text-sm whitespace-nowrap transition-all duration-150 ${
                     selectedStatus === status
                       ? "bg-blue-100 text-blue-700 border-blue-300"
                       : "border-gray-300 text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  {status === "All"
-                    ? "All"
-                    : status.charAt(0).toUpperCase() + status.slice(1)}
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
                 </button>
               ))}
             </div>
 
             {/* Payment filter */}
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-gray-500">Payment:</span>
+            <div className="ml-auto flex items-center gap-1 md:gap-2">
+              <span className="text-xs md:text-sm text-gray-500">Payment:</span>
               <select
-                className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
+                className="border border-gray-300 rounded px-2 py-1 text-xs md:text-sm bg-white"
                 value={selectedPayment}
                 onChange={(e) => setSelectedPayment(e.target.value)}
               >
@@ -188,22 +170,22 @@ export default function Order() {
           </div>
 
           {/* Search */}
-          <div className="mb-4 max-w-sm">
-            <div className="flex items-center gap-2 border border-gray-300 rounded px-3 py-2 bg-white">
+          <div className="mb-4 max-w-full md:max-w-sm">
+            <div className="flex items-center gap-2 border border-gray-300 rounded px-2 py-1 md:px-3 md:py-2 bg-white">
               <FiSearch className="text-gray-500" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by customer or order #..."
-                className="w-full outline-none text-sm"
+                className="w-full outline-none text-xs md:text-sm"
               />
             </div>
           </div>
 
           {/* Orders Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-[900px] w-full text-sm text-left">
+            <table className="min-w-[700px] md:min-w-[900px] w-full text-sm text-left">
               <thead className="text-gray-600 border-b">
                 <tr>
                   <th className="py-2 px-3">ORDER NO.</th>
@@ -242,7 +224,7 @@ export default function Order() {
                         {o.items.map((it) => (
                           <div
                             key={it.productId}
-                            className="text-xs flex items-center gap-2 py-0.5"
+                            className="text-xs flex items-center gap-1 md:gap-2 py-0.5"
                           >
                             <img
                               src={imageUrl(it.image)}
@@ -250,7 +232,7 @@ export default function Order() {
                                 (e.target.src = "https://via.placeholder.com/40x40")
                               }
                               alt={it.name}
-                              className="w-10 h-10 rounded object-cover bg-gray-100"
+                              className="w-8 h-8 md:w-10 md:h-10 rounded object-cover bg-gray-100"
                             />
                             <span>
                               {it.name} × {it.quantity}

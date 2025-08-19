@@ -14,41 +14,55 @@ export default function SidebarItem({
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Auto-open if a child route is active
+  // Auto-open dropdown if any child route is active
   useEffect(() => {
     if (children?.some((child) => location.pathname === child.link)) {
       setDropdownOpen(true);
     }
   }, [location.pathname, children]);
 
+  // Function to toggle dropdown
+  const toggleDropdown = () => setDropdownOpen((prev) => !prev);
+
+  // If there are children (nested menu)
   if (children && children.length > 0) {
     return (
       <li>
-        <div
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-          className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors
+        <button
+          onClick={toggleDropdown}
+          className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200
             ${active ? "bg-black text-white font-semibold" : "text-gray-700 hover:bg-gray-100"}
           `}
         >
-          <div className="flex items-center gap-2">
-            {icon}
-            <span>{name}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-lg">{icon}</span>
+            <span className="text-sm">{name}</span>
           </div>
-          <span>{dropdownOpen ? <FiChevronDown /> : <FiChevronRight />}</span>
-        </div>
+          <span className="text-gray-500">
+            {dropdownOpen ? <FiChevronDown /> : <FiChevronRight />}
+          </span>
+        </button>
 
-        {dropdownOpen && (
-          <ul className="pl-8 mt-1 space-y-1">
+        {/* Dropdown menu */}
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            dropdownOpen ? "max-h-80 mt-1" : "max-h-0"
+          }`}
+        >
+          <ul className="pl-10 space-y-1">
             {children.map((child) => (
               <li key={child.name}>
                 <Link
                   to={child.link}
                   onClick={() => {
-                    setDropdownOpen(false); // Close dropdown on click
-                    onClick?.();            // Close sidebar on mobile
+                    onClick?.(); // Close sidebar on mobile
                   }}
-                  className={`block p-1 rounded-md transition-colors text-sm
-                    ${location.pathname === child.link ? "bg-black text-white font-medium" : "hover:bg-gray-100 text-gray-600"}
+                  className={`block px-2 py-1.5 rounded-md text-sm transition-colors
+                    ${
+                      location.pathname === child.link
+                        ? "bg-black text-white font-medium"
+                        : "hover:bg-gray-100 text-gray-600"
+                    }
                   `}
                 >
                   {child.name}
@@ -56,26 +70,27 @@ export default function SidebarItem({
               </li>
             ))}
           </ul>
-        )}
+        </div>
       </li>
     );
   }
 
+  // If no children, render a normal link
   return (
     <li>
       <Link
         to={link}
         onClick={onClick}
-        className={`flex items-center justify-between p-2 rounded-md transition-colors
+        className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200
           ${active ? "bg-black text-white font-semibold" : "text-gray-700 hover:bg-gray-100"}
         `}
       >
-        <div className="flex items-center gap-2">
-          {icon}
-          <span>{name}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-lg">{icon}</span>
+          <span className="text-sm">{name}</span>
         </div>
         {badge && (
-          <span className="text-xs bg-red-500 text-white rounded-full px-2 py-0.5">
+          <span className="text-xs font-medium bg-red-500 text-white rounded-full px-2 py-0.5">
             {badge}
           </span>
         )}
