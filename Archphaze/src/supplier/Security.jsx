@@ -28,18 +28,6 @@ export default function Security() {
                     Change email
                   </button>
                 </div>
-
-                {/* Recovery Codes */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Recovery codes</p>
-                    <p className="text-sm text-gray-500">Generated May 12, 2025</p>
-                  </div>
-                  <button className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
-                    <FiRefreshCcw size={14} /> Regenerate
-                  </button>
-                </div>
-
                 {/* Password */}
                 <div className="flex items-center justify-between">
                   <div>
