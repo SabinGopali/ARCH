@@ -157,8 +157,8 @@ export default function ManageProduct() {
       </div>
 
       <div className="max-w-screen-2xl mx-auto px-4 lg:flex lg:gap-8">
-        <aside className="sticky top-6 self-start hidden lg:block w-64">
-          <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+          <Suppliersidebar />
         </aside>
 
         <main className="flex-1">

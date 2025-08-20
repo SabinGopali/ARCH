@@ -102,7 +102,7 @@ export default function Profilesettings() {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-gray-100 to-white lg:flex lg:gap-8">
       {/* Sidebar */}
-      <aside className="w-full lg:w-64 bg-white border-r min-h-screen">
+      <aside className="w-full lg:w-64 mb-10 lg:mb-0">
         <Suppliersidebar />
       </aside>
 

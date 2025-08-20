@@ -47,8 +47,8 @@ export default function Accountinfo() {
   return (
     <div className="min-h-screen bg-gray-100 lg:flex lg:gap-8">
       {/* Sidebar */}
-      <aside className="hidden lg:block w-64 sticky top-6 self-start">
-        <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
+      <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+        <Suppliersidebar />
       </aside>
 
       {/* Main Content */}

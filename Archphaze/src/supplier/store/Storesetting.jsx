@@ -1,4 +1,4 @@
-  import React, { useState, useCallback } from "react";
+ import React, { useState, useCallback } from "react";
   import Cropper from "react-easy-crop";
   import Slider from "@mui/material/Slider";
   import { Dialog, DialogActions, DialogContent } from "@mui/material";
@@ -181,8 +181,8 @@
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="p-4 md:p-8 lg:flex lg:gap-8 relative z-10">
-          <aside className="hidden lg:block w-62 sticky top-6 self-start">
-            <Suppliersidebar sidebarOpen={true} setSidebarOpen={() => {}} />
+          <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+            <Suppliersidebar />
           </aside>
 
           <main className="flex-1 shadow-md rounded-xl overflow-hidden bg-white p-6">

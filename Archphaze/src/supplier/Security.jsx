@@ -8,7 +8,7 @@ export default function Security() {
       <div className="mx-auto max-w-screen-2xl px-4">
         <div className="flex flex-col lg:flex-row lg:gap-6">
           {/* Sidebar */}
-          <aside className="w-full lg:w-[20rem] xl:w-[22rem] mb-8 lg:mb-0">
+          <aside className="w-full lg:w-64 mb-8 lg:mb-0">
             <Suppliersidebar />
           </aside>
 

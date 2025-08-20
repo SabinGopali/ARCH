@@ -75,7 +75,7 @@ export default function Suppliersidebar() {
     <>
       {/* Sidebar */}
       <div
-        className={`sticky top-24 z-30 h-[calc(100vh-96px)] w-64 bg-white shadow-md border-r p-4 overflow-auto hide-scrollbar
+        className={`sticky top-24 z-30 h-[calc(100vh-96px)] w-64 bg-white shadow-md border rounded-2xl p-4 overflow-auto hide-scrollbar
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
@@ -108,8 +108,8 @@ export default function Suppliersidebar() {
         ))}
       </div>
 
-      {/* Toggle button - top right for mobile */}
-      <div className="md:hidden fixed top-24 right-0 z-40">
+      {/* Toggle button - top left for mobile */}
+      <div className="md:hidden fixed top-24 left-0 z-40">
         <button
           onClick={toggleSidebar}
           className="m-2 p-2 rounded-md bg-white shadow-md border"

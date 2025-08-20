@@ -83,7 +83,7 @@ export default function Updatesserform() {
     <div className="min-h-screen bg-gray-50 pt-6 pb-10">
       <div className="max-w-screen-2xl mx-auto px-4">
         <div className="flex flex-col lg:flex-row gap-6">
-          <aside className="w-full lg:w-[20rem] xl:w-[22rem]">
+          <aside className="w-full lg:w-64 mb-10 lg:mb-0">
             <Suppliersidebar />
           </aside>
 

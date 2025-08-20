@@ -101,7 +101,7 @@ export default function UserManagement() {
       <div className="max-w-screen-2xl mx-auto px-4">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
-          <aside className="w-full lg:w-[20rem] xl:w-[22rem]">
+          <aside className="w-full lg:w-64 mb-10 lg:mb-0">
             <Suppliersidebar />
           </aside>
 
