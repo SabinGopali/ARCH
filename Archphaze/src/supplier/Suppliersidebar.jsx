@@ -64,20 +64,40 @@ const sections = [
   },
 ];
 
-export default function Suppliersidebar() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function Suppliersidebar({ sidebarOpen, setSidebarOpen }) {
+  const isControlled = typeof setSidebarOpen === "function";
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = isControlled ? Boolean(sidebarOpen) : internalOpen;
   const location = useLocation();
   const activePath = location.pathname;
 
-  const toggleSidebar = () => setIsOpen(!isOpen);
+  const toggleSidebar = () => {
+    if (isControlled) {
+      setSidebarOpen(!isOpen);
+    } else {
+      setInternalOpen(!isOpen);
+    }
+  };
+
+  const handleItemClick = () => {
+    if (isControlled) {
+      setSidebarOpen(false);
+    } else {
+      setInternalOpen(false);
+    }
+  };
 
   return (
     <>
       {/* Sidebar */}
       <div
-        className={`sticky top-24 z-30 h-[calc(100vh-96px)] w-64 bg-white shadow-md border-r p-4 overflow-auto hide-scrollbar
-          transform transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+        className={`sticky top-24 z-30 h-[calc(100vh-96px)] w-64 bg-white shadow-md border-r p-4 overflow-auto hide-scrollbar ${
+          isControlled
+            ? ""
+            : `transform transition-transform duration-300 ease-in-out ${
+                isOpen ? "translate-x-0" : "-translate-x-full"
+              } md:translate-x-0`
+        }`}
       >
         {sections.map((section, index) => (
           <div key={index} className="mb-6">
@@ -99,7 +119,7 @@ export default function Suppliersidebar() {
                     badge={item.badge}
                     children={item.children}
                     active={isActive}
-                    onClick={() => setIsOpen(false)}
+                    onClick={handleItemClick}
                   />
                 );
               })}
@@ -108,19 +128,21 @@ export default function Suppliersidebar() {
         ))}
       </div>
 
-      {/* Toggle button - top right for mobile */}
-      <div className="md:hidden fixed top-24 right-0 z-40">
-        <button
-          onClick={toggleSidebar}
-          className="m-2 p-2 rounded-md bg-white shadow-md border"
-          aria-label="Toggle sidebar"
-        >
-          {isOpen ? <FiX size={20} /> : <FiMenu size={20} />}
-        </button>
-      </div>
+      {/* Toggle button - top right for mobile (only when uncontrolled) */}
+      {!isControlled && (
+        <div className="md:hidden fixed top-24 right-0 z-40">
+          <button
+            onClick={toggleSidebar}
+            className="m-2 p-2 rounded-md bg-white shadow-md border"
+            aria-label="Toggle sidebar"
+          >
+            {isOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+          </button>
+        </div>
+      )}
 
-      {/* Mobile Overlay */}
-      {isOpen && (
+      {/* Mobile Overlay (only when uncontrolled) */}
+      {!isControlled && isOpen && (
         <div
           onClick={toggleSidebar}
           className="fixed inset-0 bg-black opacity-30 z-20 md:hidden"
