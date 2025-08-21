@@ -117,7 +117,7 @@ export default function Supplierprofileshop() {
             </div>
           </div>
           <Link to={userId ? "/shopindex" : "/supplierproduct"}>
-            <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
+            <button className="bg-white text-black px-6 py-3 rounded-xl font-semibold shadow-md hover:bg-black hover:text-white transition duration-300">
               {userId ? 'Back to Shop' : 'Back to Store'}
             </button>
           </Link>

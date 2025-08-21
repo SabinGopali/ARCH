@@ -213,7 +213,7 @@ export default function Supplierproduct() {
       {/* Tabs */}
       <div className="flex space-x-6 px-6 md:px-12 border-b py-4 text-sm md:text-base font-medium max-w-7xl mx-auto">
         <button className="text-red-500 border-b-2 border-red-500 pb-1">Store</button>
-        <Link to="/productshowcase">
+        <Link to={userId ? `/productshowcase/${userId}` : "/productshowcase"}>
           <button className="text-gray-500 hover:text-orange-500">Products</button>
         </Link>
       </div>
