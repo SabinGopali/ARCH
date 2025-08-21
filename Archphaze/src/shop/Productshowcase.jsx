@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { MdMenu } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 
@@ -37,6 +37,7 @@ function getProductImageUrl(product) {
 
 export default function Productshowcase() {
   const { currentUser } = useSelector((state) => state.user);
+  const { userId } = useParams();
 
   const [storeProfile, setStoreProfile] = useState(null);
   const [supplier, setSupplier] = useState(null);
@@ -109,55 +110,70 @@ export default function Productshowcase() {
     }));
   }, [products]);
 
-  // Fetch supplier, store profile, and products in parallel
+  // Fetch supplier and store profile similarly to Supplierproduct
   useEffect(() => {
-    if (!currentUser?._id) return;
-    let aborted = false;
-
-    async function fetchAll() {
+    async function fetchData() {
       setLoading(true);
       try {
-        const [supRes, storeRes, prodRes] = await Promise.all([
-          fetch("/backend/user/supplier-users", { credentials: "include" }),
-          fetch(`/backend/store/getall/${currentUser._id}`, { credentials: "include" }),
-          fetch(`/backend/user/product/${currentUser._id}`, { credentials: "include" }),
-        ]);
-
-        const [supData, storeData, prodData] = await Promise.all([
-          supRes.json().catch(() => ({})),
-          storeRes.json().catch(() => ({})),
-          prodRes.json().catch(() => ([])),
-        ]);
-
-        if (!aborted) {
-          if (supRes.ok && supData) setSupplier(supData.supplier);
-          else console.error(supData?.message || "Failed to fetch supplier");
-
-          if (storeRes.ok && storeData) setStoreProfile(storeData.storeProfile);
-          else console.error(storeData?.message || "Failed to fetch store profile");
-
-          if (prodRes.ok) {
-            if (Array.isArray(prodData)) setProducts(prodData);
-            else if (prodData && Array.isArray(prodData.products)) setProducts(prodData.products);
-            else setProducts(defaultProducts);
+        if (userId) {
+          const res = await fetch(`/backend/store/public/${userId}`);
+          const data = await res.json();
+          if (res.ok) {
+            setStoreProfile(data.storeProfile);
+            setSupplier(data.supplier || null);
           } else {
-            console.error("Failed to fetch products");
+            console.error(data.message);
+          }
+        } else if (currentUser?._id) {
+          const supRes = await fetch("/backend/user/supplier-users", { credentials: "include" });
+          const supData = await supRes.json();
+          if (supRes.ok) setSupplier(supData.supplier);
+          else console.error(supData.message);
+
+          const storeRes = await fetch(`/backend/store/get/${currentUser._id}`, { credentials: "include" });
+          const storeData = await storeRes.json();
+          if (storeRes.ok) setStoreProfile(storeData.storeProfile);
+          else console.error(storeData.message);
+        }
+      } catch (error) {
+        console.error("Error fetching store or supplier data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [currentUser?._id, userId]);
+
+  // Fetch products similarly to Supplierproduct
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        if (userId) {
+          const res = await fetch(`/backend/product/getall`);
+          if (!res.ok) throw new Error("Failed to fetch products");
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : data && Array.isArray(data.products) ? data.products : [];
+          const filtered = list.filter((p) => String(p.userRef) === String(userId) && (p.available === undefined || p.available));
+          setProducts(filtered.length ? filtered : defaultProducts);
+        } else if (currentUser?._id) {
+          const res = await fetch(`/backend/user/product/${currentUser._id}`, { credentials: "include" });
+          if (!res.ok) throw new Error("Failed to fetch products");
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setProducts(data);
+          } else if (data && Array.isArray(data.products)) {
+            setProducts(data.products);
+          } else {
             setProducts(defaultProducts);
           }
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
-        if (!aborted) setProducts(defaultProducts);
-      } finally {
-        if (!aborted) setLoading(false);
+        console.error("Error fetching products:", error);
+        setProducts(defaultProducts);
       }
-    }
-
-    fetchAll();
-    return () => {
-      aborted = true;
     };
-  }, [currentUser?._id]);
+    fetchProducts();
+  }, [currentUser?._id, userId]);
 
   // Derive sidebar filter data (categories, brands, price ranges) from fetched products
   useEffect(() => {
@@ -347,7 +363,7 @@ export default function Productshowcase() {
               </p>
             </div>
           </div>
-          <Link to="/supplierproduct">
+          <Link to={userId ? `/supplierproduct/${userId}` : (currentUser?._id ? `/supplierproduct/${currentUser._id}` : "/supplierproduct")}>
             <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition duration-300">
               Back to Store
             </button>
