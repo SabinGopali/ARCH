@@ -85,10 +85,6 @@ export const signin = async (req, res, next) => {
     const validUser = await User.findOne({ email });
 
     if (validUser) {
-      if (!validUser.isEmailVerified && !validUser.isAdmin) {
-        return next(errorHandler(403, 'Please verify your email with the OTP sent to your Gmail.'));
-      }
-
       const validPassword = bcryptjs.compareSync(password, validUser.password);
       if (!validPassword) {
         return next(errorHandler(400, 'Invalid password'));
