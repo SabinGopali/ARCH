@@ -66,6 +66,19 @@
             type: Boolean,
             default: false,
         },
+        // Email verification fields
+        isEmailVerified: {
+            type: Boolean,
+            default: false,
+        },
+        emailVerificationOtp: {
+            type: String,
+            default: null,
+        },
+        emailVerificationOtpExpiresAt: {
+            type: Date,
+            default: null,
+        },
             }, 
             {timestamps:true}
             );
