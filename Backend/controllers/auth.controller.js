@@ -5,6 +5,17 @@ import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 import { sendOtp } from "../utils/sendOtp.js";
 
+// Cookie options for cross-site usage
+const isProduction = process.env.NODE_ENV === "production";
+const cookieDomain = process.env.COOKIE_DOMAIN || undefined; // e.g. .yourdomain.com
+const cookieOptions = {
+  httpOnly: true,
+  maxAge: 24 * 60 * 60 * 1000,
+  sameSite: isProduction ? "none" : "lax",
+  secure: isProduction,
+  domain: cookieDomain,
+};
+
 // ================== SIGNUP ==================
 export const signup = async (req, res, next) => {
   const {
@@ -98,7 +109,7 @@ export const verifyOtp = async (req, res, next) => {
 
     return res
       .status(200)
-      .cookie("access_token", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
+      .cookie("access_token", token, cookieOptions)
       .json({ success: true, message: "OTP verified successfully.", user: userWithoutPassword });
   } catch (err) {
     next(err);
@@ -139,7 +150,7 @@ export const signin = async (req, res, next) => {
 
       return res
         .status(200)
-        .cookie("access_token", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
+        .cookie("access_token", token, cookieOptions)
         .json(userWithoutPassword);
     }
 
@@ -166,7 +177,7 @@ export const signin = async (req, res, next) => {
 
     return res
       .status(200)
-      .cookie("access_token", subUserToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
+      .cookie("access_token", subUserToken, cookieOptions)
       .json({ ...subUserWithoutPassword, isSubUser: true });
   } catch (err) {
     next(err);
@@ -223,7 +234,7 @@ export const google = async (req, res, next) => {
     const { password, ...rest } = user._doc;
     res
       .status(200)
-      .cookie("access_token", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
+      .cookie("access_token", token, cookieOptions)
       .json(rest);
   } catch (err) {
     next(err);

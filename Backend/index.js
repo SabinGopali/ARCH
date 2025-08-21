@@ -39,6 +39,8 @@ import mediaroute from './routes/media.route.js';
 })();
 
 const app = express();
+// Trust proxy for correct secure cookie behavior behind reverse proxies/CDN
+app.set('trust proxy', 1);
 
 // ✅ Middleware
 app.use(cookieParser());
