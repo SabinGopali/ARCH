@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FiChevronLeft } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { MdMenu } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,8 +54,41 @@ export default function Productshowcase() {
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Featured carousel index
+  // Featured carousel state
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+  const [isCarouselHovered, setIsCarouselHovered] = useState(false);
+  const [direction, setDirection] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  const slideVariants = {
+    enter: (dir) => ({ x: dir > 0 ? 160 : -160, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir) => ({ x: dir > 0 ? -160 : 160, opacity: 0 }),
+  };
+
+  const goToIndex = (idx) => {
+    if (!featuredItems || featuredItems.length === 0) return;
+    const bounded = ((idx % featuredItems.length) + featuredItems.length) % featuredItems.length;
+    setDirection(bounded > currentFeatureIndex ? 1 : -1);
+    setCurrentFeatureIndex(bounded);
+    setProgress(0);
+  };
+
+  const goNext = () => {
+    if (!featuredItems || featuredItems.length === 0) return;
+    setDirection(1);
+    setCurrentFeatureIndex((prev) => (prev + 1) % featuredItems.length);
+    setProgress(0);
+  };
+
+  const goPrev = () => {
+    if (!featuredItems || featuredItems.length === 0) return;
+    setDirection(-1);
+    setCurrentFeatureIndex((prev) => (prev - 1 + featuredItems.length) % featuredItems.length);
+    setProgress(0);
+  };
+
+  const swipeConfidenceThreshold = 50;
 
   // Compute featured items from fetched products (prefer highest discount)
   const featuredItems = React.useMemo(() => {
@@ -86,8 +119,8 @@ export default function Productshowcase() {
       try {
         const [supRes, storeRes, prodRes] = await Promise.all([
           fetch("/backend/user/supplier-users", { credentials: "include" }),
-          fetch(`/backend/store/get/${currentUser._id}`, { credentials: "include" }),
-          fetch(`/backend/user/product/${currentUser._id}`, { credentials: "include" }),
+          fetch(`/backend/store/getall/${currentUser._id}`, { credentials: "include" }),
+          fetch(`/backend/product/getall`, { credentials: "include" }),
         ]);
 
         const [supData, storeData, prodData] = await Promise.all([
@@ -193,14 +226,25 @@ export default function Productshowcase() {
     setPriceRanges(ranges);
   }, [products]);
 
-  // Featured carousel auto-scroll using derived featuredItems
+  // Featured carousel auto-scroll with progress
   useEffect(() => {
-    if (!featuredItems || featuredItems.length === 0) return;
+    if (!featuredItems || featuredItems.length <= 1) return;
+    if (isCarouselHovered) return;
+
     const interval = setInterval(() => {
-      setCurrentFeatureIndex((prev) => (prev + 1) % featuredItems.length);
-    }, 4000);
+      setProgress((p) => {
+        const increment = 100 / (4000 / 50);
+        const next = p + increment;
+        if (next >= 100) {
+          goNext();
+          return 0;
+        }
+        return next;
+      });
+    }, 50);
+
     return () => clearInterval(interval);
-  }, [featuredItems]);
+  }, [featuredItems?.length, isCarouselHovered]);
 
   // Ensure index is valid when featuredItems length changes
   useEffect(() => {
@@ -315,7 +359,7 @@ export default function Productshowcase() {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="fixed top-1/2 left-0 -translate-y-1/2 bg-pink-600 text-white px-3 py-2 rounded-r-full shadow-lg z-40 lg:hidden hover:bg-pink-700 transition"
+            className="fixed top-1/2 left-0 -translate-y-1/2 bg-white text-black border border-black px-3 py-2 rounded-r-full shadow-lg z-40 lg:hidden hover:bg-black hover:text-white transition"
             aria-label="Open Filters"
           >
             <MdMenu className="w-5 h-5" />
@@ -340,7 +384,7 @@ export default function Productshowcase() {
           <h2 className="text-sm font-semibold text-gray-900 uppercase mb-5">Filters</h2>
           <button
             onClick={resetFilters}
-            className="mb-6 bg-pink-600 text-white px-4 py-2 rounded w-full hover:bg-pink-700 transition"
+            className="mb-6 bg-white text-black border border-black px-4 py-2 rounded w-full hover:bg-black hover:text-white transition"
           >
             Reset Filters
           </button>
@@ -357,7 +401,7 @@ export default function Productshowcase() {
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
                       className={`cursor-pointer ${
-                        selectedCategory === cat ? "font-bold text-pink-600" : "hover:text-pink-600"
+                        selectedCategory === cat ? "font-bold text-black" : "hover:text-gray-700"
                       }`}
                     >
                       {cat}
@@ -367,7 +411,7 @@ export default function Productshowcase() {
                   <li
                     onClick={() => setSelectedCategory("All")}
                     className={`cursor-pointer ${
-                      selectedCategory === "All" ? "font-bold text-pink-600" : "hover:text-pink-600"
+                      selectedCategory === "All" ? "font-bold text-black" : "hover:text-gray-700"
                     }`}
                   >
                     All
@@ -421,45 +465,101 @@ export default function Productshowcase() {
         {/* Main Content */}
         <main className="flex-1">
           {/* Featured Product Carousel */}
-          <div className="relative overflow-hidden bg-pink-100 rounded-xl px-6 py-10 mb-12 shadow-sm">
-            <div className="flex items-center justify-center md:justify-start gap-6">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentFeatureIndex}
-                  initial={{ x: 300, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -300, opacity: 0 }}
-                  transition={{ duration: 0.6 }}
-                  className="flex flex-col md:flex-row items-center gap-6 w-full"
-                >
-                  {featuredItems.length > 0 && (
-                    <img
-                      src={featuredItems[currentFeatureIndex]?.image}
-                      alt={featuredItems[currentFeatureIndex]?.title || "Featured"}
-                      className="w-full max-w-xs md:max-w-sm object-contain rounded-lg shadow-md"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "https://via.placeholder.com/600x400?text=Product";
+          <div
+            className="relative overflow-hidden rounded-2xl mb-12 shadow-sm"
+            onMouseEnter={() => setIsCarouselHovered(true)}
+            onMouseLeave={() => setIsCarouselHovered(false)}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-600 via-gray-500 to-gray-400" />
+            <div className="relative px-6 py-10 sm:px-10">
+              <button
+                onClick={goPrev}
+                aria-label="Previous"
+                className="absolute left-3 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 rounded-full  text-pink-600 shadow hover:bg-white z-10"
+              >
+                <FiChevronLeft className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={goNext}
+                aria-label="Next"
+                className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center justify-center w-10 h-10 rounded-full text-pink-600 shadow hover:bg-white z-10"
+              >
+                <FiChevronRight className="w-6 h-6" />
+              </button>
+
+              <div className="flex items-stretch">
+                <div className="w-full">
+                  <AnimatePresence initial={false} custom={direction} mode="wait">
+                    <motion.div
+                      key={currentFeatureIndex}
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={{ type: "spring", stiffness: 300, damping: 30, duration: 0.5 }}
+                      drag="x"
+                      dragConstraints={{ left: 0, right: 0 }}
+                      onDragEnd={(e, info) => {
+                        if (info.offset.x < -swipeConfidenceThreshold) goNext();
+                        else if (info.offset.x > swipeConfidenceThreshold) goPrev();
                       }}
+                      className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
+                    >
+                      <div className="order-2 md:order-1 text-white">
+                        <h2 className="text-3xl sm:text-4xl font-bold mb-3">
+                          {featuredItems[currentFeatureIndex]?.title || "Featured Product"}
+                        </h2>
+                        <p className="text-white/90 mb-6 max-w-xl line-clamp-3">
+                          {featuredItems[currentFeatureIndex]?.description || "Check out this product from our store."}
+                        </p>
+                        {featuredItems[currentFeatureIndex]?.id && (
+                          <Link to={`/productdetail/${featuredItems[currentFeatureIndex].id}`}>
+                            <button className="inline-flex items-center border border-white text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-black hover:border-black transition">
+                              BUY NOW
+                            </button>
+                          </Link>
+                        )}
+                      </div>
+                      <div className="order-1 md:order-2">
+                        <div className="relative h-64 sm:h-72 md:h-80 bg-white/10 rounded-xl overflow-hidden ring-1 ring-white/20">
+                          {featuredItems.length > 0 && (
+                            <img
+                              src={featuredItems[currentFeatureIndex]?.image}
+                              alt={featuredItems[currentFeatureIndex]?.title || "Featured"}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "https://via.placeholder.com/600x400?text=Product";
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-between">
+                <div className="flex gap-2">
+                  {featuredItems.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => goToIndex(idx)}
+                      aria-label={`Go to slide ${idx + 1}`}
+                      className={`h-2.5 w-2.5 rounded-full transition-all ${idx === currentFeatureIndex ? "bg-white ring-2 ring-white/40 scale-110" : "bg-white/50 hover:bg-white/80"}`}
                     />
-                  )}
-                  <div className="text-center md:text-left">
-                    <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">
-                      {featuredItems[currentFeatureIndex]?.title || "Featured Product"}
-                    </h2>
-                    <p className="text-gray-700 mb-5 max-w-md">
-                      {featuredItems[currentFeatureIndex]?.description || "Check out this product from our store."}
-                    </p>
-                    {featuredItems[currentFeatureIndex]?.id && (
-                      <Link to={`/productdetail/${featuredItems[currentFeatureIndex].id}`}>
-                        <button className="bg-white text-pink-600 font-semibold px-6 py-3 rounded shadow hover:bg-pink-50 transition duration-300">
-                          BUY NOW
-                        </button>
-                      </Link>
-                    )}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+                  ))}
+                </div>
+                <div className="relative h-1 w-36 bg-white/30 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-white"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
