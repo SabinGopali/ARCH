@@ -60,6 +60,7 @@ import Speakerinfo from './admin/shop/earphone/speaker/Speakerinfo';
 import Profile from './components/Profile';
 import Suppliersignup from './supplier/Suppliersignup';
 import Supplierlogin from './supplier/Supplierlogin';
+import VerifyEmail from './components/VerifyEmail';
 import Supplierinfo from './admin/Supplierinfo';
 import Supplierdashboard from './supplier/Supplierdashboard';
 import Checkout from './shop/Checkout';
@@ -135,6 +136,7 @@ import FailureEsewa from './components/FailureEsewa';
                <Route path="/productdetail/:id" element={<Productdetail/>}/>
                <Route path="/cart" element={<Cart/>}/>
                <Route path="/signup" element={<Signup/>}/>
+               <Route path="/verify-email" element={<VerifyEmail/>}/>
                <Route path="/login" element={<Login/>}/>
                <Route path="/forgetpassword" element={<Forgetpassword/>}/>
                <Route path="/careers" element={<Careers/>}/>

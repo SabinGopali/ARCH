@@ -18,6 +18,10 @@ export default function Signup() {
     if (!formData.username || !formData.email || !formData.password) {
       return setErrorMessage('Please fill out all fields.');
     }
+    const gmailRegex = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
+    if (!gmailRegex.test(formData.email)) {
+      return setErrorMessage('Please use a valid Gmail address (example@gmail.com).');
+    }
     try {
       setLoading(true);
       setErrorMessage(null);
@@ -33,7 +37,8 @@ export default function Signup() {
       }
       setLoading(false);
       if (res.ok) {
-        navigate('/login');
+        const email = formData.email;
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
       }
     } catch (error) {
       setErrorMessage(error.message);
