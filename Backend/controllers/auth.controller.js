@@ -2,38 +2,8 @@ import User from "../models/user.model.js";
 import SubUser from "../models/subuser.model.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
 import { errorHandler } from "../utils/error.js";
-
-// ================== OTP STORE ==================
-const otpStore = new Map(); // better: move to DB
-
-// ================== NODEMAILER ==================
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.SMTP_EMAIL, // must be set in .env
-    pass: process.env.SMTP_PASS,  // Gmail App Password
-  },
-});
-
-// Generate 6-digit OTP
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000);
-
-// Send OTP
-const sendOtpEmail = async (email, otp) => {
-  try {
-    await transporter.sendMail({
-      from: `"Auth System" <${process.env.SMTP_EMAIL}>`,
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-    });
-  } catch (err) {
-    console.error("Failed to send email:", err);
-    throw errorHandler(500, "Failed to send OTP email");
-  }
-};
+import { sendOtp } from "../utils/sendOtp.js";
 
 // ================== SIGNUP ==================
 export const signup = async (req, res, next) => {
@@ -78,14 +48,12 @@ export const signup = async (req, res, next) => {
 
     await newUser.save();
 
-    // Send OTP only once on signup
-    const otp = generateOtp();
-    otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-    await sendOtpEmail(email, otp);
+    // Send OTP for activation (email + SMS if phone provided)
+    await sendOtp(newUser);
 
     res.status(201).json({
       success: true,
-      message: "Signup successful. OTP sent to email.",
+      message: "Signup successful. OTP sent to your email and, if available, your phone.",
     });
   } catch (err) {
     next(err);
@@ -97,18 +65,41 @@ export const verifyOtp = async (req, res, next) => {
   const { email, otp } = req.body;
 
   try {
-    const record = otpStore.get(email);
-    if (!record) return next(errorHandler(400, "No OTP found for this email."));
-    if (record.expiresAt < Date.now()) {
-      otpStore.delete(email);
-      return next(errorHandler(400, "OTP expired."));
+    const user = await User.findOne({ email });
+    if (!user) return next(errorHandler(404, "User not found."));
+
+    if (!user.otp || !user.otpExpires) {
+      return next(errorHandler(400, "No OTP found. Please request a new one."));
     }
-    if (record.otp !== parseInt(otp)) {
+    if (new Date(user.otpExpires).getTime() < Date.now()) {
+      user.otp = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+      return next(errorHandler(400, "OTP expired. Please request a new one."));
+    }
+    if (String(user.otp) !== String(otp)) {
       return next(errorHandler(400, "Invalid OTP."));
     }
 
-    otpStore.delete(email);
-    res.status(200).json({ success: true, message: "OTP verified successfully." });
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    const payload = {
+      id: user._id.toString(),
+      isAdmin: user.isAdmin,
+      isSupplier: user.isSupplier,
+      username: user.username,
+      isSubUser: false,
+    };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const { password: pass, ...userWithoutPassword } = user._doc;
+
+    return res
+      .status(200)
+      .cookie("access_token", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
+      .json({ success: true, message: "OTP verified successfully.", user: userWithoutPassword });
   } catch (err) {
     next(err);
   }
@@ -126,7 +117,15 @@ export const signin = async (req, res, next) => {
       const validPassword = bcryptjs.compareSync(password, validUser.password);
       if (!validPassword) return next(errorHandler(400, "Invalid password."));
 
-      // Do NOT send OTP here again — only first signup
+      // If first-time email sign-in (not verified), send OTP to both channels and require verification
+      if (!validUser.isVerified) {
+        await sendOtp(validUser);
+        return res.status(202).json({
+          success: true,
+          message: "Verification required. OTP sent to your email and, if available, your phone.",
+        });
+      }
+
       const payload = {
         id: validUser._id.toString(),
         isAdmin: validUser.isAdmin,
@@ -192,14 +191,27 @@ export const google = async (req, res, next) => {
         password: hashedPassword,
         profilePicture: googlePhotoUrl,
         isSupplier: false,
+        isVerified: false,
       });
 
       await user.save();
 
-      // OTP only first time Google signup
-      const otp = generateOtp();
-      otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-      await sendOtpEmail(email, otp);
+      // Send OTP for activation on first Google signup (email; SMS if phone later exists)
+      await sendOtp(user);
+
+      return res.status(201).json({
+        success: true,
+        message: "Account created with Google. Please verify the OTP sent to your email to activate your account.",
+      });
+    }
+
+    // Existing user flow: if not verified, send/require OTP; else sign in
+    if (!user.isVerified) {
+      await sendOtp(user);
+      return res.status(202).json({
+        success: true,
+        message: "Verification required. OTP sent to your email.",
+      });
     }
 
     const token = jwt.sign(
