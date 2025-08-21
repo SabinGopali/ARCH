@@ -100,15 +100,17 @@ export default function Profilesettings() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-gray-100 to-white lg:flex lg:gap-8">
-      {/* Sidebar */}
-      <aside className="w-full lg:w-64 mb-10 lg:mb-0">
-        <Suppliersidebar />
-      </aside>
+    <div className="min-h-screen bg-gray-50 pt-5 pb-10">
+      <div className="container mx-auto max-w-screen-2xl px-4">
+        <div className="lg:flex lg:gap-6">
+          {/* Sidebar */}
+          <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+            <Suppliersidebar />
+          </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6">
-        <div className="w-full max-w-6xl mx-auto bg-white rounded-xl shadow-md p-8 space-y-8">
+          {/* Main Content */}
+          <main className="flex-1 p-0 md:p-0">
+            <div className="w-full max-w-6xl mx-auto bg-white rounded-xl shadow-md p-8 space-y-8">
           <div className="border-b pb-4">
             <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
             <p className="text-sm text-gray-500 mt-1">
@@ -220,7 +222,9 @@ export default function Profilesettings() {
             </div>
           </div>
         )}
-      </main>
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
@@ -229,7 +233,7 @@ export default function Profilesettings() {
 const InfoCard = ({ title, description, iconColor, link }) => (
   <a
     href={link}
-    className="block bg-white hover:bg-gray-50 border border-gray-200 hover:shadow-lg transition rounded-lg p-5 flex gap-4 items-start cursor-pointer"
+    className=" bg-white hover:bg-gray-50 border border-gray-200 hover:shadow-lg transition rounded-lg p-5 flex gap-4 items-start cursor-pointer"
   >
     <div
       className={`w-12 h-12 rounded-md bg-gradient-to-br ${iconColor} flex items-center justify-center text-white text-xl font-bold shadow-inner`}

@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { FiSearch, FiMenu } from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 import Suppliersidebar from "./Suppliersidebar";
 import { useSelector } from "react-redux";
 
 export default function Order() {
   const [search, setSearch] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedPayment, setSelectedPayment] = useState("All");
   const [orders, setOrders] = useState([]);
@@ -115,189 +114,174 @@ export default function Order() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row relative">
-      {/* Mobile Toggle */}
-      <button
-        className="lg:hidden p-3 fixed top-4 left-4 z-50 bg-white rounded-full shadow-md"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <FiMenu size={22} />
-      </button>
+    <div className="min-h-screen bg-gray-50 pt-5 pb-10">
+      <div className="container mx-auto max-w-screen-2xl px-4">
+        <div className="lg:flex lg:gap-6">
+          {/* Sidebar */}
+          <aside className="w-full lg:w-64 mb-10 lg:mb-0">
+            <Suppliersidebar />
+          </aside>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed z-40 top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0 lg:static lg:shadow-none`}
-      >
-        <Suppliersidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      </aside>
+          {/* Main Content */}
+          <main className="flex-1 p-0 md:p-0">
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h1 className="text-2xl font-semibold mb-2">Orders</h1>
+              <p className="text-gray-500 mb-6">
+                Manage your customers' orders and logistics.
+              </p>
 
-      {/* Mobile Backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                {/* Status Tabs */}
+                <div className="flex flex-wrap gap-2">
+                  {allStatuses.map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => setSelectedStatus(status)}
+                      className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-all duration-150 ${
+                        selectedStatus === status
+                          ? "bg-blue-100 text-blue-700 border-blue-300"
+                          : "border-gray-300 text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {status === "All"
+                        ? "All"
+                        : status.charAt(0).toUpperCase() + status.slice(1)}
+                    </button>
+                  ))}
+                </div>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h1 className="text-2xl font-semibold mb-2">Orders</h1>
-          <p className="text-gray-500 mb-6">
-            Manage your customers' orders and logistics.
-          </p>
+                {/* Payment filter */}
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Payment:</span>
+                  <select
+                    className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
+                    value={selectedPayment}
+                    onChange={(e) => setSelectedPayment(e.target.value)}
+                  >
+                    {paymentFilters.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            {/* Status Tabs */}
-            <div className="flex flex-wrap gap-2">
-              {allStatuses.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setSelectedStatus(status)}
-                  className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-all duration-150 ${
-                    selectedStatus === status
-                      ? "bg-blue-100 text-blue-700 border-blue-300"
-                      : "border-gray-300 text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {status === "All"
-                    ? "All"
-                    : status.charAt(0).toUpperCase() + status.slice(1)}
-                </button>
-              ))}
-            </div>
+              {/* Search */}
+              <div className="mb-4 max-w-sm">
+                <div className="flex items-center gap-2 border border-gray-300 rounded px-3 py-2 bg-white">
+                  <FiSearch className="text-gray-500" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search by customer or order #..."
+                    className="w-full outline-none text-sm"
+                  />
+                </div>
+              </div>
 
-            {/* Payment filter */}
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-gray-500">Payment:</span>
-              <select
-                className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
-                value={selectedPayment}
-                onChange={(e) => setSelectedPayment(e.target.value)}
-              >
-                {paymentFilters.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="mb-4 max-w-sm">
-            <div className="flex items-center gap-2 border border-gray-300 rounded px-3 py-2 bg-white">
-              <FiSearch className="text-gray-500" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by customer or order #..."
-                className="w-full outline-none text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Orders Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-[900px] w-full text-sm text-left">
-              <thead className="text-gray-600 border-b">
-                <tr>
-                  <th className="py-2 px-3">ORDER NO.</th>
-                  <th className="py-2 px-3">DATE</th>
-                  <th className="py-2 px-3">CUSTOMER</th>
-                  <th className="py-2 px-3">ITEMS</th>
-                  <th className="py-2 px-3">PAYMENT</th>
-                  <th className="py-2 px-3">TOTAL (NPR)</th>
-                  <th className="py-2 px-3">STATUS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td className="py-6 px-3" colSpan={7}>
-                      Loading…
-                    </td>
-                  </tr>
-                ) : filteredOrders.length > 0 ? (
-                  filteredOrders.map((o) => (
-                    <tr key={o._id} className="border-b hover:bg-gray-50">
-                      <td className="py-2 px-3">
-                        <div className="font-medium">{referenceOf(o)}</div>
-                        <div className="text-xs text-gray-500">{o._id}</div>
-                      </td>
-                      <td className="py-2 px-3">
-                        {new Date(o.createdAt).toLocaleString()}
-                      </td>
-                      <td className="py-2 px-3">
-                        <div className="font-medium">{o.customer?.name || "-"}</div>
-                        <div className="text-xs text-gray-500">
-                          {o.customer?.email || ""}
-                        </div>
-                      </td>
-                      <td className="py-2 px-3">
-                        {o.items.map((it) => (
-                          <div
-                            key={it.productId}
-                            className="text-xs flex items-center gap-2 py-0.5"
-                          >
-                            <img
-                              src={imageUrl(it.image)}
-                              onError={(e) =>
-                                (e.target.src = "https://via.placeholder.com/40x40")
-                              }
-                              alt={it.name}
-                              className="w-10 h-10 rounded object-cover bg-gray-100"
-                            />
-                            <span>
-                              {it.name} × {it.quantity}
-                            </span>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-2 px-3">
-                        <div className="text-xs font-medium uppercase">
-                          {o.paymentMethod || "card"}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {o.paymentProvider || ""}
-                        </div>
-                      </td>
-                      <td className="py-2 px-3 font-semibold">
-                        {(o.totalAmount / 100).toFixed(2)}
-                      </td>
-                      <td className="py-2 px-3">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            o.status === "paid"
-                              ? "bg-green-100 text-green-700"
-                              : o.status === "canceled"
-                              ? "bg-red-100 text-red-700"
-                              : o.status === "fulfilled"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {o.status}
-                        </span>
-                      </td>
+              {/* Orders Table */}
+              <div className="overflow-x-auto">
+                <table className="min-w-[900px] w-full text-sm text-left">
+                  <thead className="text-gray-600 border-b">
+                    <tr>
+                      <th className="py-2 px-3">ORDER NO.</th>
+                      <th className="py-2 px-3">DATE</th>
+                      <th className="py-2 px-3">CUSTOMER</th>
+                      <th className="py-2 px-3">ITEMS</th>
+                      <th className="py-2 px-3">PAYMENT</th>
+                      <th className="py-2 px-3">TOTAL (NPR)</th>
+                      <th className="py-2 px-3">STATUS</th>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="py-6 px-3" colSpan={7}>
-                      No orders found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td className="py-6 px-3" colSpan={7}>
+                          Loading…
+                        </td>
+                      </tr>
+                    ) : filteredOrders.length > 0 ? (
+                      filteredOrders.map((o) => (
+                        <tr key={o._id} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-3">
+                            <div className="font-medium">{referenceOf(o)}</div>
+                            <div className="text-xs text-gray-500">{o._id}</div>
+                          </td>
+                          <td className="py-2 px-3">
+                            {new Date(o.createdAt).toLocaleString()}
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="font-medium">{o.customer?.name || "-"}</div>
+                            <div className="text-xs text-gray-500">
+                              {o.customer?.email || ""}
+                            </div>
+                          </td>
+                          <td className="py-2 px-3">
+                            {o.items.map((it) => (
+                              <div
+                                key={it.productId}
+                                className="text-xs flex items-center gap-2 py-0.5"
+                              >
+                                <img
+                                  src={imageUrl(it.image)}
+                                  onError={(e) =>
+                                    (e.target.src =
+                                      "https://via.placeholder.com/40x40")
+                                  }
+                                  alt={it.name}
+                                  className="w-10 h-10 rounded object-cover bg-gray-100"
+                                />
+                                <span>
+                                  {it.name} × {it.quantity}
+                                </span>
+                              </div>
+                            ))}
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="text-xs font-medium uppercase">
+                              {o.paymentMethod || "card"}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {o.paymentProvider || ""}
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 font-semibold">
+                            {(o.totalAmount / 100).toFixed(2)}
+                          </td>
+                          <td className="py-2 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                o.status === "paid"
+                                  ? "bg-green-100 text-green-700"
+                                  : o.status === "canceled"
+                                  ? "bg-red-100 text-red-700"
+                                  : o.status === "fulfilled"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
+                            >
+                              {o.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="py-6 px-3" colSpan={7}>
+                          No orders found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

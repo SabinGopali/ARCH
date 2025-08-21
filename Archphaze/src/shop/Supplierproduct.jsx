@@ -3,8 +3,6 @@ import { FiSearch } from "react-icons/fi";
 import { Link, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-const categories = ["All", "Headphones", "Health", "Supplements", "Gadgets"];
-
 // Default fallback products
 const defaultProducts = [
   {
@@ -49,7 +47,6 @@ export default function Supplierproduct() {
   const { currentUser } = useSelector((state) => state.user);
   const { userId } = useParams();
 
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [storeProfile, setStoreProfile] = useState(null);
   const [supplier, setSupplier] = useState(null);
@@ -150,15 +147,13 @@ export default function Supplierproduct() {
     fetchProducts();
   }, [currentUser?._id, userId]);
 
-  // Filter only available products + category + search
+  // Filter only available products + search
   const filteredProducts = products
     .filter((product) => product.available) // show only available
-    .filter(
-      (item) =>
-        (selectedCategory === "All" || item.category === selectedCategory) &&
-        (item.productName || item.name)
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
+    .filter((item) =>
+      (item.productName || item.name)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
     );
 
   if (loading) {
@@ -208,7 +203,7 @@ export default function Supplierproduct() {
             </div>
           </div>
           <Link to={userId ? `/store/${userId}` : "/supplierprofileshop"}>
-            <button className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold shadow-md hover:bg-orange-600 transition">
+            <button className="bg-white text-black px-6 py-3 rounded-xl font-semibold shadow-md hover:bg-black hover:text-white transition">
               Check Store Profile
             </button>
           </Link>
@@ -217,29 +212,14 @@ export default function Supplierproduct() {
 
       {/* Tabs */}
       <div className="flex space-x-6 px-6 md:px-12 border-b py-4 text-sm md:text-base font-medium max-w-7xl mx-auto">
-        <button className="text-orange-600 border-b-2 border-orange-600 pb-1">Store</button>
+        <button className="text-red-500 border-b-2 border-red-500 pb-1">Store</button>
         <Link to="/productshowcase">
           <button className="text-gray-500 hover:text-orange-500">Products</button>
         </Link>
       </div>
 
-      {/* Categories & Search */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-6 md:px-12 py-5 gap-4 max-w-7xl mx-auto">
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium border transition ${
-                selectedCategory === cat
-                  ? "bg-orange-500 text-white border-orange-500"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+      {/* Search Only */}
+      <div className="flex justify-end items-center px-6 md:px-12 py-5 max-w-7xl mx-auto">
         <div className="flex items-center border rounded-full px-3 py-1.5 w-full md:w-80 bg-white shadow-sm">
           <FiSearch className="text-gray-500" />
           <input
@@ -257,7 +237,7 @@ export default function Supplierproduct() {
         <h2 className="text-3xl font-bold text-center mb-12 text-gray-800 tracking-tight">
           <span className="inline-block w-12 h-[2px] bg-gray-800 align-middle mr-4 uppercase"></span>
           <span className="font-extrabold uppercase">Products</span>{" "}
-          <span className="text-orange-500 uppercase font-extrabold">Just for you</span>
+          <span className="text-red-500 uppercase font-extrabold">Just for you</span>
           <span className="inline-block w-12 h-[2px] bg-gray-800 align-middle ml-4"></span>
         </h2>
 
