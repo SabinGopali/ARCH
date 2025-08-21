@@ -4,11 +4,13 @@ import logo from '/logo.webp';
 import { useSelector, useDispatch } from 'react-redux';
 import { signoutSuccess } from '../redux/user/userslice';
 import { useNavigate } from 'react-router-dom';
+import { selectUnseenCartCount, markCartSeen } from '../redux/cartSlice';
 
 export default function Navbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
+  const unseenCartCount = useSelector(selectUnseenCartCount);
 
   const handleSignout = async () => {
     try {
@@ -270,8 +272,13 @@ export default function Navbar() {
     </div>
 
     {/* Cart Icon */}
-    <Link to="/cart" aria-label="cart">
+    <Link to="/cart" aria-label="cart" onClick={() => dispatch(markCartSeen())} className="relative">
       <span className="text-2xl">🛒</span>
+      {unseenCartCount > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+          {unseenCartCount}
+        </span>
+      )}
     </Link>
 
     {/* Conditional Button */}
@@ -368,8 +375,13 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
-              <Link to="/cart" aria-label="cart">
+              <Link to="/cart" aria-label="cart" onClick={() => dispatch(markCartSeen())} className="relative">
                 <span className="text-2xl">🛒</span>
+                {unseenCartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-1 py-0.5 rounded-full min-w-[16px] text-center leading-none">
+                    {unseenCartCount}
+                  </span>
+                )}
               </Link>  
             </>
           ) : (

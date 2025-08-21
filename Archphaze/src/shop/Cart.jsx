@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MdDelete } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
-import { updateQty, removeFromCart, addToCart, setCurrentUserId } from "../redux/cartSlice";
+import { updateQty, removeFromCart, addToCart, setCurrentUserId, markCartSeen } from "../redux/cartSlice";
 import { Link } from "react-router-dom";
 
 function getImageUrl(imagePath) {
@@ -60,6 +60,11 @@ export default function ShoppingCart() {
       });
     }
   }, [currentUser, currentUserId, cartState, products, debugMode]);
+
+  // Mark cart as seen when this page is opened
+  useEffect(() => {
+    dispatch(markCartSeen());
+  }, [dispatch]);
 
   const toggleSelection = (index) => {
     setSelectedIndexes((prev) =>
