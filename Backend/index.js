@@ -4,9 +4,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import Stripe from "stripe";
 
-
-
+// Routes
 import userroute from './routes/user.route.js';
 import authroute from './routes/auth.route.js';
 import careerroute from './routes/career.route.js';
@@ -14,50 +14,41 @@ import partnerroute from './routes/partner.route.js';
 import serviceroute from './routes/services.route.js';
 import clientroute from './routes/client.route.js';
 import teamroute from './routes/team.route.js';
-import formroute from './routes/form.route.js'
-import productroute from './routes/product.route.js'
-import subuserroute from './routes/subuser.route.js'
-import storeroute from './routes/store.route.js'
-import paymentroute from './routes/payment.route.js'
-import orderroute from './routes/order.route.js'
-import mediaroute from './routes/media.route.js'
-
-
-
-
+import formroute from './routes/form.route.js';
+import productroute from './routes/product.route.js';
+import subuserroute from './routes/subuser.route.js';
+import storeroute from './routes/store.route.js';
+import paymentroute from './routes/payment.route.js';
+import orderroute from './routes/order.route.js';
+import mediaroute from './routes/media.route.js';
 
 dotenv.config();
 
-mongoose.connect(process.env.MONGO)
-  .then(() => console.log('MongoDb is connected'))
-  .catch(err => console.log(err));
-
 const app = express();
 
-// Middleware
+// ✅ Middleware
 app.use(cookieParser());
-
-// Conditionally parse JSON (skip Stripe webhook raw body)
-app.use((req, res, next) => {
-  if (req.originalUrl === '/backend/payment/webhook') {
-    return next();
-  }
-  return express.json()(req, res, next);
-});
-
-// Enable CORS for frontend
+app.use(express.json());
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
-
-// ✅ Serve uploaded images statically
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+// ✅ MongoDB Connection
+const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/emailAuthSystem';
+mongoose.connect(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ MongoDB connected successfully'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 
+// ✅ Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Routes
+// ✅ Routes
 app.use('/backend/user', userroute);
 app.use('/backend/auth', authroute);
-app.use('/backend/Career', careerroute);
-app.use('/backend/Partners', partnerroute); 
+app.use('/backend/career', careerroute);
+app.use('/backend/partners', partnerroute); 
 app.use('/backend/services', serviceroute);
 app.use('/backend/client', clientroute);
 app.use('/backend/team', teamroute);
@@ -67,14 +58,9 @@ app.use('/backend/subuser', subuserroute);
 app.use('/backend/store', storeroute);
 app.use('/backend/payment', paymentroute);
 app.use('/backend/order', orderroute);
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/backend/media', mediaroute);
 
-
-
-
-
-// Error handler
+// ✅ Error handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -85,7 +71,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start the server
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});
+// ✅ Start Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
