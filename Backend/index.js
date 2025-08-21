@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import Stripe from "stripe";
@@ -22,24 +23,43 @@ import paymentroute from './routes/payment.route.js';
 import orderroute from './routes/order.route.js';
 import mediaroute from './routes/media.route.js';
 
-dotenv.config();
+// Load .env from root or Backend folder for flexibility
+(() => {
+  const rootEnv = path.join(process.cwd(), '.env');
+  const backendEnv = path.join(process.cwd(), 'Backend', '.env');
+  if (fs.existsSync(rootEnv)) {
+    dotenv.config({ path: rootEnv });
+  } else if (fs.existsSync(backendEnv)) {
+    dotenv.config({ path: backendEnv });
+  } else {
+    dotenv.config();
+    // eslint-disable-next-line no-console
+    console.warn('No .env file found at project root or Backend/.env. Using process environment variables.');
+  }
+})();
 
 const app = express();
+// Trust proxy for correct secure cookie behavior behind reverse proxies/CDN
+app.set('trust proxy', 1);
 
 // ✅ Middleware
 app.use(cookieParser());
 app.use(express.json());
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ✅ MongoDB Connection
 const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/emailAuthSystem';
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+mongoose
+  .connect(mongoUri)
+  .then(() => {
+    // eslint-disable-next-line no-console
+    console.log(`✅ MongoDB connected (${process.env.MONGO_URI ? 'env' : 'local default'})`);
+  })
+  .catch(err => {
+    // eslint-disable-next-line no-console
+    console.error('❌ MongoDB connection error:', err?.message || err);
+  });
 
 // ✅ Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
