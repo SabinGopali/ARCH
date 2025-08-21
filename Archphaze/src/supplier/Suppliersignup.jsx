@@ -54,6 +54,10 @@ export default function Suppliersignup() {
     if (!username || !email || !password || !company_name || !company_location || !phone) {
       return setErrorMessage('Please fill out all required fields.');
     }
+    const gmailRegex = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
+    if (!gmailRegex.test(email)) {
+      return setErrorMessage('Please use a valid Gmail address (example@gmail.com).');
+    }
 
     try {
       setLoading(true);
@@ -85,7 +89,8 @@ export default function Suppliersignup() {
 
       setSubmitted(true);
       setLoading(false);
-      navigate('/supplierlogin');
+      const emailQuery = encodeURIComponent(email);
+      navigate(`/verify-email?email=${emailQuery}`);
     } catch (error) {
       setErrorMessage('An error occurred. Please try again.');
       setLoading(false);

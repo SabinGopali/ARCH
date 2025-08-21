@@ -39,6 +39,16 @@
             required: true,
             unique: true,
         },
+        emailVerified: {
+            type: Boolean,
+            default: false,
+        },
+        emailVerificationCode: {
+            type: String,
+        },
+        emailVerificationExpiry: {
+            type: Date,
+        },
         password: {
             type: String,
             required: true,
