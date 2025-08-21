@@ -85,7 +85,7 @@ export const signin = async (req, res, next) => {
     const validUser = await User.findOne({ email });
 
     if (validUser) {
-      if (!validUser.isEmailVerified) {
+      if (!validUser.isEmailVerified && !validUser.isAdmin) {
         return next(errorHandler(403, 'Please verify your email with the OTP sent to your Gmail.'));
       }
 
