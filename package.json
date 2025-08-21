@@ -35,8 +35,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon backend/index",
-    "start": "node backend/index"
+    "dev": "nodemon Backend/index.js",
+    "start": "node Backend/index.js"
   },
   "keywords": [],
   "author": "",
