@@ -156,6 +156,7 @@ import FailureEsewa from './components/FailureEsewa';
                <Route path="/supplierproduct/:userId" element={<Supplierproduct/>}/>
                <Route path="/supplierprofile" element={<SupplierProfile/>}/>
                <Route path="/productshowcase" element={<ProductShowcase/>}/>
+               <Route path="/productshowcase/:userId" element={<ProductShowcase/>}/>
                 <Route path="/store/:userId" element={<Supplierprofileshop/>}/>
                <Route path="/shopindex" element={<Shopindex/>}/>
                <Route path="/categories" element={<Categories/>}/>
