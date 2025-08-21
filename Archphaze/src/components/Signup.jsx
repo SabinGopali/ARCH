@@ -15,30 +15,8 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.username || !formData.email || !formData.password) {
-      return setErrorMessage('Please fill out all fields.');
-    }
-    try {
-      setLoading(true);
-      setErrorMessage(null);
-      const res = await fetch('/backend/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (data.success === false) {
-        setLoading(false);
-        return setErrorMessage(data.message);
-      }
-      setLoading(false);
-      if (res.ok) {
-        navigate('/login');
-      }
-    } catch (error) {
-      setErrorMessage(error.message);
-      setLoading(false);
-    }
+    setErrorMessage('Email/password sign up is disabled. Please use Google.');
+    return;
   };
 
   return (
@@ -62,6 +40,7 @@ export default function Signup() {
             onChange={handleChange}
             placeholder="Full name"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            disabled
           />
           <input
             type="email"
@@ -69,6 +48,7 @@ export default function Signup() {
             onChange={handleChange}
             placeholder="Email address"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            disabled
           />
           <input
             type="password"
@@ -76,13 +56,14 @@ export default function Signup() {
             onChange={handleChange}
             placeholder="Password"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            disabled
           />
 
           <button
-            disabled={loading}
-            className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition"
+            disabled
+            className="w-full py-3 bg-gray-300 text-gray-600 cursor-not-allowed rounded-lg"
           >
-            {loading ? 'Loading...' : 'Sign Up'}
+            Sign Up (Use Google below)
           </button>
         </form>
 
@@ -107,7 +88,7 @@ export default function Signup() {
         {/* Error alert */}
         {errorMessage && (
           <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg">
-            <strong>Error:</strong> {errorMessage}
+            <strong>Note:</strong> {errorMessage}
           </div>
         )}
       </div>

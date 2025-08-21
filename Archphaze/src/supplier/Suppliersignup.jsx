@@ -35,61 +35,8 @@ export default function Suppliersignup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage(null);
-    setSubmitted(false);
-
-    const {
-      username,
-      email,
-      password,
-      company_name,
-      company_location,
-      phone,
-      exportBusiness,
-      ecommerceBusiness,
-      wholesaleBusiness,
-      manufacturingBusiness,
-    } = formData;
-
-    if (!username || !email || !password || !company_name || !company_location || !phone) {
-      return setErrorMessage('Please fill out all required fields.');
-    }
-
-    try {
-      setLoading(true);
-      const res = await fetch('/backend/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-          company_name,
-          company_location,
-          phone,
-          businessTypes: [
-            exportBusiness && 'Export Internationally',
-            ecommerceBusiness && 'Online Store',
-            wholesaleBusiness && 'Wholesale Supplier',
-            manufacturingBusiness && 'Manufacturer',
-          ].filter(Boolean),
-          isSupplier: true,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setLoading(false);
-        return setErrorMessage(data.message || 'Something went wrong.');
-      }
-
-      setSubmitted(true);
-      setLoading(false);
-      navigate('/supplierlogin');
-    } catch (error) {
-      setErrorMessage('An error occurred. Please try again.');
-      setLoading(false);
-    }
+    setErrorMessage('Email/password supplier sign up is disabled. Please use Google below.');
+    return;
   };
 
   const businessOptions = [
@@ -98,6 +45,13 @@ export default function Suppliersignup() {
     { id: 'wholesaleBusiness', label: 'Wholesale Supplier', icon: <FaWarehouse className="text-3xl" /> },
     { id: 'manufacturingBusiness', label: 'Manufacturer', icon: <FaIndustry className="text-3xl" /> },
   ];
+
+  const getBusinessTypes = () => [
+    formData.exportBusiness && 'Export Internationally',
+    formData.ecommerceBusiness && 'Online Store',
+    formData.wholesaleBusiness && 'Wholesale Supplier',
+    formData.manufacturingBusiness && 'Manufacturer',
+  ].filter(Boolean);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white to-blue-50 px-4 py-10 relative">
@@ -114,15 +68,11 @@ export default function Suppliersignup() {
         </div>
 
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Create Supplier Account</h2>
-        <p className="text-center text-gray-600 mb-6">Enter your details and business info to get started</p>
+        <p className="text-center text-gray-600 mb-6">Use Google to continue. Gmail accounts only.</p>
 
         {errorMessage && <p className="text-red-600 text-center text-sm mb-4">{errorMessage}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input name="username" onChange={handleChange} placeholder="Full name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
-          <input name="email" type="email" onChange={handleChange} placeholder="Email address" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
-          <input name="password" type="password" onChange={handleChange} placeholder="Password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
-
           <input name="company_name" onChange={handleChange} placeholder="Company Name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
           <input name="company_location" onChange={handleChange} placeholder="Company Location" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
 
@@ -154,8 +104,8 @@ export default function Suppliersignup() {
             ))}
           </div>
 
-          <button disabled={loading} type="submit" className="w-full bg-black text-white py-3 rounded-lg font-semibold text-lg hover:bg-gray-900 transition">
-            {loading ? 'Loading...' : 'Sign Up'}
+          <button disabled className="w-full bg-gray-300 text-gray-600 py-3 rounded-lg font-semibold text-lg cursor-not-allowed">
+            Sign Up (Use Google below)
           </button>
 
           <div className="flex items-center my-4">
@@ -164,7 +114,15 @@ export default function Suppliersignup() {
             <div className="flex-grow border-t border-gray-300"></div>
           </div>
 
-          <OAuth />
+          <OAuth
+            endpoint="/backend/auth/google-supplier"
+            extraBody={() => ({
+              company_name: formData.company_name,
+              company_location: formData.company_location,
+              phone: formData.phone,
+              businessTypes: getBusinessTypes(),
+            })}
+          />
 
           <p className="text-center text-sm text-gray-600 mt-4">
             Already have an account?{' '}

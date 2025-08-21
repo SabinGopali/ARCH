@@ -5,12 +5,13 @@ import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { app } from '../firebase';
 import { useDispatch } from 'react-redux';
 import { signInSuccess } from '../redux/user/userslice';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function OAuth() {
+export default function OAuth({ endpoint: endpointProp, extraBody }) {
   const auth = getAuth(app);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleGoogleClick = async () => {
     const provider = new GoogleAuthProvider();
@@ -18,17 +19,17 @@ export default function OAuth() {
 
     try {
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      const idToken = await result.user.getIdToken();
 
-      // Send user data to backend
-      const res = await fetch('/backend/auth/google', {
+      const isSupplierSignup = location.pathname.toLowerCase().includes('supplier');
+      const endpoint = endpointProp || (isSupplierSignup ? '/backend/auth/google-supplier' : '/backend/auth/google');
+
+      const extra = typeof extraBody === 'function' ? extraBody() : (extraBody || {});
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: user.displayName,
-          email: user.email,
-          googlePhotoUrl: user.photoURL,
-        }),
+        body: JSON.stringify({ idToken, ...extra }),
       });
 
       const data = await res.json();
@@ -38,10 +39,12 @@ export default function OAuth() {
         navigate('/');
       } else {
         console.error("Server error:", data.message);
+        alert(data.message || 'Google sign-in failed');
       }
 
     } catch (error) {
       console.error("Google login failed:", error);
+      alert(error?.message || 'Google sign-in failed');
     }
   };
 
