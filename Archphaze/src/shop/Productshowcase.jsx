@@ -120,7 +120,7 @@ export default function Productshowcase() {
         const [supRes, storeRes, prodRes] = await Promise.all([
           fetch("/backend/user/supplier-users", { credentials: "include" }),
           fetch(`/backend/store/getall/${currentUser._id}`, { credentials: "include" }),
-          fetch(`/backend/product/getall`, { credentials: "include" }),
+          fetch(`/backend/user/product/${currentUser._id}`, { credentials: "include" }),
         ]);
 
         const [supData, storeData, prodData] = await Promise.all([
