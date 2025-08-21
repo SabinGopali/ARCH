@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   currentUserId: null,
   cartsByUser: {}, // { userId1: [...items], userId2: [...items] }
+  unseenCountsByUser: {}, // { userId1: 3, userId2: 0 }
 };
 
 const cartSlice = createSlice({
@@ -16,6 +17,10 @@ const cartSlice = createSlice({
       if (!state.cartsByUser) {
         state.cartsByUser = {};
       }
+      // Ensure unseenCountsByUser exists
+      if (!state.unseenCountsByUser) {
+        state.unseenCountsByUser = {};
+      }
       
       // Validate userId
       if (userId && (typeof userId === 'string' || typeof userId === 'number')) {
@@ -24,6 +29,10 @@ const cartSlice = createSlice({
         // Ensure there's a cart array for this user
         if (!state.cartsByUser[state.currentUserId]) {
           state.cartsByUser[state.currentUserId] = [];
+        }
+        // Ensure unseen counter exists for this user
+        if (state.unseenCountsByUser[state.currentUserId] === undefined) {
+          state.unseenCountsByUser[state.currentUserId] = 0;
         }
       } else if (userId === null || userId === undefined) {
         // Allow clearing the current user
@@ -50,6 +59,10 @@ const cartSlice = createSlice({
       if (!state.cartsByUser) {
         state.cartsByUser = {};
       }
+      // Ensure unseenCountsByUser exists
+      if (!state.unseenCountsByUser) {
+        state.unseenCountsByUser = {};
+      }
 
       // Ensure cart exists for user
       if (!state.cartsByUser[userId]) {
@@ -57,6 +70,8 @@ const cartSlice = createSlice({
       }
 
       const userCart = state.cartsByUser[userId];
+      const addQtyRaw = Number(newItem.qty);
+      const addQty = addQtyRaw && addQtyRaw > 0 ? addQtyRaw : 1;
       
       // Check if product already exists
       const existingItemIndex = userCart.findIndex((item) => {
@@ -73,7 +88,6 @@ const cartSlice = createSlice({
       if (existingItemIndex >= 0) {
         // If product already in cart, update quantity
         const currentQty = Number(userCart[existingItemIndex].qty) || 0;
-        const addQty = Number(newItem.qty) || 1;
         const newQty = currentQty + addQty;
         
         // Check stock limit
@@ -100,6 +114,10 @@ const cartSlice = createSlice({
         
         userCart.push(cartItem);
       }
+
+      // Increment unseen counter for this user by the added quantity
+      const currentUnseen = Number(state.unseenCountsByUser[userId]) || 0;
+      state.unseenCountsByUser[userId] = currentUnseen + addQty;
     },
     
     updateQty: (state, action) => {
@@ -250,6 +268,14 @@ const cartSlice = createSlice({
         }
       }
     },
+    
+    // Mark the cart as seen (clears the unseen counter for current user or specified user)
+    markCartSeen: (state, action) => {
+      const userId = action?.payload || state.currentUserId;
+      if (!userId) return;
+      if (!state.unseenCountsByUser) state.unseenCountsByUser = {};
+      state.unseenCountsByUser[userId] = 0;
+    },
   },
 });
 
@@ -261,7 +287,8 @@ export const {
   clearCart,
   removePurchasedItems,
   removeOutOfStockItems,
-  updateItemDetails
+  updateItemDetails,
+  markCartSeen
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
@@ -289,4 +316,10 @@ export const selectCartTotal = (state) => {
 export const selectCartItemById = (state, productId) => {
   const items = selectCartItems(state);
   return items.find(item => item.productId === productId);
+};
+
+export const selectUnseenCartCount = (state) => {
+  const userId = state.cart?.currentUserId;
+  const unseenMap = state.cart?.unseenCountsByUser || {};
+  return Number(unseenMap[userId]) || 0;
 };
