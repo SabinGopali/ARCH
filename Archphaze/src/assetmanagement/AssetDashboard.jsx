@@ -35,7 +35,7 @@ export default function AssetDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans md:flex">
+    <div className="min-h-screen bg-gray-50 font-sans md:flex md:items-stretch">
       {/* Sidebar (controls its own responsiveness) */}
       <AssetSidebar />
 
