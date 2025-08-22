@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Bell, Search } from "lucide-react";
-import AssetSidebar from "./Assetsidebar";
+import AssetSidebar from "./AssetSidebar";
 
 export default function AssetDashboard() {
   const [timeFilter, setTimeFilter] = useState("Week");
@@ -35,14 +35,12 @@ export default function AssetDashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0">
-        <AssetSidebar />
-      </aside>
+    <div className="min-h-screen bg-gray-50 font-sans md:flex md:items-stretch">
+      {/* Sidebar (controls its own responsiveness) */}
+      <AssetSidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 md:p-6 space-y-6">
         {/* HEADER */}
         <div className="bg-white p-6 rounded-2xl shadow-sm">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">

@@ -56,20 +56,32 @@ export default function AssetSidebar() {
 
   return (
     <>
-      {/* Mobile toggle button */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-white shadow-md">
-        <h1 className="text-2xl font-bold text-red-500">OCTA</h1>
-        <button onClick={() => setShowSidebar(!showSidebar)}>
-          {showSidebar ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
+      {/* Mobile left-attached toggle button */}
+      <button
+        className="md:hidden fixed left-2 top-4 z-50 bg-white border rounded-full p-2 shadow-md"
+        onClick={() => setShowSidebar(!showSidebar)}
+        aria-label="Toggle sidebar"
+      >
+        {showSidebar ? <X size={20} /> : <Menu size={20} />}
+      </button>
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-md p-4 flex flex-col
-        md:relative md:translate-x-0 transition-transform duration-300
+        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-md p-4 flex flex-col z-40
+        md:relative md:h-auto md:self-stretch md:translate-x-0 transition-transform duration-300
         ${showSidebar ? "translate-x-0" : "-translate-x-full"}`}
       >
+        {/* Close button inside sidebar on mobile */}
+        {showSidebar && (
+          <button
+            className="md:hidden absolute right-3 top-3 p-1 rounded-full hover:bg-gray-100"
+            onClick={() => setShowSidebar(false)}
+            aria-label="Close sidebar"
+          >
+            <X size={18} />
+          </button>
+        )}
+
         {/* Logo for desktop */}
         <img src={logo} className="hidden md:block text-2xl font-bold text-red-500 mb-8">
           
@@ -112,7 +124,7 @@ export default function AssetSidebar() {
       {/* Overlay for mobile */}
       {showSidebar && (
         <div
-          className="fixed inset-0 bg-black opacity-30 md:hidden"
+          className="fixed inset-0 bg-black opacity-30 md:hidden z-30"
           onClick={() => setShowSidebar(false)}
         />
       )}
