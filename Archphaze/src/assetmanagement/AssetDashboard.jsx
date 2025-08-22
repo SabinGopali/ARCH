@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Bell, Search } from "lucide-react";
-import AssetSidebar from "./Assetsidebar";
+import { Bell, Search, Menu, X } from "lucide-react";
+import AssetSidebar from "./AssetSidebar";
 
 export default function AssetDashboard() {
   const [timeFilter, setTimeFilter] = useState("Week");
   const [search, setSearch] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Stats data
   const stats = [
@@ -37,12 +38,27 @@ export default function AssetDashboard() {
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0">
-        <AssetSidebar />
+      <aside className="w-64 flex-shrink-0 hidden md:block">
+        <AssetSidebar isOpen={true} />
       </aside>
 
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-20 bg-white shadow-md">
+        <div className="flex justify-between items-center p-4">
+          <h1 className="text-2xl font-bold text-red-500">OCTA</h1>
+          <button onClick={() => setSidebarOpen((v) => !v)}>
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Instance */}
+      <div className="md:hidden">
+        <AssetSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-6 w-full md:ml-0 md:pl-0 pt-20 md:pt-6">
         {/* HEADER */}
         <div className="bg-white p-6 rounded-2xl shadow-sm">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">

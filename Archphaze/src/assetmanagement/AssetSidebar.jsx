@@ -9,13 +9,20 @@ import {
   Settings,
   Package,
   FileSearch,
-  Menu,
-  X,
 } from "lucide-react";
 
-export default function AssetSidebar() {
+export default function AssetSidebar({ isOpen, onClose }) {
   const [active, setActive] = useState("Dashboard");
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const open = typeof isOpen === "boolean" ? isOpen : internalOpen;
+  const handleClose = () => {
+    if (typeof isOpen === "boolean") {
+      onClose && onClose();
+    } else {
+      setInternalOpen(false);
+    }
+  };
 
   const menu = [
     { name: "Dashboard", icon: <Home size={18} />, submenu: [] },
@@ -55,19 +62,11 @@ export default function AssetSidebar() {
 
   return (
     <>
-      {/* Mobile toggle button */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-white shadow-md">
-        <h1 className="text-2xl font-bold text-red-500">OCTA</h1>
-        <button onClick={() => setShowSidebar(!showSidebar)}>
-          {showSidebar ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-md p-4 flex flex-col
-        md:relative md:translate-x-0 transition-transform duration-300
-        ${showSidebar ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-md p-4 flex flex-col transform transition-transform duration-300
+        md:relative md:z-auto md:shadow-none md:translate-x-0
+        ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Logo for desktop */}
         <h1 className="hidden md:block text-2xl font-bold text-red-500 mb-8">
@@ -109,10 +108,10 @@ export default function AssetSidebar() {
       </div>
 
       {/* Overlay for mobile */}
-      {showSidebar && (
+      {open && (
         <div
-          className="fixed inset-0 bg-black opacity-30 md:hidden"
-          onClick={() => setShowSidebar(false)}
+          className="fixed inset-0 bg-black opacity-30 md:hidden z-30"
+          onClick={handleClose}
         />
       )}
     </>
