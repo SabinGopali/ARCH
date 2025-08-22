@@ -101,6 +101,8 @@ import SuccessEsewa from './components/SuccessEsewa';
 import FailureEsewa from './components/FailureEsewa';
 import AssetDashboard from './assetmanagement/AssetDashboard';
 import AssetSidebar from './assetmanagement/AssetSidebar';
+import Subscriptioncard from './components/Subscriptioncard';
+import Assetmanageproduct from './assetmanagement/Assetmanageproduct';
      
      
      
@@ -168,6 +170,7 @@ import AssetSidebar from './assetmanagement/AssetSidebar';
               <Route path="/category/:slug" element={<Userproductshowcase/>}/>            
               <Route path="/orderhistory" element={<Orderhistory/>}/>
               <Route path="/settings" element={<Accountsecurity/>}/>
+              <Route path="/subscription" element={<Subscriptioncard/>}/>
 
 
               <Route path="/supplierdashboard" element={<Supplierdashboard />} />
@@ -196,6 +199,7 @@ import AssetSidebar from './assetmanagement/AssetSidebar';
             {/* asset management routes */}
             <Route path="/assetdashboard" element={<AssetDashboard/>} />
             <Route path="/assetsidebar" element={<AssetSidebar/>} />
+            <Route path="/assetmanageproduct" element={<Assetmanageproduct/>} />
 
 
 
