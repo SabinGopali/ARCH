@@ -68,8 +68,8 @@ const Storeprofile = () => {
   }, [currentUser]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="p-4 md:p-8 lg:flex lg:gap-8 relative z-10">
+    <div className="min-h-screen bg-white">
+      <div className="p-2 md:p-5 lg:flex lg:gap-8 relative z-10">
         <aside className="w-full lg:w-64 mb-10 lg:mb-0">
           <Suppliersidebar />
         </aside>

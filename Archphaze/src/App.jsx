@@ -99,6 +99,8 @@ import Cancel from './components/Cancel';
 import Adminorder from './admin/shop/earphone/Adminorder';
 import SuccessEsewa from './components/SuccessEsewa';
 import FailureEsewa from './components/FailureEsewa';
+import AssetDashboard from './assetmanagement/AssetDashboard';
+import AssetSidebar from './assetmanagement/Assetsidebar';
    
    
    
@@ -165,9 +167,45 @@ import FailureEsewa from './components/FailureEsewa';
                <Route path="/category/:slug" element={<Userproductshowcase/>}/>            
                <Route path="/orderhistory" element={<Orderhistory/>}/>
                <Route path="/settings" element={<Accountsecurity/>}/>
+
+
+               <Route path="/supplierdashboard" element={<Supplierdashboard />} />
+              <Route path="/addproduct" element={<Addproduct/>} />
+              <Route path="/suppliersidebar" element={<Suppliersidebar/>} />
+              <Route path="/manageproduct" element={<Manageproduct/>} />
+              <Route path="/mediacenter" element={<Mediacenter/>} />
+              <Route path="/profilesettings" element={<Profilesettings/>} />
+              <Route path="/supplierprofile" element={<Supplierprofile/>} />
+              <Route path="/businessinfo" element={<Businessinfo/>} />
+              <Route path="/accountinfo" element={<Accountinfo/>} />
+              <Route path="/order" element={<Order/>} />
+              <Route path="/storesettings" element={<Store/>} />
+              <Route path="/storeprofile" element={<Storeprofile/>} />
+              <Route path="/security" element={<Security/>} />
+              <Route path="/usermanagement" element={<Usermanagement/>} />
+              <Route path="/adduserform" element={<AddUserForm/>} />
+              <Route path="/updateproduct/:id" element={<Updateproduct/>} />
+              <Route path="/updateuserform/:id" element={<Updateuserform/>} />
+              <Route path="/updatestoresetting/:id" element={<Updatestoresetting/>} />
+
+
+
+
+
+
+              {/* asset management routes */}
+              <Route path="/assetdashboard" element={<AssetDashboard/>} />
+              <Route path="/assetsidebar" element={<AssetSidebar/>} />
+
+
+
+
                
    
    
+              
+              {/* private route */}
+              <Route element={<Privateroute />} >
                <Route path="/sidebar" element={<Sidebar/>}/>
                <Route path="/userinfo" element={<Userinfo/>}/>
                <Route path="/dashboard" element={<Dashboard/>}/>
@@ -199,27 +237,7 @@ import FailureEsewa from './components/FailureEsewa';
                <Route path="/adminorder" element={<Adminorder />} />
 
 
-              <Route path="/supplierdashboard" element={<Supplierdashboard />} />
-              <Route path="/addproduct" element={<Addproduct/>} />
-              <Route path="/suppliersidebar" element={<Suppliersidebar/>} />
-              <Route path="/manageproduct" element={<Manageproduct/>} />
-              <Route path="/mediacenter" element={<Mediacenter/>} />
-              <Route path="/profilesettings" element={<Profilesettings/>} />
-              <Route path="/supplierprofile" element={<Supplierprofile/>} />
-              <Route path="/businessinfo" element={<Businessinfo/>} />
-              <Route path="/accountinfo" element={<Accountinfo/>} />
-              <Route path="/order" element={<Order/>} />
-              <Route path="/storesettings" element={<Store/>} />
-              <Route path="/storeprofile" element={<Storeprofile/>} />
-              <Route path="/security" element={<Security/>} />
-              <Route path="/usermanagement" element={<Usermanagement/>} />
-              <Route path="/adduserform" element={<AddUserForm/>} />
-              <Route path="/updateproduct/:id" element={<Updateproduct/>} />
-              <Route path="/updateuserform/:id" element={<Updateuserform/>} />
-              <Route path="/updatestoresetting/:id" element={<Updatestoresetting/>} />
               
-              {/* private route */}
-              <Route element={<Privateroute />} >
               </Route>
               {/* private route */}
             </Routes>
