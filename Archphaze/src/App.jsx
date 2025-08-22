@@ -100,7 +100,7 @@ import Adminorder from './admin/shop/earphone/Adminorder';
 import SuccessEsewa from './components/SuccessEsewa';
 import FailureEsewa from './components/FailureEsewa';
 import AssetDashboard from './assetmanagement/AssetDashboard';
-import AssetSidebar from './assetmanagement/Assetsidebar';
+import AssetSidebar from './assetmanagement/AssetSidebar';
    
    
    
