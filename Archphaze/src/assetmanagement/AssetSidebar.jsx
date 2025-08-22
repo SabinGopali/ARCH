@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import logo from '/logo.webp'
 import {
   Home,
   FileText,
@@ -70,9 +71,9 @@ export default function AssetSidebar() {
         ${showSidebar ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Logo for desktop */}
-        <h1 className="hidden md:block text-2xl font-bold text-red-500 mb-8">
-          OCTA
-        </h1>
+        <img src={logo} className="hidden md:block text-2xl font-bold text-red-500 mb-8">
+          
+        </img>
 
         {/* Menu */}
         <nav className="flex-1">
