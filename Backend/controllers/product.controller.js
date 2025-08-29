@@ -158,6 +158,29 @@ export const updateProduct = async (req, res) => {
   }
 };
 
+// 🔄 Update only availability
+export const updateAvailability = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    const ownerUserId = getActingOwnerUserIdFromReq(req);
+    if (product.userRef?.toString() !== String(ownerUserId)) {
+      return res.status(403).json({ error: "Not authorized to update this product" });
+    }
+
+    if (req.body.available === undefined) {
+      return res.status(400).json({ error: "'available' is required" });
+    }
+
+    product.available = req.body.available === true || req.body.available === "true";
+    await product.save();
+    return res.json({ message: "Availability updated", product });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update availability" });
+  }
+};
+
 // 🔴 DELETE Product
 export const deleteProduct = async (req, res) => {
   try {

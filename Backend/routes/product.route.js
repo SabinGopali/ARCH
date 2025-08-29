@@ -6,6 +6,7 @@ import {
   getProductById,
   updateProduct,
   deleteProduct,
+  updateAvailability,
 } from "../controllers/product.controller.js";
 import { verifyToken } from "../utils/verifyuser.js";
 import { requireSupplierOrFullAccess, requireAnySupplier } from "../utils/roles.js";
@@ -38,6 +39,14 @@ router.post(
     { name: "variantImages_2", maxCount: 3 },
   ]),
   updateProduct
+);
+
+// Update only availability
+router.patch(
+  "/availability/:id",
+  verifyToken,
+  requireAnySupplier,
+  updateAvailability
 );
 
 // Delete product by ID (with auth)

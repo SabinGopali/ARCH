@@ -144,8 +144,8 @@ export default function ManageProduct() {
     );
 
     try {
-      const res = await fetch(`/backend/product/update/${product._id}`, {
-        method: "POST",
+      const res = await fetch(`/backend/product/availability/${product._id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ available: newValue }),
