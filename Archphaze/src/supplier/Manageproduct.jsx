@@ -31,7 +31,7 @@ export default function ManageProduct() {
         : currentUser?._id;
       if (!supplierOwnerId) return;
       try {
-        const res = await fetch(`/backend/user/product/${supplierOwnerId}`);
+        const res = await fetch(`/backend/user/product/${supplierOwnerId}`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch products");
         const data = await res.json();
 
@@ -75,6 +75,7 @@ export default function ManageProduct() {
         const res = await fetch(`/backend/product/delete/${product._id}`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
         if (res.ok) {
           setProducts((prev) => prev.filter((p) => p._id !== product._id));
@@ -102,6 +103,7 @@ export default function ManageProduct() {
         const res = await fetch(`/backend/product/delete/${productId}`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
         if (!res.ok) throw new Error();
         setProducts((prev) => prev.filter((p) => p._id !== productId));
@@ -144,13 +146,39 @@ export default function ManageProduct() {
     );
 
     try {
-      const res = await fetch(`/backend/product/availability/${product._id}`, {
+      let res = await fetch(`/backend/product/availability/${product._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ available: newValue }),
       });
-      if (!res.ok) throw new Error("Failed to update availability");
+      if (!res.ok) {
+        // Fallback: try the existing update endpoint with JSON
+        res = await fetch(`/backend/product/update/${product._id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ available: newValue }),
+        });
+      }
+      if (!res.ok) {
+        // Fallback: try multipart/form-data (multer route)
+        const fd = new FormData();
+        fd.append("available", String(newValue));
+        res = await fetch(`/backend/product/update/${product._id}`, {
+          method: "POST",
+          credentials: "include",
+          body: fd,
+        });
+      }
+      if (!res.ok) {
+        let message = "Failed to update availability";
+        try {
+          const data = await res.json();
+          if (data?.error || data?.message) message = data.error || data.message;
+        } catch {}
+        throw new Error(message);
+      }
     } catch (err) {
       setProducts((prev) =>
         prev.map((p) => (p._id === product._id ? { ...p, available: product.available } : p))
