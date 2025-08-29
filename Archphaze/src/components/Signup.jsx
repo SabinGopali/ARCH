@@ -13,6 +13,21 @@ export default function Signup() {
     setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
   };
 
+  // ✅ Move testConnection function outside of handleSubmit
+  const testConnection = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/health');
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Server is running: ${data.message}`);
+      } else {
+        alert('Server responded with error');
+      }
+    } catch (error) {
+      alert(`Cannot connect to server: ${error.message}`);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.username || !formData.email || !formData.password) {
@@ -21,22 +36,40 @@ export default function Signup() {
     try {
       setLoading(true);
       setErrorMessage(null);
-      const res = await fetch('/backend/auth/signup', {
+      
+      // ✅ Use the correct endpoint with /backend prefix
+      const res = await fetch('http://localhost:3000/backend/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+      
+      // Check if response is OK
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Server error: ${res.status} - ${errorText}`);
+      }
+      
+      // Check if response is JSON
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        throw new Error(`Server returned non-JSON: ${text.substring(0, 100)}`);
+      }
+      
       const data = await res.json();
+      
       if (data.success === false) {
-        setLoading(false);
-        return setErrorMessage(data.message);
+        throw new Error(data.message);
       }
-      setLoading(false);
-      if (res.ok) {
-        navigate('/login');
-      }
+      
+      // Navigate to OTP page with email
+      navigate('/otp', { state: { email: formData.email } });
+      
     } catch (error) {
-      setErrorMessage(error.message);
+      console.error('Signup error:', error);
+      setErrorMessage(error.message || 'Failed to connect to server. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -53,6 +86,8 @@ export default function Signup() {
             className="h-12 sm:h-14 md:h-16 object-contain transition-transform duration-300 hover:scale-105"
           />
         </div>
+
+        <h2 className="text-2xl font-bold text-center text-gray-800">Create Account</h2>
 
         {/* Sign Up Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -77,13 +112,15 @@ export default function Signup() {
             placeholder="Password"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
+          
 
           <button
             disabled={loading}
-            className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition"
+            className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition disabled:opacity-70"
           >
             {loading ? 'Loading...' : 'Sign Up'}
           </button>
+          
         </form>
 
         {/* OR Divider */}
@@ -95,6 +132,15 @@ export default function Signup() {
 
         {/* Google Auth Button */}
         <OAuth />
+
+        {/* Test Connection Button */}
+        <button
+          type="button"
+          onClick={testConnection}
+          className="w-full py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+        >
+          Test Server Connection
+        </button>
 
         {/* Redirect link */}
         <p className="text-center text-sm text-gray-600">

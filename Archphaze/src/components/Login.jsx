@@ -22,20 +22,52 @@ export default function Login() {
     }
     try {
       dispatch(signInStart());
-      const res = await fetch('/backend/auth/signin', {
+      
+      // Use full URL for the API endpoint
+      const res = await fetch('http://localhost:3000/backend/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+      
+      // Handle non-JSON responses
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const errorText = await res.text();
+        throw new Error(`Server error: ${res.status} - ${errorText}`);
+      }
+      
       const data = await res.json();
+      
       if (data.success === false) {
-        dispatch(signInFailure(data.message));
+        // Handle email verification requirement
+        if (data.message && data.message.includes('verify your email')) {
+          dispatch(signInFailure(
+            <span>
+              {data.message}{' '}
+              <button 
+                type="button" 
+                onClick={() => navigate('/signup')}
+                className="text-blue-600 underline hover:text-blue-800"
+              >
+                Sign up again
+              </button>
+            </span>
+          ));
+        } else {
+          dispatch(signInFailure(data.message));
+        }
         return;
       }
+      
       if (res.ok) {
+        // Store user data in localStorage for persistence
+        localStorage.setItem('user', JSON.stringify(data));
+        
+        // Dispatch to Redux store
         dispatch(signInSuccess(data));
 
-        // Optional: store supplierId for sub-user
+        // Store supplierId for sub-user if available
         if (data.isSubUser && data.supplierId) {
           localStorage.setItem('supplierId', data.supplierId);
         }
@@ -50,7 +82,8 @@ export default function Login() {
         }
       }
     } catch (error) {
-      dispatch(signInFailure(error.message));
+      console.error('Login error:', error);
+      dispatch(signInFailure(error.message || 'Failed to connect to server. Please try again.'));
     }
   };
 
@@ -70,7 +103,7 @@ export default function Login() {
         {/* Right Side - Form */}
         <div className="w-full md:w-1/2 space-y-4">
           <h2 className="text-2xl font-bold text-gray-800 text-center">Sign In</h2>
-          <p className="text-gray-600 text-center">Sign in for further</p>
+          <p className="text-gray-600 text-center">Sign in to your account</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <input
@@ -79,6 +112,7 @@ export default function Login() {
                 placeholder="Email address"
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
               />
             </div>
             <div className="space-y-2">
@@ -88,6 +122,7 @@ export default function Login() {
                 placeholder="Password"
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required
               />
               <div className="text-right">
                 <Link
@@ -98,6 +133,7 @@ export default function Login() {
                 </Link>
               </div>
             </div>
+            
             <button
               disabled={loading}
               className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition disabled:opacity-80"
