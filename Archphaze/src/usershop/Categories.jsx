@@ -24,9 +24,13 @@ export default function Categories() {
           products = data.products;
         }
 
-        // Extract unique categories from products
+        // Extract unique categories from available products only
         const uniqueCategories = [
-          ...new Set(products.map((product) => product.category)),
+          ...new Set(
+            products
+              .filter((p) => p.available === undefined || p.available)
+              .map((product) => product.category)
+          ),
         ];
 
         // Create category objects with slug

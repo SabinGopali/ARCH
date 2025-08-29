@@ -94,7 +94,8 @@ const Shopindex = () => {
         const res = await fetch("/backend/product/getall", { credentials: "include" });
         const data = await res.json();
         const list = Array.isArray(data) ? data : Array.isArray(data?.products) ? data.products : [];
-        setProducts(list);
+        const availableOnly = list.filter((p) => p.available === undefined || p.available);
+        setProducts(availableOnly);
         setProductsLoaded(true);
       } catch (e) {
         setProducts([]);
