@@ -54,6 +54,8 @@ export default function Product() {
     fetchAllProducts();
   }, []);
 
+  const visibleProducts = products.filter((p) => p.available === undefined || p.available);
+
   return (
     <section className="py-14 bg-gradient-to-b from-white to-gray-100">
       <h2 className="text-3xl font-bold text-center mb-12 text-gray-800 tracking-tight">
@@ -67,11 +69,11 @@ export default function Product() {
         <div className="text-center py-12 text-lg">Loading...</div>
       ) : (
         <div className="px-8 sm:px-12 md:px-16 lg:px-28">
-          {products.length === 0 ? (
+          {visibleProducts.length === 0 ? (
             <div className="text-center text-gray-500 text-lg">No products available.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {products.map((product, index) => {
+              {visibleProducts.map((product, index) => {
                 const productImage = getProductImageUrl(product);
                 const hasDiscount =
                   product.specialPrice > 0 && product.specialPrice < product.price;

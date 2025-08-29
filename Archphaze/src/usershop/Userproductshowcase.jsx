@@ -292,6 +292,7 @@ export default function Userproductshowcase() {
 
   // Filtering products with selected filters
   const filteredProducts = products.filter((product) => {
+    if (product.available === false) return false;
     // Category filter
     if (selectedCategory && selectedCategory !== "All" && product.category !== selectedCategory)
       return false;
