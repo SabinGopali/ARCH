@@ -135,6 +135,30 @@ export default function ManageProduct() {
     navigate(`/updateproduct/${product._id}`);
   };
 
+  const handleToggleAvailability = async (product) => {
+    if (!canModify) return;
+    const newValue = !product.available;
+
+    setProducts((prev) =>
+      prev.map((p) => (p._id === product._id ? { ...p, available: newValue } : p))
+    );
+
+    try {
+      const res = await fetch(`/backend/product/update/${product._id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ available: newValue }),
+      });
+      if (!res.ok) throw new Error("Failed to update availability");
+    } catch (err) {
+      setProducts((prev) =>
+        prev.map((p) => (p._id === product._id ? { ...p, available: product.available } : p))
+      );
+      alert("Could not update availability. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -259,13 +283,14 @@ export default function ManageProduct() {
                     <th className="px-4 py-3">Warranty</th>
                     <th className="px-4 py-3">Variants</th>
                     <th className="px-4 py-3">Managed By</th>
+                    <th className="px-4 py-3">Availability</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-6 text-gray-500">
+                      <td colSpan={9} className="text-center py-6 text-gray-500">
                         No products found.
                       </td>
                     </tr>
@@ -303,6 +328,32 @@ export default function ManageProduct() {
                           <td className="px-4 py-4">{variantsStr}</td>
                           <td className="px-4 py-4">
                             {product.managedBy || currentUser?.name || currentUser?.username || "You"}
+                          </td>
+                          <td className="px-4 py-4">
+                            <label
+                              htmlFor={`available-${product._id}`}
+                              className={`inline-flex items-center select-none ${canModify ? "cursor-pointer" : "cursor-not-allowed"}`}
+                            >
+                              <input
+                                id={`available-${product._id}`}
+                                type="checkbox"
+                                checked={!!product.available}
+                                onChange={() => handleToggleAvailability(product)}
+                                className="sr-only"
+                                disabled={!canModify}
+                              />
+                              <div
+                                className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${
+                                  product.available ? "bg-black" : "bg-gray-300"
+                                }`}
+                              >
+                                <div
+                                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 ${
+                                    product.available ? "translate-x-6" : "translate-x-0"
+                                  }`}
+                                />
+                              </div>
+                            </label>
                           </td>
                           <td className="px-4 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
